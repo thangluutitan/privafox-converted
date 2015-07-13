@@ -1,1 +1,2 @@
 thangluu add
+test auto update to server
