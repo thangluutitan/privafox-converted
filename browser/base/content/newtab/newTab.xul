@@ -8,6 +8,7 @@
 <?xml-stylesheet href="chrome://browser/content/searchSuggestionUI.css" type="text/css"?>
 <?xml-stylesheet href="chrome://browser/content/newtab/newTab.css" type="text/css"?>
 <?xml-stylesheet href="chrome://browser/skin/newtab/newTab.css" type="text/css"?>
+<?xml-stylesheet href="chrome://browser/content/abouthome/aboutHome.css" type="text/css"?>
 
 <!DOCTYPE window [
   <!ENTITY % newTabDTD SYSTEM "chrome://browser/locale/newTab.dtd">
@@ -16,6 +17,8 @@
   %searchBarDTD;
   <!ENTITY % browserDTD SYSTEM "chrome://browser/locale/browser.dtd">
   %browserDTD;
+  <!ENTITY % aboutHomeDTD SYSTEM "chrome://browser/locale/aboutHome.dtd">
+  %aboutHomeDTD;  
 ]>
 
 <xul:window id="newtab-window" xmlns="http://www.w3.org/1999/xhtml"
@@ -109,14 +112,22 @@
 
       <div id="newtab-search-container">
         <form id="newtab-search-form" name="searchForm">
-          <div id="newtab-search-logo"/>
+          <!--<div id="newtab-search-logo"/>-->
+          <button id="newtab-search-icon" type="button" />
           <input type="text" name="q" value="" id="newtab-search-text"
                  maxlength="256" dir="auto"/>
           <input id="newtab-search-submit" type="submit"
                  value="&searchEndCap.label;"/>
         </form>
       </div>
-
+      <div id="snippetContainer">
+        <div id="defaultSnippets" hidden="true">
+          <span id="defaultSnippet1" hidden="false">&abouthome.defaultSnippet1.v1;</span>
+        </div>
+        <div id="snippets"/>
+      </div>
+    <div class="spacer"/>
+    
       <div id="newtab-horizontal-margin">
         <div class="newtab-side-margin"/>
 
@@ -129,7 +140,7 @@
       <div id="newtab-margin-bottom"/>
 
     </div>
-    <input id="newtab-customize-button" type="button" title="&newtab.customize.title;"/>
+    <!--<input id="newtab-customize-button" type="button" title="&newtab.customize.title;"/>-->
   </div>
 
   <xul:script type="text/javascript;version=1.8"

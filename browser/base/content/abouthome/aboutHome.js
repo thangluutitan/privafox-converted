@@ -141,9 +141,13 @@ NAkHr4vdUdf82rQN6JwnSl4N4vAxeKdxP2A+mjXuKTvcXcY9TdOnyxPk4zKZ/vbRAqe75C3QfZZY\
 //   * add a <span/> for it in aboutHome.xhtml
 //   * add an entry here in the proper ordering (based on spans)
 // The <a/> part of the snippet will be linked to the corresponding url.
+//const DEFAULT_SNIPPETS_URLS = [
+//  "https://www.mozilla.org/firefox/features/?utm_source=snippet&utm_medium=snippet&utm_campaign=default+feature+snippet"
+//, "https://addons.mozilla.org/firefox/?utm_source=snippet&utm_medium=snippet&utm_campaign=addons"
+//];
+// Restore default search engine
 const DEFAULT_SNIPPETS_URLS = [
-  "https://www.mozilla.org/firefox/features/?utm_source=snippet&utm_medium=snippet&utm_campaign=default+feature+snippet"
-, "https://addons.mozilla.org/firefox/?utm_source=snippet&utm_medium=snippet&utm_campaign=addons"
+  "https://www.privafox.com/features/?utm_source=snippet&utm_medium=snippet&utm_campaign=default+feature+snippet"
 ];
 
 const SNIPPETS_UPDATE_INTERVAL_MS = 14400000; // 4 hours.
@@ -451,80 +455,153 @@ function loadSnippets()
  *        a "too much recursion" exception.
  */
 let _snippetsShown = false;
+
 function showSnippets()
 {
-  let snippetsElt = document.getElementById("snippets");
+    let snippetsElt = document.getElementById("snippets");
 
-  // Show about:rights notification, if needed.
-  let showRights = document.documentElement.getAttribute("showKnowYourRights");
-  if (showRights) {
-    let rightsElt = document.getElementById("rightsSnippet");
-    let anchor = rightsElt.getElementsByTagName("a")[0];
-    anchor.href = "about:rights";
-    snippetsElt.appendChild(rightsElt);
-    rightsElt.removeAttribute("hidden");
-    return;
-  }
-
-  if (!gSnippetsMap)
-    throw new Error("Snippets map has not properly been initialized");
-  if (_snippetsShown) {
-    // There's something wrong with the remote snippets, just in case fall back
-    // to the default snippets.
-    showDefaultSnippets();
-    throw new Error("showSnippets should never be invoked multiple times");
-  }
-  _snippetsShown = true;
-
-  let snippets = gSnippetsMap.get("snippets");
-  // If there are remotely fetched snippets, try to to show them.
-  if (snippets) {
-    // Injecting snippets can throw if they're invalid XML.
-    try {
-      snippetsElt.innerHTML = snippets;
-      // Scripts injected by innerHTML are inactive, so we have to relocate them
-      // through DOM manipulation to activate their contents.
-      Array.forEach(snippetsElt.getElementsByTagName("script"), function(elt) {
-        let relocatedScript = document.createElement("script");
-        relocatedScript.type = "text/javascript;version=1.8";
-        relocatedScript.text = elt.text;
-        elt.parentNode.replaceChild(relocatedScript, elt);
-      });
-      return;
-    } catch (ex) {
-      // Bad content, continue to show default snippets.
+    // Show about:rights notification, if needed.
+    let showRights = document.documentElement.getAttribute("showKnowYourRights");
+    if (showRights) {
+        let rightsElt = document.getElementById("rightsSnippet");
+        let anchor = rightsElt.getElementsByTagName("a")[0];
+        anchor.href = "about:rights";
+        snippetsElt.appendChild(rightsElt);
+        rightsElt.removeAttribute("hidden");
+        return;
     }
-  }
 
-  showDefaultSnippets();
+    if (!gSnippetsMap)
+        throw new Error("Snippets map has not properly been initialized");
+    if (_snippetsShown) {
+        // There's something wrong with the remote snippets, just in case fall back
+        // to the default snippets.
+        showDefaultSnippets();
+        throw new Error("showSnippets should never be invoked multiple times");
+    }
+    _snippetsShown = true;
+
+    let snippets = gSnippetsMap.get("snippets");
+    // If there are remotely fetched snippets, try to to show them.
+    if (snippets) {
+        // Injecting snippets can throw if they're invalid XML.
+        try {
+            snippetsElt.innerHTML = snippets;
+            // Scripts injected by innerHTML are inactive, so we have to relocate them
+            // through DOM manipulation to activate their contents.
+            Array.forEach(snippetsElt.getElementsByTagName("script"), function(elt) {
+                let relocatedScript = document.createElement("script");
+                relocatedScript.type = "text/javascript;version=1.8";
+                relocatedScript.text = elt.text;
+                elt.parentNode.replaceChild(relocatedScript, elt);
+            });
+            return;
+        } catch (ex) {
+            // Bad content, continue to show default snippets.
+        }
+    }
+
+    showDefaultSnippets();
 }
+//function showSnippets()
+//{
+//  let snippetsElt = document.getElementById("snippets");
+
+//  // Show about:rights notification, if needed.
+//  let showRights = document.documentElement.getAttribute("showKnowYourRights");
+//  if (showRights) {
+//    let rightsElt = document.getElementById("rightsSnippet");
+//    let anchor = rightsElt.getElementsByTagName("a")[0];
+//    anchor.href = "about:rights";
+//    snippetsElt.appendChild(rightsElt);
+//    rightsElt.removeAttribute("hidden");
+//    return;
+//  }
+
+//  if (!gSnippetsMap)
+//    throw new Error("Snippets map has not properly been initialized");
+//  if (_snippetsShown) {
+//    // There's something wrong with the remote snippets, just in case fall back
+//    // to the default snippets.
+//    showDefaultSnippets();
+//    throw new Error("showSnippets should never be invoked multiple times");
+//  }
+//  _snippetsShown = true;
+
+//  let snippets = gSnippetsMap.get("snippets");
+//  // If there are remotely fetched snippets, try to to show them.
+//  if (snippets) {
+//    // Injecting snippets can throw if they're invalid XML.
+//    try {
+//      snippetsElt.innerHTML = snippets;
+//      // Scripts injected by innerHTML are inactive, so we have to relocate them
+//      // through DOM manipulation to activate their contents.
+//      Array.forEach(snippetsElt.getElementsByTagName("script"), function(elt) {
+//        let relocatedScript = document.createElement("script");
+//        relocatedScript.type = "text/javascript;version=1.8";
+//        relocatedScript.text = elt.text;
+//        elt.parentNode.replaceChild(relocatedScript, elt);
+//      });
+//      return;
+//    } catch (ex) {
+//      // Bad content, continue to show default snippets.
+//    }
+//  }
+
+//  showDefaultSnippets();
+//}
 
 /**
  * Clear snippets element contents and show default snippets.
  */
+//function showDefaultSnippets()
+//{
+//  // Clear eventual contents...
+//  let snippetsElt = document.getElementById("snippets");
+//  snippetsElt.innerHTML = "";
+
+//  // ...then show default snippets.
+//  let defaultSnippetsElt = document.getElementById("defaultSnippets");
+//  let entries = defaultSnippetsElt.querySelectorAll("span");
+//  // Choose a random snippet.  Assume there is always at least one.
+//  let randIndex = Math.floor(Math.random() * entries.length);
+//  let entry = entries[randIndex];
+//  // Inject url in the eventual link.
+//  if (DEFAULT_SNIPPETS_URLS[randIndex]) {
+//    let links = entry.getElementsByTagName("a");
+//    // Default snippets can have only one link, otherwise something is messed
+//    // up in the translation.
+//    if (links.length == 1) {
+//      links[0].href = DEFAULT_SNIPPETS_URLS[randIndex];
+//    }
+//  }
+//  // Move the default snippet to the snippets element.
+//  snippetsElt.appendChild(entry);
+//}
+// show notice if not default seach engine findx.com
 function showDefaultSnippets()
 {
-  // Clear eventual contents...
-  let snippetsElt = document.getElementById("snippets");
-  snippetsElt.innerHTML = "";
+    // Clear eventual contents...
+    let snippetsElt = document.getElementById("snippets");
+    snippetsElt.innerHTML = "";
 
-  // ...then show default snippets.
-  let defaultSnippetsElt = document.getElementById("defaultSnippets");
-  let entries = defaultSnippetsElt.querySelectorAll("span");
-  // Choose a random snippet.  Assume there is always at least one.
-  let randIndex = Math.floor(Math.random() * entries.length);
-  let entry = entries[randIndex];
-  // Inject url in the eventual link.
-  if (DEFAULT_SNIPPETS_URLS[randIndex]) {
-    let links = entry.getElementsByTagName("a");
-    // Default snippets can have only one link, otherwise something is messed
-    // up in the translation.
-    if (links.length == 1) {
-      links[0].href = DEFAULT_SNIPPETS_URLS[randIndex];
+    // ...then show default snippets.
+    let defaultSnippetsElt = document.getElementById("defaultSnippets");
+    let entries = defaultSnippetsElt.querySelectorAll("span");
+    // Choose a random snippet.  Assume there is always at least one.
+    let randIndex = 0;
+    let entry = entries[randIndex];
+    // Inject url in the eventual link.
+    if (DEFAULT_SNIPPETS_URLS[randIndex]) {
+        let links = entry.getElementsByTagName("a");
+        // Default snippets can have only one link, otherwise something is messed
+        // up in the translation.
+        if (links.length == 1) {
+            links[0].href = DEFAULT_SNIPPETS_URLS[randIndex];
+        }
     }
-  }
-  // Move the default snippet to the snippets element.
-  snippetsElt.appendChild(entry);
+    // Move the default snippet to the snippets element.
+    snippetsElt.appendChild(entry);
 }
 
 function fitToWidth() {

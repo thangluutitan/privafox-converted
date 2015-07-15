@@ -31,6 +31,7 @@
 .standalone .conversation-toolbar {
   padding: 20px;
   height: 64px;
+  border: none;
 }
 
 .standalone .focus-stream {
@@ -54,7 +55,7 @@
     margin-right: 16px;
   }
 
-.btn-screen-share-entry {
+.btn-edit-entry {
   float: right !important;
   border-left: 1px solid #5a5a5a;
 }
@@ -210,10 +211,15 @@
 }
 
 /* Screen share button */
+.btn-mute-edit,
 .btn-screen-share {
   position: relative;
-  background-image: url(../img/icons-16x16.svg#screen-white);
+  background-image: url(../img/icons-10x10.svg#edit-white);
   background-size: 16px 16px;
+}
+
+.btn-screen-share {
+  background-image: url(../img/icons-16x16.svg#screen-white);
   width: 42px;
 }
 
@@ -225,6 +231,10 @@
 .btn-screen-share.active {
   background-image: url(../img/icons-16x16.svg#screenmute-white);
   background-color: #6CB23E;
+}
+
+.btn-mute-edit.muted,
+.btn-screen-share.active {
   opacity: 1;
 }
 
@@ -930,7 +940,7 @@ body[platform="win"] .share-service-dropdown.overflow > .dropdown-menu-item {
 }
 
 .room-context {
-  background: rgba(0,0,0,.6);
+  background: rgba(0,0,0,.8);
   border-top: 2px solid #444;
   border-bottom: 2px solid #444;
   padding: .5rem;
@@ -939,6 +949,9 @@ body[platform="win"] .share-service-dropdown.overflow > .dropdown-menu-item {
   left: 0;
   bottom: 0;
   width: 100%;
+  /* Stretch to the maximum available space whilst not covering the conversation
+     toolbar (26px). */
+  height: calc(100% - 26px);
   font-size: .9em;
   display: flex;
   flex-flow: column nowrap;
@@ -950,40 +963,12 @@ body[platform="win"] .share-service-dropdown.overflow > .dropdown-menu-item {
   z-index: 2;
 }
 
-.room-context.editMode {
-  /* Stretch to the maximum available space whilst not covering the conversation
-     toolbar (26px). */
-  height: calc(100% - 26px);
-}
-
 .room-invitation-overlay .room-context {
   position: relative;
   left: auto;
   bottom: auto;
   flex: 0 1 auto;
-}
-
-.room-invitation-overlay .room-context.editMode {
   height: 100%;
-}
-
-.room-context-content {
-  flex: 1 1 auto;
-  text-align: start;
-  display: flex;
-  flex-flow: row nowrap;
-  font-size: .9em;
-}
-
-.room-context-thumbnail {
-  /* 16px icon size + 3px border width. */
-  width: 19px;
-  max-height: 19px;
-  border: 3px solid #fff;
-  border-radius: 3px;
-  background-color: #fff;
-  -moz-margin-end: 1ch;
-  flex: 0 1 auto;
 }
 
 .room-context > .error-display-area.error {
@@ -1011,7 +996,7 @@ body[platform="win"] .share-service-dropdown.overflow > .dropdown-menu-item {
   margin-bottom: 1em;
 }
 
-.room-context-description,
+.room-context-label,
 .room-context > .checkbox-wrapper > label {
   color: #fff;
 }
@@ -1020,7 +1005,6 @@ body[platform="win"] .share-service-dropdown.overflow > .dropdown-menu-item {
   color: #707070;
 }
 
-.room-context-description,
 .room-context-comment {
   word-wrap: break-word;
 }
@@ -1079,8 +1063,7 @@ body[platform="win"] .share-service-dropdown.overflow > .dropdown-menu-item {
   align-self: flex-end;
 }
 
-.room-context-btn-close,
-.room-context-btn-edit {
+.room-context-btn-close {
   position: absolute;
   right: 8px;
   /* 8px offset + 2px border-top */
@@ -1096,42 +1079,30 @@ body[platform="win"] .share-service-dropdown.overflow > .dropdown-menu-item {
   cursor: pointer;
 }
 
-.room-context-btn-edit {
-  right: 20px;
-  background-image: url("../img/icons-10x10.svg#edit-darkergrey");
-}
-
-.room-context-btn-edit:hover,
-.room-context-btn-edit:hover:active {
-  background-image: url("../img/icons-10x10.svg#edit-active");
-}
-
 .room-context-btn-close:hover,
 .room-context-btn-close:hover:active {
   background-image: url("../img/icons-10x10.svg#close-active");
 }
 
-html[dir="rtl"] .room-context-btn-close,
-html[dir="rtl"] .room-context-btn-edit {
+html[dir="rtl"] .room-context-btn-close {
   right: auto;
   left: 8px;
 }
 
-html[dir="rtl"] .room-context-btn-edit {
-  left: 20px;
+.media-layout {
+  height: 100%;
 }
 
-.media-layout {
-  /* 50px is the header, 3em is the footer. */
-  height: calc(100% - 50px - 3em);
+.standalone-room-wrapper > .media-layout {
+  /* 50px is the header, 64px for toolbar, 3em is the footer. */
+  height: calc(100% - 50px - 64px - 3em);
 }
 
 .media-layout > .media-wrapper {
   display: flex;
   flex-flow: column wrap;
-  /* 64px for .conversation-toolbar */
-  height: calc(100% - 64px);
   margin: 0 10px;
+  height: 100%;
 }
 
 .media-wrapper > .focus-stream {
@@ -1215,17 +1186,19 @@ html[dir="rtl"] .room-context-btn-edit {
 }
 
 @media screen and (max-width:640px) {
-  .media-layout {
-    /* 50px is height of header, 25px is height of footer. */
-    height: calc(100% - 50px - 25px);
+  .media-layout-wrapper {
+    height: 100%;
+  }
+
+  .standalone-room-wrapper > .media-layout {
+    /* 50px is height of header, 38px is height of toolbar, 25px is height of footer. */
+    height: calc(100% - 50px - 38px - 25px);
   }
 
   .media-layout > .media-wrapper {
     flex-direction: row;
     margin: 0;
     width: 100%;
-    /* conversation toolbar is 38px in narrow mode */
-    height: calc(100% - 38px);
   }
 
   .media-wrapper > .focus-stream {

@@ -390,7 +390,7 @@ pref("browser.helperApps.deleteTempFileOnExit", true);
 #endif
 
 // search engines URL
-pref("browser.search.searchEnginesURL",      "https://addons.mozilla.org/%LOCALE%/firefox/search-engines/");
+pref("browser.search.searchEnginesURL",      "https://addons.privafox.com/%LOCALE%/firefox/search-engines/");
 
 // Tell the search service to load search plugins from the locale JAR
 pref("browser.search.loadFromJars", true);
@@ -403,13 +403,15 @@ pref("browser.search.defaultenginename",      "chrome://browser-region/locale/re
 pref("browser.search.order.1",                "chrome://browser-region/locale/region.properties");
 pref("browser.search.order.2",                "chrome://browser-region/locale/region.properties");
 pref("browser.search.order.3",                "chrome://browser-region/locale/region.properties");
+pref("browser.search.order.4",                "chrome://browser-region/locale/region.properties");
 
 // Market-specific search defaults (US market only)
 pref("browser.search.geoSpecificDefaults", true);
-pref("browser.search.defaultenginename.US",      "data:text/plain,browser.search.defaultenginename.US=Yahoo");
-pref("browser.search.order.US.1",                "data:text/plain,browser.search.order.US.1=Yahoo");
-pref("browser.search.order.US.2",                "data:text/plain,browser.search.order.US.2=Google");
-pref("browser.search.order.US.3",                "data:text/plain,browser.search.order.US.3=Bing");
+pref("browser.search.defaultenginename.US",      "data:text/plain,browser.search.defaultenginename.US=Findx");
+pref("browser.search.order.US.1",                "data:text/plain,browser.search.order.US.1=Findx");
+pref("browser.search.order.US.2",                "data:text/plain,browser.search.order.US.2=Yahoo");
+pref("browser.search.order.US.3",                "data:text/plain,browser.search.order.US.3=Google");
+pref("browser.search.order.US.4",                "data:text/plain,browser.search.order.US.4=Bing");
 
 // search bar results always open in a new tab
 pref("browser.search.openintab", false);
@@ -421,6 +423,12 @@ pref("browser.search.showOneOffButtons", true);
 
 // comma seperated list of of engines to hide in the search panel.
 pref("browser.search.hiddenOneOffs", "");
+
+#ifdef XP_WIN
+pref("browser.search.redirectWindowsSearch", true);
+#else
+pref("browser.search.redirectWindowsSearch", false);
+#endif
 
 pref("browser.sessionhistory.max_entries", 50);
 

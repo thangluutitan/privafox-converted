@@ -54,7 +54,7 @@
 <!ENTITY malformedURI.longDesc2 "
 <ul>
   <li>Web addresses are usually written like
-    <strong>http://www.example.com/</strong></li>
+    <strong>http://www.privacore.com/</strong></li>
     <div id='searchbox'>
       <input id='searchtext' type='search'></input>
       <button id='searchbutton'>Search</button>
@@ -188,7 +188,7 @@ be temporary, and you can try again later.</li>
 <!-- LOCALIZATION NOTE (securityOverride.warningContent) - Do not translate the
 contents of the <xul:button> tags.  The only language content is the label= field,
 which uses strings already defined above. The button is included here (instead of
-netError.xhtml) because it exposes functionality specific to firefox. -->
+netError.xhtml) because it exposes functionality specific to privafox. -->
 
 <!ENTITY securityOverride.warningContent "
 <p>You should not add an exception if you are using an internet connection that you do not trust completely or if you are not used to seeing a warning for this server.</p>

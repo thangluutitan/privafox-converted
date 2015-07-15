@@ -1,15 +1,15 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
-MOZ_APP_BASENAME=Fennec
-MOZ_APP_VENDOR=Mozilla
+MOZ_APP_DEFINE_PRIVAFOX=1
+MOZ_APP_BASENAME=Privafox
+MOZ_APP_VENDOR=Privacore
 
 MOZ_APP_VERSION=42.0a1
-MOZ_APP_UA_NAME=Firefox
+MOZ_APP_UA_NAME=Privafox
 
-MOZ_BRANDING_DIRECTORY=mobile/android/branding/unofficial
-MOZ_OFFICIAL_BRANDING_DIRECTORY=mobile/android/branding/official
+MOZ_BRANDING_DIRECTORY=mobile/android/branding/privafox
+MOZ_OFFICIAL_BRANDING_DIRECTORY=mobile/android/branding/privafox
 # MOZ_APP_DISPLAYNAME is set by branding/configure.sh
 
 # We support Android SDK version 9 and up by default.
@@ -18,9 +18,16 @@ MOZ_ANDROID_MIN_SDK_VERSION=9
 
 # There are several entry points into the Firefox application.  These are the names of some of the classes that are
 # listed in the Android manifest.  They are specified in here to avoid hard-coding them in source code files.
-MOZ_ANDROID_APPLICATION_CLASS=org.mozilla.gecko.GeckoApplication
-MOZ_ANDROID_BROWSER_INTENT_CLASS=org.mozilla.gecko.BrowserApp
-MOZ_ANDROID_SEARCH_INTENT_CLASS=org.mozilla.search.SearchActivity
+if test "$MOZ_APP_DEFINE_PRIVAFOX"; then
+    MOZ_ANDROID_APPLICATION_CLASS=com.privacore.privafox.PrivafoxApplication
+    MOZ_ANDROID_BROWSER_INTENT_CLASS=com.privacore.privafox.BrowserApp
+    MOZ_ANDROID_SEARCH_INTENT_CLASS=com.privacore.search.SearchActivity
+else
+    MOZ_ANDROID_APPLICATION_CLASS=org.mozilla.gecko.GeckoApplication
+    MOZ_ANDROID_BROWSER_INTENT_CLASS=org.mozilla.gecko.BrowserApp
+    MOZ_ANDROID_SEARCH_INTENT_CLASS=org.mozilla.search.SearchActivity
+fi
+
 
 MOZ_SAFE_BROWSING=1
 
