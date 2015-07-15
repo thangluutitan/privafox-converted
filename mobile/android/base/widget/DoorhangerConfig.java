@@ -14,10 +14,12 @@ public class DoorhangerConfig {
     public static class Link {
         public final String label;
         public final String url;
+        public final String delimiter;
 
-        private Link(String label, String url) {
+        private Link(String label, String url, String delimiter) {
             this.label = label;
             this.url = url;
+            this.delimiter = delimiter;
         }
     }
 
@@ -105,8 +107,8 @@ public class DoorhangerConfig {
         return this.buttonClickListener;
     }
 
-    public void setLink(String label, String url) {
-        this.link = new Link(label, url);
+    public void setLink(String label, String url, String delimiter) {
+        this.link = new Link(label, url, delimiter);
     }
 
     public Link getLink() {

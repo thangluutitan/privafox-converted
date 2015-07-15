@@ -223,7 +223,7 @@ loop.webapp = (function($, _, OT, mozL10n) {
       var urlCreationDateClasses = cx({
         "light-color-font": true,
         "call-url-date": true, /* Used as a handler in the tests */
-        // Hidden until date is available.
+        /*hidden until date is available*/
         "hide": !this.props.urlCreationDateString.length
       });
 

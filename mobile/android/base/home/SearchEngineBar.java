@@ -175,8 +175,7 @@ public class SearchEngineBar extends TwoWayView
                 view = LayoutInflater.from(getContext()).inflate(R.layout.search_engine_bar_label, parent, false);
             }
 
-            final Drawable icon = DrawableCompat.wrap(
-                    ContextCompat.getDrawable(parent.getContext(), R.drawable.search_icon_active).mutate());
+            Drawable icon = DrawableCompat.wrap(ContextCompat.getDrawable(parent.getContext(), R.drawable.search_icon_active));
             DrawableCompat.setTint(icon, getResources().getColor(R.color.disabled_grey));
 
             final ImageView iconView = (ImageView) view.findViewById(R.id.search_engine_label);

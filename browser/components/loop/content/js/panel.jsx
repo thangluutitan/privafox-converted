@@ -546,8 +546,7 @@ loop.panel = (function(_, mozL10n) {
       event.stopPropagation();
       event.preventDefault();
       this.props.dispatcher.dispatch(new sharedActions.CopyRoomUrl({
-        roomUrl: this.props.room.roomUrl,
-        from: "panel"
+        roomUrl: this.props.room.roomUrl
       }));
       this.setState({urlCopied: true});
     },

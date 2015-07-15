@@ -62,7 +62,6 @@ SEARCH_PATHS = [
     'testing/mozbase/mozdevice',
     'testing/mozbase/mozfile',
     'testing/mozbase/mozhttpd',
-    'testing/mozbase/mozleak',
     'testing/mozbase/mozlog',
     'testing/mozbase/moznetwork',
     'testing/mozbase/mozprocess',

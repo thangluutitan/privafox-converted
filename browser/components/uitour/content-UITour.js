@@ -86,10 +86,6 @@ let UITourListener = {
   },
 
   sendPageEvent: function (type, detail) {
-    if (!this.ensureTrustedOrigin()) {
-      return;
-    }
-
     let doc = content.document;
     let eventName = "mozUITour" + type;
     let event = new doc.defaultView.CustomEvent(eventName, {

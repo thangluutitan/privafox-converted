@@ -256,9 +256,6 @@ describe("loop.shared.views", function() {
     var hangup, publishStream;
 
     function mountTestComponent(props) {
-      props = _.extend({
-        dispatcher: dispatcher
-      }, props || {});
       return TestUtils.renderIntoDocument(
         React.createElement(sharedViews.ConversationToolbar, props));
     }
@@ -365,9 +362,6 @@ describe("loop.shared.views", function() {
     var fakeSDK, fakeSessionData, fakeSession, fakePublisher, model, fakeAudio;
 
     function mountTestComponent(props) {
-      props = _.extend({
-        dispatcher: dispatcher
-      }, props || {});
       return TestUtils.renderIntoDocument(
         React.createElement(sharedViews.ConversationView, props));
     }
@@ -682,9 +676,6 @@ describe("loop.shared.views", function() {
     var coll, view, testNotif;
 
     function mountTestComponent(props) {
-      props = _.extend({
-        key: 0
-      }, props || {});
       return TestUtils.renderIntoDocument(
         React.createElement(sharedViews.NotificationListView, props));
     }
@@ -840,11 +831,7 @@ describe("loop.shared.views", function() {
 
     function mountTestComponent(extraProps) {
       var props = _.extend({
-        allowClick: false,
-        description: "test",
-        dispatcher: dispatcher,
-        showContextTitle: false,
-        useDesktopPaths: false
+        dispatcher: dispatcher
       }, extraProps);
       return TestUtils.renderIntoDocument(
         React.createElement(sharedViews.ContextUrlView, props));
@@ -926,9 +913,6 @@ describe("loop.shared.views", function() {
     var view;
 
     function mountTestComponent(props) {
-      props = _.extend({
-        isLoading: false
-      }, props || {});
       return TestUtils.renderIntoDocument(
         React.createElement(sharedViews.MediaView, props));
     }

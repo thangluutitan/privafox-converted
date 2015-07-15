@@ -15,7 +15,6 @@
 #include "nsIServiceManager.h"
 #include "nsIStringBundle.h"
 #include "nsNetUtil.h"
-#include "nsServiceManagerUtils.h"
 #include "nsShellService.h"
 #include "nsWindowsShellService.h"
 #include "nsIProcess.h"

@@ -54,7 +54,7 @@
 <!ENTITY malformedURI.longDesc2 "
 <ul>
   <li>Web addresses are usually written like
-    <strong>http://www.privacore.com/</strong></li>
+    <strong>http://www.privafox.com/</strong></li>
     <div id='searchbox'>
       <input id='searchtext' type='search'></input>
       <button id='searchbutton'>Search</button>

@@ -281,7 +281,7 @@
     // Don't require quotes around object literal property names.
     "quote-props": 0,
     // Double quotes should be used.
-    "quotes": [1, "double", "avoid-escape"],
+    "quotes": [1, "double"],
     // Require use of the second argument for parseInt().
     "radix": 2,
     // Always require use of semicolons wherever they are valid.

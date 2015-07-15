@@ -39,10 +39,6 @@ describe("loop.store.ConversationStore", function () {
     };
 
     fakeMozLoop = {
-      ROOM_CREATE: {
-        CREATE_SUCCESS: 0,
-        CREATE_FAIL: 1
-      },
       getLoopPref: sandbox.stub(),
       addConversationContext: sandbox.stub(),
       calls: {
@@ -52,8 +48,7 @@ describe("loop.store.ConversationStore", function () {
       },
       rooms: {
         create: sandbox.stub()
-      },
-      telemetryAddValue: sandbox.stub()
+      }
     };
 
     dispatcher = new loop.Dispatcher();
@@ -1041,8 +1036,6 @@ describe("loop.store.ConversationStore", function () {
         }));
 
         expect(store.getStoreState("emailLink")).eql("http://fake.invalid/");
-        sinon.assert.calledOnce(fakeMozLoop.telemetryAddValue);
-        sinon.assert.calledWithExactly(fakeMozLoop.telemetryAddValue, "LOOP_ROOM_CREATE", 0);
       });
 
     it("should trigger an error:emailLink event in case of failure",
@@ -1058,8 +1051,6 @@ describe("loop.store.ConversationStore", function () {
 
         sinon.assert.calledOnce(trigger);
         sinon.assert.calledWithExactly(trigger, "error:emailLink");
-        sinon.assert.calledOnce(fakeMozLoop.telemetryAddValue);
-        sinon.assert.calledWithExactly(fakeMozLoop.telemetryAddValue, "LOOP_ROOM_CREATE", 1);
       });
   });
 

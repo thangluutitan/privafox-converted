@@ -10,8 +10,6 @@ loop.store = loop.store || {};
  * the window data and store the window type.
  */
 loop.store.ConversationAppStore = (function() {
-  "use strict";
-
   /**
    * Constructor
    *

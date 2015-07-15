@@ -11,4 +11,3 @@
  *
  * To make a manual change to preferences, you can visit the URL about:config
  */
-user_pref("browser.search.selectedEngine", "findx");

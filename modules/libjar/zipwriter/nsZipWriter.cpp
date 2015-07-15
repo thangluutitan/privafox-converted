@@ -19,8 +19,6 @@
 #include "nsStreamUtils.h"
 #include "nsThreadUtils.h"
 #include "nsNetUtil.h"
-#include "nsIChannel.h"
-#include "nsIFile.h"
 #include "prio.h"
 
 #define ZIP_EOCDR_HEADER_SIZE 22

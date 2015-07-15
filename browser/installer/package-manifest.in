@@ -151,7 +151,6 @@
 @BINPATH@/@DLL_PREFIX@mozsqlite3@DLL_SUFFIX@
 #endif
 #endif
-@BINPATH@/@DLL_PREFIX@lgpllibs@DLL_SUFFIX@
 @RESPATH@/browser/blocklist.xml
 #ifdef XP_UNIX
 #ifndef XP_MACOSX
@@ -315,7 +314,9 @@
 @RESPATH@/components/saxparser.xpt
 @RESPATH@/browser/components/sessionstore.xpt
 @RESPATH@/components/services-crypto-component.xpt
+#ifdef MOZ_CAPTIVEDETECT
 @RESPATH@/components/captivedetect.xpt
+#endif
 @RESPATH@/browser/components/shellservice.xpt
 @RESPATH@/components/shistory.xpt
 @RESPATH@/components/spellchecker.xpt
@@ -520,8 +521,10 @@
 @RESPATH@/components/SyncComponents.manifest
 @RESPATH@/components/Weave.js
 #endif
+#ifdef MOZ_CAPTIVEDETECT
 @RESPATH@/components/CaptivePortalDetectComponents.manifest
 @RESPATH@/components/captivedetect.js
+#endif
 @RESPATH@/components/servicesComponents.manifest
 @RESPATH@/components/cryptoComponents.manifest
 @RESPATH@/components/TelemetryStartup.js

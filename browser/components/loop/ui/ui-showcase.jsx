@@ -1219,8 +1219,6 @@
             </FramedExample>
 
             <FramedExample
-              cssClass="standalone"
-              dashed={true}
               height={480}
               onContentsRendered={updatingSharingRoomStore.forcedUpdate}
               summary="Standalone room convo (has-participants, receivingScreenShare, 600x480)"
@@ -1245,8 +1243,8 @@
                            width={298}>
               <div className="fx-embedded">
                 <TextChatView dispatcher={dispatcher}
-                              showRoomName={false}
-                              useDesktopPaths={false} />
+                              showAlways={false}
+                              showRoomName={false} />
               </div>
             </FramedExample>
 
@@ -1259,8 +1257,8 @@
                 <div className="media-wrapper">
                   <TextChatView
                     dispatcher={dispatcher}
-                    showRoomName={true}
-                    useDesktopPaths={false} />
+                    showAlways={true}
+                    showRoomName={true} />
                 </div>
               </div>
             </FramedExample>
@@ -1315,7 +1313,7 @@
 
       // This simulates the mocha layout for errors which means we can run
       // this alongside our other unit tests but use the same harness.
-      var expectedWarningsCount = 28;
+      var expectedWarningsCount = 53;
       var warningsMismatch = caughtWarnings.length !== expectedWarningsCount;
       if (uncaughtError || warningsMismatch) {
         $("#results").append("<div class='failures'><em>" +

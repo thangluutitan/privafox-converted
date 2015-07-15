@@ -43,8 +43,7 @@ describe("loop.shared.views.TextChatView", function () {
     function mountTestComponent(extraProps) {
       var basicProps = {
         dispatcher: dispatcher,
-        messageList: [],
-        useDesktopPaths: false
+        messageList: []
       };
 
       return TestUtils.renderIntoDocument(
@@ -57,13 +56,11 @@ describe("loop.shared.views.TextChatView", function () {
         messageList: [{
           type: CHAT_MESSAGE_TYPES.RECEIVED,
           contentType: CHAT_CONTENT_TYPES.TEXT,
-          message: "Hello!",
-          receivedTimestamp: "2015-06-25T17:53:55.357Z"
+          message: "Hello!"
         }, {
           type: CHAT_MESSAGE_TYPES.SENT,
           contentType: CHAT_CONTENT_TYPES.TEXT,
-          message: "Is it me you're looking for?",
-          sentTimestamp: "2015-06-25T17:53:55.357Z"
+          message: "Is it me you're looking for?"
         }]
       });
 
@@ -84,8 +81,7 @@ describe("loop.shared.views.TextChatView", function () {
         messageList: [{
           type: CHAT_MESSAGE_TYPES.RECEIVED,
           contentType: CHAT_CONTENT_TYPES.TEXT,
-          message: "Hello!",
-          receivedTimestamp: "2015-06-25T17:53:55.357Z"
+          message: "Hello!"
         }]
       });
 
@@ -101,8 +97,7 @@ describe("loop.shared.views.TextChatView", function () {
         messageList: [{
           type: CHAT_MESSAGE_TYPES.SPECIAL,
           contentType: CHAT_CONTENT_TYPES.ROOM_NAME,
-          message: "Hello!",
-          receivedTimestamp: "2015-06-25T17:53:55.357Z"
+          message: "Hello!"
         }]
       });
 
@@ -117,8 +112,7 @@ describe("loop.shared.views.TextChatView", function () {
         messageList: [{
           type: CHAT_MESSAGE_TYPES.SENT,
           contentType: CHAT_CONTENT_TYPES.TEXT,
-          message: "Hello!",
-          sentTimestamp: "2015-06-25T17:53:55.357Z"
+          message: "Hello!"
         }]
       });
 
@@ -131,11 +125,7 @@ describe("loop.shared.views.TextChatView", function () {
 
     function mountTestComponent(extraProps) {
       var props = _.extend({
-        contentType: CHAT_CONTENT_TYPES.TEXT,
-        dispatcher: dispatcher,
-        message: "test",
-        type: CHAT_MESSAGE_TYPES.RECEIVED,
-        timestamp: "2015-06-23T22:48:39.738Z"
+        dispatcher: dispatcher
       }, extraProps);
       return TestUtils.renderIntoDocument(
         React.createElement(loop.shared.views.chat.TextChatEntry, props));
@@ -143,7 +133,8 @@ describe("loop.shared.views.TextChatView", function () {
 
     it("should not render a timestamp", function() {
       view = mountTestComponent({
-        showTimestamp: false
+        showTimestamp: false,
+        timestamp: "2015-06-23T22:48:39.738Z"
       });
       var node = view.getDOMNode();
 
@@ -152,7 +143,8 @@ describe("loop.shared.views.TextChatView", function () {
 
     it("should render a timestamp", function() {
       view = mountTestComponent({
-        showTimestamp: true
+        showTimestamp: true,
+        timestamp: "2015-06-23T22:48:39.738Z"
       });
       var node = view.getDOMNode();
 
@@ -165,9 +157,7 @@ describe("loop.shared.views.TextChatView", function () {
 
     function mountTestComponent(extraProps) {
       var props = _.extend({
-        dispatcher: dispatcher,
-        messageList: [],
-        useDesktopPaths: false
+        dispatcher: dispatcher
       }, extraProps);
       return TestUtils.renderIntoDocument(
         React.createElement(loop.shared.views.chat.TextChatEntriesView, props));
@@ -182,13 +172,11 @@ describe("loop.shared.views.TextChatView", function () {
         messageList: [{
           type: CHAT_MESSAGE_TYPES.RECEIVED,
           contentType: CHAT_CONTENT_TYPES.TEXT,
-          message: "Hello!",
-          receivedTimestamp: "2015-06-25T17:53:55.357Z"
+          message: "Hello!"
         }, {
           type: CHAT_MESSAGE_TYPES.SENT,
           contentType: CHAT_CONTENT_TYPES.TEXT,
-          message: "Is it me you're looking for?",
-          sentTimestamp: "2015-06-25T17:53:55.357Z"
+          message: "Is it me you're looking for?"
         }]
       });
       node = view.getDOMNode();
@@ -242,13 +230,11 @@ describe("loop.shared.views.TextChatView", function () {
         messageList: [{
           type: CHAT_MESSAGE_TYPES.RECEIVED,
           contentType: CHAT_CONTENT_TYPES.TEXT,
-          message: "Hello!",
-          receivedTimestamp: "2015-06-25T17:53:55.357Z"
+          message: "Hello!"
         }, {
           type: CHAT_MESSAGE_TYPES.RECEIVED,
           contentType: CHAT_CONTENT_TYPES.TEXT,
-          message: "Is it me you're looking for?",
-          sentTimestamp: "2015-06-25T17:53:55.357Z"
+          message: "Is it me you're looking for?"
         }]
       });
       node = view.getDOMNode();
@@ -263,9 +249,7 @@ describe("loop.shared.views.TextChatView", function () {
 
     function mountTestComponent(extraProps) {
       var props = _.extend({
-        dispatcher: dispatcher,
-        showRoomName: false,
-        useDesktopPaths: false
+        dispatcher: dispatcher
       }, extraProps);
       return TestUtils.renderIntoDocument(
         React.createElement(loop.shared.views.chat.TextChatView, props));
@@ -304,16 +288,30 @@ describe("loop.shared.views.TextChatView", function () {
           .to.eql(2);
     });
 
-    it("should not display the view if no messages and text chat not enabled", function() {
+    it("should not display anything if no messages and text chat not enabled and showAlways is false", function() {
       store.setStoreState({ textChatEnabled: false });
 
-      view = mountTestComponent();
+      view = mountTestComponent({
+        showAlways: false
+      });
 
       expect(view.getDOMNode()).eql(null);
     });
 
-    it("should display the view if no messages and text chat is enabled", function() {
-      view = mountTestComponent();
+    it("should display the view if no messages and text chat not enabled and showAlways is true", function() {
+      store.setStoreState({ textChatEnabled: false });
+
+      view = mountTestComponent({
+        showAlways: true
+      });
+
+      expect(view.getDOMNode()).not.eql(null);
+    });
+
+    it("should display the view if text chat is enabled", function() {
+      view = mountTestComponent({
+        showAlways: true
+      });
 
       expect(view.getDOMNode()).not.eql(null);
     });
@@ -332,15 +330,11 @@ describe("loop.shared.views.TextChatView", function () {
 
       store.receivedTextChatMessage({
         contentType: CHAT_CONTENT_TYPES.TEXT,
-        message: "Hello!",
-        sentTimestamp: "1970-01-01T00:03:00.000Z",
-        receivedTimestamp: "1970-01-01T00:03:00.000Z"
+        message: "Hello!"
       });
       store.sendTextChatMessage({
         contentType: CHAT_CONTENT_TYPES.TEXT,
-        message: "Is it me you're looking for?",
-        sentTimestamp: "1970-01-01T00:03:00.000Z",
-        receivedTimestamp: "1970-01-01T00:03:00.000Z"
+        message: "Is it me you're looking for?"
       });
 
       var node = view.getDOMNode();
@@ -365,18 +359,17 @@ describe("loop.shared.views.TextChatView", function () {
     });
 
     it("should add `received` CSS class selector to msg of type RECEIVED",
-      function() {
-        var node = mountTestComponent().getDOMNode();
+       function() {
+         var node = mountTestComponent().getDOMNode();
 
-        store.receivedTextChatMessage({
-          contentType: CHAT_CONTENT_TYPES.TEXT,
-          message: "Foo",
-          sentTimestamp: "1970-01-01T00:03:00.000Z",
-          receivedTimestamp: "1970-01-01T00:03:00.000Z"
-        });
+         store.receivedTextChatMessage({
+           contentType: CHAT_CONTENT_TYPES.TEXT,
+           message: "Foo",
+           timestamp: 0
+         });
 
-        expect(node.querySelector(".received")).to.not.eql(null);
-      });
+         expect(node.querySelector(".received")).to.not.eql(null);
+     });
 
     it("should render a room name special entry", function() {
       view = mountTestComponent({
@@ -399,7 +392,9 @@ describe("loop.shared.views.TextChatView", function () {
     });
 
     it("should render a special entry for the context url", function() {
-      view = mountTestComponent();
+      view = mountTestComponent({
+        showRoomName: true
+      });
 
       store.updateRoomInfo(new sharedActions.UpdateRoomInfo({
         roomName: "A Very Long Conversation Name",

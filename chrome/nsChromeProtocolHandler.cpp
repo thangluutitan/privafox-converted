@@ -23,8 +23,6 @@
 #include "nsIScriptSecurityManager.h"
 #include "nsIStandardURL.h"
 #include "nsNetUtil.h"
-#include "nsNetCID.h"
-#include "nsIURL.h"
 #include "nsString.h"
 #include "nsStandardURL.h"
 

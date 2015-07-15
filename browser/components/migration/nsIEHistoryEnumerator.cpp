@@ -9,7 +9,6 @@
 
 #include "nsStringAPI.h"
 #include "nsNetUtil.h"
-#include "prtime.h"
 #include "nsIVariant.h"
 #include "nsCOMArray.h"
 #include "nsArrayEnumerator.h"

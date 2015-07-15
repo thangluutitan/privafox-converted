@@ -281,7 +281,7 @@ public class GeckoAppShell
 
     public static native void notifyBatteryChange(double aLevel, boolean aCharging, double aRemainingTime);
 
-    public static native void invalidateAndScheduleComposite();
+    public static native void scheduleComposite();
 
     // Resuming the compositor is a synchronous request, so be
     // careful of possible deadlock. Resuming the compositor will also cause

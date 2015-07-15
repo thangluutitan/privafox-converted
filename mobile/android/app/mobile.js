@@ -177,8 +177,8 @@ pref("dom.forms.number", true);
 /* extension manager and xpinstall */
 pref("xpinstall.whitelist.directRequest", false);
 pref("xpinstall.whitelist.fileRequest", false);
-pref("xpinstall.whitelist.add", "addons.privafox.org");
-pref("xpinstall.whitelist.add.180", "marketplace.privacore.com");
+pref("xpinstall.whitelist.add", "addons.privafox.com");
+pref("xpinstall.whitelist.add.180", "marketplace.privafox.com");
 
 pref("xpinstall.signatures.required", false);
 
@@ -197,8 +197,8 @@ pref("extensions.hideUpdateButton", false);
 pref("extensions.strictCompatibility", false);
 pref("extensions.minCompatibleAppVersion", "11.0");
 
-pref("extensions.update.url", "https://versioncheck.addons.privafox.org/update/VersionCheck.php?reqVersion=%REQ_VERSION%&id=%ITEM_ID%&version=%ITEM_VERSION%&maxAppVersion=%ITEM_MAXAPPVERSION%&status=%ITEM_STATUS%&appID=%APP_ID%&appVersion=%APP_VERSION%&appOS=%APP_OS%&appABI=%APP_ABI%&locale=%APP_LOCALE%&currentAppVersion=%CURRENT_APP_VERSION%&updateType=%UPDATE_TYPE%&compatMode=%COMPATIBILITY_MODE%");
-pref("extensions.update.background.url", "https://versioncheck-bg.addons.privafox.org/update/VersionCheck.php?reqVersion=%REQ_VERSION%&id=%ITEM_ID%&version=%ITEM_VERSION%&maxAppVersion=%ITEM_MAXAPPVERSION%&status=%ITEM_STATUS%&appID=%APP_ID%&appVersion=%APP_VERSION%&appOS=%APP_OS%&appABI=%APP_ABI%&locale=%APP_LOCALE%&currentAppVersion=%CURRENT_APP_VERSION%&updateType=%UPDATE_TYPE%&compatMode=%COMPATIBILITY_MODE%");
+pref("extensions.update.url", "https://versioncheck.addons.privafox.com/update/VersionCheck.php?reqVersion=%REQ_VERSION%&id=%ITEM_ID%&version=%ITEM_VERSION%&maxAppVersion=%ITEM_MAXAPPVERSION%&status=%ITEM_STATUS%&appID=%APP_ID%&appVersion=%APP_VERSION%&appOS=%APP_OS%&appABI=%APP_ABI%&locale=%APP_LOCALE%&currentAppVersion=%CURRENT_APP_VERSION%&updateType=%UPDATE_TYPE%&compatMode=%COMPATIBILITY_MODE%");
+pref("extensions.update.background.url", "https://versioncheck-bg.addons.privafox.com/update/VersionCheck.php?reqVersion=%REQ_VERSION%&id=%ITEM_ID%&version=%ITEM_VERSION%&maxAppVersion=%ITEM_MAXAPPVERSION%&status=%ITEM_STATUS%&appID=%APP_ID%&appVersion=%APP_VERSION%&appOS=%APP_OS%&appABI=%APP_ABI%&locale=%APP_LOCALE%&currentAppVersion=%CURRENT_APP_VERSION%&updateType=%UPDATE_TYPE%&compatMode=%COMPATIBILITY_MODE%");
 
 pref("extensions.hotfix.id", "privafox-android-hotfix@privafox.org");
 pref("extensions.hotfix.cert.checkAttributes", true);
@@ -207,8 +207,8 @@ pref("extensions.hotfix.certs.1.sha1Fingerprint", "91:53:98:0C:C1:86:DF:47:8F:35
 /* preferences for the Get Add-ons pane */
 pref("extensions.getAddons.cache.enabled", true);
 pref("extensions.getAddons.maxResults", 15);
-pref("extensions.getAddons.recommended.browseURL", "https://addons.privafox.org/%LOCALE%/android/recommended/");
-pref("extensions.getAddons.recommended.url", "https://services.addons.privafox.org/%LOCALE%/android/api/%API_VERSION%/list/featured/all/%MAX_RESULTS%/%OS%/%VERSION%");
+pref("extensions.getAddons.recommended.browseURL", "https://addons.privafox.com/%LOCALE%/android/recommended/");
+pref("extensions.getAddons.recommended.url", "https://services.addons.privafox.com/%LOCALE%/android/api/%API_VERSION%/list/featured/all/%MAX_RESULTS%/%OS%/%VERSION%");
 pref("extensions.getAddons.search.browseURL", "https://addons.privafox.com/%LOCALE%/android/search?q=%TERMS%&platform=%OS%&appver=%VERSION%");
 pref("extensions.getAddons.search.url", "https://services.addons.privafox.com/%LOCALE%/android/api/%API_VERSION%/search/%TERMS%/all/%MAX_RESULTS%/%OS%/%VERSION%/%COMPATIBILITY_MODE%");
 pref("extensions.getAddons.browseAddons", "https://addons.privafox.com/%LOCALE%/android/");
@@ -448,26 +448,26 @@ pref("plugin.default.state", 1);
 
 // product URLs
 // The breakpad report server to link to in about:crashes
-pref("breakpad.reportURL", "https://crash-stats.privacore.com/report/index/");
-pref("app.support.baseURL", "http://support.privacore.com/1/mobile/%VERSION%/%OS%/%LOCALE%/");
+pref("breakpad.reportURL", "https://crash-stats.privafox.com/report/index/");
+pref("app.support.baseURL", "http://support.privafox.com/1/mobile/%VERSION%/%OS%/%LOCALE%/");
 // Used to submit data to input from about:feedback
-pref("app.feedback.postURL", "https://input.privacore.com/api/v1/feedback/");
-pref("app.privacyURL", "https://www.privacore.com/privacy/firefox/");
-pref("app.creditsURL", "http://www.privacore.com/credits/");
-pref("app.channelURL", "http://www.privacore.com/%LOCALE%/privafoxfox/channel/");
+pref("app.feedback.postURL", "https://input.privafox.com/api/v1/feedback/");
+pref("app.privacyURL", "https://www.privafox.com/privacy/firefox/");
+pref("app.creditsURL", "http://www.privafox.com/credits/");
+pref("app.channelURL", "http://www.privafox.com/%LOCALE%/privafox/channel/");
 #if MOZ_UPDATE_CHANNEL == aurora
-pref("app.releaseNotesURL", "http://www.privacore.com/%LOCALE%/mobile/%VERSION%/auroranotes/");
+pref("app.releaseNotesURL", "http://www.privafox.com/%LOCALE%/mobile/%VERSION%/auroranotes/");
 #elif MOZ_UPDATE_CHANNEL == beta
-pref("app.releaseNotesURL", "http://www.privacore.com/%LOCALE%/mobile/%VERSION%beta/releasenotes/");
+pref("app.releaseNotesURL", "http://www.privafox.com/%LOCALE%/mobile/%VERSION%beta/releasenotes/");
 #else
-pref("app.releaseNotesURL", "http://www.privacore.com/%LOCALE%/mobile/%VERSION%/releasenotes/");
+pref("app.releaseNotesURL", "http://www.privafox.com/%LOCALE%/mobile/%VERSION%/releasenotes/");
 #endif
 #if MOZ_UPDATE_CHANNEL == beta
-pref("app.faqURL", "http://www.privacore.com/%LOCALE%/mobile/beta/faq/");
+pref("app.faqURL", "http://www.privafox.com/%LOCALE%/mobile/beta/faq/");
 #else
-pref("app.faqURL", "http://www.privacore.com/%LOCALE%/mobile/faq/");
+pref("app.faqURL", "http://www.privafox.com/%LOCALE%/mobile/faq/");
 #endif
-pref("app.marketplaceURL", "https://marketplace.privacore.com/");
+pref("app.marketplaceURL", "https://marketplace.privafox.com/");
 
 // Name of alternate about: page for certificate errors (when undefined, defaults to about:neterror)
 pref("security.alternate_certificate_error_page", "certerror");
@@ -520,7 +520,7 @@ pref("app.update.timerMinimumDelay", 30); // seconds
 // used by update service to decide whether or not to
 // automatically download an update
 pref("app.update.autodownload", "wifi");
-pref("app.update.url.android", "https://aus4.privafox.org/update/4/%PRODUCT%/%VERSION%/%BUILD_ID%/%BUILD_TARGET%/%LOCALE%/%CHANNEL%/%OS_VERSION%/%DISTRIBUTION%/%DISTRIBUTION_VERSION%/%MOZ_VERSION%/update.xml");
+pref("app.update.url.android", "https://aus4.privafox.com/update/4/%PRODUCT%/%VERSION%/%BUILD_ID%/%BUILD_TARGET%/%LOCALE%/%CHANNEL%/%OS_VERSION%/%DISTRIBUTION%/%DISTRIBUTION_VERSION%/%MOZ_VERSION%/update.xml");
 
 #ifdef MOZ_UPDATER
 /* prefs used specifically for updating the app */
@@ -610,8 +610,8 @@ pref("browser.safebrowsing.debug", false);
 pref("browser.safebrowsing.updateURL", "https://safebrowsing.google.com/safebrowsing/downloads?client=SAFEBROWSING_ID&appver=%VERSION%&pver=2.2&key=%GOOGLE_API_KEY%");
 pref("browser.safebrowsing.gethashURL", "https://safebrowsing.google.com/safebrowsing/gethash?client=SAFEBROWSING_ID&appver=%VERSION%&pver=2.2");
 pref("browser.safebrowsing.reportPhishMistakeURL", "https://%LOCALE%.phish-error.mozilla.com/?hl=%LOCALE%&url=");
-pref("browser.safebrowsing.reportPhishURL", "https://%LOCALE%.phish-report.privacore.com/?hl=%LOCALE%&url=");
-pref("browser.safebrowsing.reportMalwareMistakeURL", "https://%LOCALE%.malware-error.privacore.com/?hl=%LOCALE%&url=");
+pref("browser.safebrowsing.reportPhishURL", "https://%LOCALE%.phish-report.privafox.com/?hl=%LOCALE%&url=");
+pref("browser.safebrowsing.reportMalwareMistakeURL", "https://%LOCALE%.malware-error.privafox.com/?hl=%LOCALE%&url=");
 pref("browser.safebrowsing.malware.reportURL", "https://safebrowsing.google.com/safebrowsing/diagnostic?client=%NAME%&hl=%LOCALE%&site=");
 
 pref("browser.safebrowsing.id", @MOZ_APP_UA_NAME@);
@@ -634,7 +634,7 @@ pref("urlclassifier.max-complete-age", 2700);
 
 // URL for posting tiles metrics.
 #ifdef RELEASE_BUILD
-pref("browser.tiles.reportURL", "https://tiles.services.privacore.com/v2/links/click");
+pref("browser.tiles.reportURL", "https://tiles.services.privafox.com/v2/links/click");
 #endif
 
 // True if this is the first time we are showing about:firstrun
@@ -819,16 +819,16 @@ pref("snav.enabled", true);
 // This url, if changed, MUST continue to point to an https url. Pulling arbitrary content to inject into
 // this page over http opens us up to a man-in-the-middle attack that we'd rather not face. If you are a downstream
 // repackager of this code using an alternate snippet url, please keep your users safe
-pref("browser.snippets.updateUrl", "https://snippets.privacore.com/json/%SNIPPETS_VERSION%/%NAME%/%VERSION%/%APPBUILDID%/%BUILD_TARGET%/%LOCALE%/%CHANNEL%/%OS_VERSION%/%DISTRIBUTION%/%DISTRIBUTION_VERSION%/");
+pref("browser.snippets.updateUrl", "https://snippets.privafox.com/json/%SNIPPETS_VERSION%/%NAME%/%VERSION%/%APPBUILDID%/%BUILD_TARGET%/%LOCALE%/%CHANNEL%/%OS_VERSION%/%DISTRIBUTION%/%DISTRIBUTION_VERSION%/");
 
 // How frequently we check for new snippets, in seconds (1 day)
 pref("browser.snippets.updateInterval", 86400);
 
 // URL used to check for user's country code
-pref("browser.snippets.geoUrl", "https://geo.privafox.org/country.json");
+pref("browser.snippets.geoUrl", "https://geo.privafox.com/country.json");
 
 // URL used to ping metrics with stats about which snippets have been shown
-pref("browser.snippets.statsUrl", "https://snippets-stats.privafox.org/mobile");
+pref("browser.snippets.statsUrl", "https://snippets-stats.privafox.com/mobile");
 
 // These prefs require a restart to take effect.
 pref("browser.snippets.enabled", true);
@@ -836,7 +836,7 @@ pref("browser.snippets.syncPromo.enabled", true);
 pref("browser.snippets.firstrunHomepage.enabled", true);
 
 // The URL of the APK factory from which we obtain APKs for webapps.
-pref("browser.webapps.apkFactoryUrl", "https://controller.apk.privacore.com/application.apk");
+pref("browser.webapps.apkFactoryUrl", "https://controller.apk.privafox.com/application.apk");
 
 // How frequently to check for webapp updates, in seconds (86400 is daily).
 pref("browser.webapps.updateInterval", 86400);
@@ -857,7 +857,7 @@ pref("browser.webapps.checkForUpdates", 1);
 // The URL of the service that checks for updates.
 // To test updates, set this to http://apk-update-checker.paas.allizom.org,
 // which is a test server that always reports all apps as having updates.
-pref("browser.webapps.updateCheckUrl", "https://controller.apk.privacore.com/app_updates");
+pref("browser.webapps.updateCheckUrl", "https://controller.apk.privafox.com/app_updates");
 
 // The mode of home provider syncing.
 // 0: Sync always

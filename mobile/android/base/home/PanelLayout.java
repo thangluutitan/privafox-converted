@@ -370,7 +370,7 @@ abstract class PanelLayout extends FrameLayout {
                     break;
 
                 case GRID:
-                    view = new PanelRecyclerView(getContext(), viewConfig);
+                    view = new PanelGridView(getContext(), viewConfig);
                     break;
 
                 default:

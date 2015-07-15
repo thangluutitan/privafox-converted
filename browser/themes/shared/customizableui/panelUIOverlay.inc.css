@@ -684,10 +684,6 @@ toolbarpaletteitem[place="palette"] > toolbaritem > toolbarbutton {
   display: none;
 }
 
-#PanelUI-fxa-status[disabled] {
-  pointer-events: none;
-}
-
 #PanelUI-fxa-avatar {
   width: 32px;
   height: 32px;

@@ -526,10 +526,8 @@ describe("loop.panel", function() {
         TestUtils.Simulate.click(copyButton);
 
         sinon.assert.called(dispatcher.dispatch);
-        sinon.assert.calledWithExactly(dispatcher.dispatch, new sharedActions.CopyRoomUrl({
-          roomUrl: roomData.roomUrl,
-          from: "panel"
-        }));
+        sinon.assert.calledWithExactly(dispatcher.dispatch,
+          new sharedActions.CopyRoomUrl({roomUrl: roomData.roomUrl}));
       });
 
       it("should set state.urlCopied when the click event fires", function() {
@@ -780,7 +778,7 @@ describe("loop.panel", function() {
        "conversation button",
       function() {
         navigator.mozLoop.userProfile = {email: fakeEmail};
-        var view = createTestComponent(false);
+        var view = createTestComponent();
 
         TestUtils.Simulate.click(view.getDOMNode().querySelector(".new-room-button"));
 
@@ -803,7 +801,7 @@ describe("loop.panel", function() {
         });
       };
 
-      var view = createTestComponent(false);
+      var view = createTestComponent();
 
       // Simulate being visible
       view.onDocumentVisible();
@@ -843,7 +841,7 @@ describe("loop.panel", function() {
         });
       };
 
-      var view = createTestComponent(false);
+      var view = createTestComponent();
 
       // Simulate being visible
       view.onDocumentVisible();
@@ -861,7 +859,7 @@ describe("loop.panel", function() {
         });
       };
 
-      var view = createTestComponent(false);
+      var view = createTestComponent();
 
       view.setState({ checked: true });
 
@@ -880,7 +878,7 @@ describe("loop.panel", function() {
         });
       };
 
-      var view = createTestComponent(false);
+      var view = createTestComponent();
 
       // Simulate being visible
       view.onDocumentVisible();
@@ -898,7 +896,7 @@ describe("loop.panel", function() {
         });
       };
 
-      var view = createTestComponent(false);
+      var view = createTestComponent();
 
       view.onDocumentVisible();
 
@@ -915,7 +913,7 @@ describe("loop.panel", function() {
         });
       };
 
-      var view = createTestComponent(false);
+      var view = createTestComponent();
 
       // Simulate being visible
       view.onDocumentVisible();
@@ -935,7 +933,7 @@ describe("loop.panel", function() {
         });
       };
 
-      var view = createTestComponent(false);
+      var view = createTestComponent();
 
       // Simulate being visible.
       view.onDocumentVisible();

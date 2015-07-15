@@ -13,7 +13,6 @@
  */
 var loop = loop || {};
 loop.Dispatcher = (function() {
-  "use strict";
 
   function Dispatcher() {
     this._eventData = {};

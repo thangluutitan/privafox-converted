@@ -7,8 +7,6 @@ Payload Format
 An example report::
 
   {
-    "hostname":"example.com",
-    "port":443,
     "timestamp":1413490449,
     "errorCode":-16384,
     "failedCertChain":[
@@ -21,12 +19,6 @@ An example report::
   }
 
 Where the data represents the following:
-
-"hostname"
-  The name of the host the connection was being made to.
-
-"port"
-  The TCP port the connection was being made to.
 
 "timestamp"
   The (local) time at which the report was generated. Seconds since 1 Jan 1970,

@@ -112,6 +112,7 @@ loop.validate = (function() {
      */
     _dependencyMatchTypes: function(value, types) {
       return types.some(function(Type) {
+        /*jshint eqeqeq:false*/
         try {
           return typeof Type === "undefined"         || // skip checking
                  Type === null && value === null     || // null type

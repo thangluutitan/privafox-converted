@@ -146,8 +146,7 @@ describe("loop.contacts", function() {
     it("should show the gravatars promo box", function() {
       listView = TestUtils.renderIntoDocument(
         React.createElement(loop.contacts.ContactsList, {
-          notifications: notifications,
-          startForm: function() {}
+          notifications: notifications
         }));
 
       var promo = listView.getDOMNode().querySelector(".contacts-gravatar-promo");
@@ -167,8 +166,7 @@ describe("loop.contacts", function() {
       };
       listView = TestUtils.renderIntoDocument(
         React.createElement(loop.contacts.ContactsList, {
-          notifications: notifications,
-          startForm: function() {}
+          notifications: notifications
         }));
 
       var promo = listView.getDOMNode().querySelector(".contacts-gravatar-promo");
@@ -180,8 +178,7 @@ describe("loop.contacts", function() {
     it("should hide the gravatars promo box when the 'use' button is clicked", function() {
       listView = TestUtils.renderIntoDocument(
         React.createElement(loop.contacts.ContactsList, {
-          notifications: notifications,
-          startForm: function() {}
+          notifications: notifications
         }));
 
       React.addons.TestUtils.Simulate.click(listView.getDOMNode().querySelector(
@@ -196,8 +193,7 @@ describe("loop.contacts", function() {
     it("should should set the prefs correctly when the 'use' button is clicked", function() {
       listView = TestUtils.renderIntoDocument(
         React.createElement(loop.contacts.ContactsList, {
-          notifications: notifications,
-          startForm: function() {}
+          notifications: notifications
         }));
 
       React.addons.TestUtils.Simulate.click(listView.getDOMNode().querySelector(
@@ -211,8 +207,7 @@ describe("loop.contacts", function() {
     it("should hide the gravatars promo box when the 'close' button is clicked", function() {
       listView = TestUtils.renderIntoDocument(
         React.createElement(loop.contacts.ContactsList, {
-          notifications: notifications,
-          startForm: function() {}
+          notifications: notifications
         }));
 
       React.addons.TestUtils.Simulate.click(listView.getDOMNode().querySelector(
@@ -225,8 +220,7 @@ describe("loop.contacts", function() {
     it("should set prefs correctly when the 'close' button is clicked", function() {
       listView = TestUtils.renderIntoDocument(
         React.createElement(loop.contacts.ContactsList, {
-          notifications: notifications,
-          startForm: function() {}
+          notifications: notifications
         }));
 
       React.addons.TestUtils.Simulate.click(listView.getDOMNode().querySelector(
@@ -248,8 +242,7 @@ describe("loop.contacts", function() {
 
       listView = TestUtils.renderIntoDocument(
         React.createElement(loop.contacts.ContactsList, {
-          notifications: notifications,
-          startForm: function() {}
+          notifications: notifications
         }));
     });
 
@@ -306,10 +299,8 @@ describe("loop.contacts", function() {
 
         beforeEach(function() {
           view = TestUtils.renderIntoDocument(
-            React.createElement(loop.contacts.ContactDetailsForm, {
-              mode: "add",
-              selectTab: function() {}
-            }));
+            React.createElement(
+              loop.contacts.ContactDetailsForm, {mode: "add"}));
         });
 
         it("should render 'add' header", function() {
@@ -418,10 +409,8 @@ describe("loop.contacts", function() {
 
         beforeEach(function() {
           view = TestUtils.renderIntoDocument(
-            React.createElement(loop.contacts.ContactDetailsForm, {
-              mode: "edit",
-              selectTab: function() {}
-            }));
+            React.createElement(
+              loop.contacts.ContactDetailsForm, {mode: "edit"}));
         });
 
         it("should render 'edit' header", function() {

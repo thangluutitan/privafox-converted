@@ -46,12 +46,8 @@ add_task(function*() {
 
   yield scroll;
 
-  let dropCompleted = once(markup, "drop-completed");
-
   container._onMouseUp(ev);
   markup._onMouseUp(ev);
-
-  yield dropCompleted;
 
   ok("Scroll event fired");
 });

@@ -18,6 +18,19 @@ describe("loop.conversationViews", function () {
   var REST_ERRNOS = loop.shared.utils.REST_ERRNOS;
   var WEBSOCKET_REASONS = loop.shared.utils.WEBSOCKET_REASONS;
 
+  // XXX refactor to Just Work with "sandbox.stubComponent" or else
+  // just pass in the sandbox and put somewhere generally usable
+
+  function stubComponent(obj, component, mockTagName){
+    var reactClass = React.createClass({
+      render: function() {
+        var tagName = mockTagName || "div";
+        return React.DOM[tagName](null, this.props.children);
+      }
+    });
+    return sandbox.stub(obj, component, reactClass);
+  }
+
   beforeEach(function() {
     sandbox = sinon.sandbox.create();
     sandbox.useFakeTimers();
@@ -52,10 +65,6 @@ describe("loop.conversationViews", function () {
     };
 
     fakeMozLoop = navigator.mozLoop = {
-      SHARING_ROOM_URL: {
-        EMAIL_FROM_CALLFAILED: 2,
-        EMAIL_FROM_CONVERSATION: 3
-      },
       // Dummy function, stubbed below.
       getLoopPref: function() {},
       calls: {
@@ -259,7 +268,7 @@ describe("loop.conversationViews", function () {
   });
 
   describe("CallFailedView", function() {
-    var fakeAudio, composeCallUrlEmail;
+    var fakeAudio;
 
     var fakeContact = {email: [{value: "test@test.tld"}]};
 
@@ -279,7 +288,6 @@ describe("loop.conversationViews", function () {
         removeAttribute: sinon.spy()
       };
       sandbox.stub(window, "Audio").returns(fakeAudio);
-      composeCallUrlEmail = sandbox.stub(sharedUtils, "composeCallUrlEmail");
     });
 
     it("should dispatch a retryCall action when the retry button is pressed",
@@ -351,12 +359,13 @@ describe("loop.conversationViews", function () {
       });
 
     it("should compose an email once the email link is received", function() {
+      var composeCallUrlEmail = sandbox.stub(sharedUtils, "composeCallUrlEmail");
       view = mountTestComponent({contact: fakeContact});
       conversationStore.setStoreState({emailLink: "http://fake.invalid/"});
 
       sinon.assert.calledOnce(composeCallUrlEmail);
       sinon.assert.calledWithExactly(composeCallUrlEmail,
-        "http://fake.invalid/", "test@test.tld", null, "callfailed");
+        "http://fake.invalid/", "test@test.tld");
     });
 
     it("should close the conversation window once the email link is received",
