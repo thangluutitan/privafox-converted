@@ -9,7 +9,7 @@
 # BrandFullNameInternal is used for some registry and file system values
 # instead of BrandFullName and typically should not be modified.
 !define BrandFullNameInternal "Privafox"
-!define CompanyName           "Privafox Corporation"
+!define CompanyName           "Privacore ApS"
 !define URLInfoAbout          "https://www.privafox.com"
 !define URLUpdateInfo         "https://www.privafox.com/firefox/${AppVersion}/releasenotes"
 !define HelpLink              "https://support.privafox.com"

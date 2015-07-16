@@ -14,27 +14,27 @@
 #define bookmarks_toolbarfolder_description Add bookmarks to this folder to see them displayed on the Bookmarks Toolbar
 
 # LOCALIZATION NOTE (getting_started):
-# link title for https://www.mozilla.org/en-US/firefox/central/
+# link title for https://www.privafox.com/en-US/privafox/central/
 #define getting_started Getting Started
 
 # LOCALIZATION NOTE (firefox_heading):
-# Firefox links folder name
-#define firefox_heading Mozilla Firefox
+# Privafox links folder name
+#define firefox_heading Privacore Privafox
 
 # LOCALIZATION NOTE (firefox_help):
-# link title for https://www.mozilla.org/en-US/firefox/help/
+# link title for https://www.privafox.com/en-US/privafox/help/
 #define firefox_help Help and Tutorials
 
 # LOCALIZATION NOTE (firefox_customize):
-# link title for https://www.mozilla.org/en-US/firefox/customize/
-#define firefox_customize Customize Firefox
+# link title for https://www.privafox.com/en-US/privafox/customize/
+#define firefox_customize Customize Privafox
 
 # LOCALIZATION NOTE (firefox_community):
-# link title for https://www.mozilla.org/en-US/contribute/
+# link title for https://www.privafox.com/en-US/contribute/
 #define firefox_community Get Involved
 
 # LOCALIZATION NOTE (firefox_about):
-# link title for https://www.mozilla.org/en-US/about/
+# link title for https://www.privafox.com/en-US/about/
 #define firefox_about About Us
 
 #unfilter emptyLines
