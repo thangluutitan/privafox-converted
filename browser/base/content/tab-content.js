@@ -147,7 +147,6 @@ let AboutHomeListener = {
     let doc = content.document;
     if (aData.showRestoreLastSession && !PrivateBrowsingUtils.isContentWindowPrivate(content))
       doc.getElementById("launcher").setAttribute("session", "true");
-
     // Inject search engine and snippets URL.
     let docElt = doc.documentElement;
     // set the following attributes BEFORE searchEngineName, which triggers to
@@ -157,14 +156,14 @@ let AboutHomeListener = {
       docElt.setAttribute("showKnowYourRights", "true");
     docElt.setAttribute("snippetsVersion", aData.snippetsVersion);
     docElt.setAttribute("searchEngineName", aData.defaultEngineName);
+    docElt.setAttribute("domainSearchEngine", aData.domainSearchEngineName);
   },
 
-  onPageLoad: function() {
+  onPageLoad: function() {    
     let doc = content.document;
     if (doc.documentElement.hasAttribute("hasBrowserHandlers")) {
       return;
-    }
-
+    }    
     doc.documentElement.setAttribute("hasBrowserHandlers", "true");
     addMessageListener("AboutHome:Update", this);
     addMessageListener("AboutHome:FocusInput", this);
@@ -174,7 +173,6 @@ let AboutHomeListener = {
     if (!Services.prefs.getBoolPref("browser.search.showOneOffButtons")) {
       doc.documentElement.setAttribute("searchUIConfiguration", "oldsearchui");
     }
-
     sendAsyncMessage("AboutHome:RequestUpdate");
     doc.addEventListener("AboutHomeSearchEvent", this, true, true);
     doc.addEventListener("AboutHomeSearchPanel", this, true, true);
@@ -194,13 +192,16 @@ let AboutHomeListener = {
     }
 
     let elmId = originalTarget.getAttribute("id");
-
+    
     switch (elmId) {
       case "restorePreviousSession":
         sendAsyncMessage("AboutHome:RestorePreviousSession");
         ownerDoc.getElementById("launcher").removeAttribute("session");
         break;
 
+      case "setDefaultEngineFindx":
+        sendAsyncMessage("AboutHome:setDefaultEngineFindx");
+         break;
       case "downloads":
         sendAsyncMessage("AboutHome:Downloads");
         break;

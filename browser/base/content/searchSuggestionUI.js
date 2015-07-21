@@ -140,7 +140,7 @@ SearchSuggestionUIController.prototype = {
   addInputValueToFormHistory: function () {
     this._sendMsg("AddFormHistoryEntry", this.input.value);
   },
-
+  
   handleEvent: function (event) {
     this["_on" + event.type[0].toUpperCase() + event.type.substr(1)](event);
   },

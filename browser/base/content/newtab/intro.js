@@ -172,7 +172,7 @@ let gIntro = {
                    newTabString(imageClass ? "sponsored.button" : "suggested.tag") + '</span>' +
             '    <a class="newtab-link">' +
             '      <span class="newtab-thumbnail"/>' +
-            '      <span class="newtab-title">mozilla.org</span>' +
+            '      <span class="newtab-title">privafox.com</span>' +
             '    </a>' +
             '    <input type="button" class="newtab-control newtab-control-pin"/>' +
             '    <input type="button" class="newtab-control newtab-control-block"/>' +

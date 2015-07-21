@@ -175,6 +175,7 @@ html:not([searchUIConfiguration="oldsearchui"]) #searchLogoContainer {
   transition-duration: 0ms;
 }
 
+
 #defaultSnippet1,
 #defaultSnippet2,
 #rightsSnippet {
@@ -182,7 +183,7 @@ html:not([searchUIConfiguration="oldsearchui"]) #searchLogoContainer {
   min-height: 38px;
   background: 30px center no-repeat;
   padding: 6px 0;
-  -moz-padding-start: 79px;
+  -moz-padding-start: 50px;
 }
 
 #rightsSnippet[hidden] {
@@ -196,11 +197,11 @@ html:not([searchUIConfiguration="oldsearchui"]) #searchLogoContainer {
 }
 
 #defaultSnippet1 {
-  background-image: url("chrome://browser/content/abouthome/snippet1.png");
+  /*background-image: url("chrome://browser/content/abouthome/snippet1.png");*/
 }
 
 #defaultSnippet2 {
-  background-image: url("chrome://browser/content/abouthome/snippet2.png");
+  /*background-image: url("chrome://browser/content/abouthome/snippet2.png");*/
 }
 
 #snippets {
@@ -208,7 +209,7 @@ html:not([searchUIConfiguration="oldsearchui"]) #searchLogoContainer {
   text-align: start;
   margin: 12px 0;
   color: #3c3c3c;
-  font-size: 75%;
+  font-size: 80%;
   /* 12px is the computed font size, 15px the computed line height of the snippets
      with Segoe UI on a default Windows 7 setup. The 15/12 multiplier approximately
      converts em from units of font-size to units of line-height. The goal is to
@@ -234,6 +235,23 @@ body[narrow] #launcher[session] {
   text-align: center;
   white-space: nowrap; /* prevent navigational buttons from wrapping */
 }
+.launchButtonToTextLink {
+  display: -moz-box;
+  -moz-box-orient: vertical;  
+  border: 1px solid transparent;
+  color: -moz-nativehyperlinktext;
+  cursor: pointer;
+}
+
+
+.launchButtonToTextLink:hover {
+  text-decoration: underline;
+}
+
+.launchButtonToTextLink:-moz-focusring {
+  border: 1px dotted -moz-DialogText;
+}
+
 
 .launchButton {
   display: -moz-box;
@@ -386,6 +404,20 @@ body[narrow] #restorePreviousSession::before {
   width: 69px;
   height: 19px;
 }
+.text-link {
+  color: -moz-nativehyperlinktext;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.text-link:hover {
+  text-decoration: underline;
+}
+
+.text-link:-moz-focusring {
+  border: 1px dotted -moz-DialogText;
+}
+
 
 /* [HiDPI]
  * At resolutions above 1dppx, prefer downscaling the 2x Retina graphics
@@ -399,13 +431,18 @@ body[narrow] #restorePreviousSession::before {
   #searchIcon {
     background-image: url("chrome://browser/skin/magnifier@2x.png");
   }
+  #defaultSnippetSearchEngine {
+    background-size: 40px;
+  }
 
   #defaultSnippet1,
   #defaultSnippet2,
   #rightsSnippet {
     background-size: 40px;
   }
-
+  #defaultSnippetSearchEngine1 {
+    background-image: url("chrome://browser/content/abouthome/snippet1@2x.png");
+  }
   #defaultSnippet1 {
     background-image: url("chrome://browser/content/abouthome/snippet1@2x.png");
   }

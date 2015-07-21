@@ -27,7 +27,8 @@
           href="chrome://browser/content/searchSuggestionUI.css"/>
     <link rel="stylesheet" type="text/css" media="all" defer="defer"
           href="chrome://browser/content/abouthome/aboutHome.css"/>
-
+      
+ 
     <script type="text/javascript;version=1.8"
             src="chrome://browser/content/abouthome/aboutHome.js"/>
     <script type="text/javascript;version=1.8"
@@ -51,31 +52,30 @@
 
       <div id="snippetContainer">
         <div id="defaultSnippets" hidden="true">
-          <span id="defaultSnippet1" hidden="false">&abouthome.defaultSnippet1.v1;</span>
-          <!--<span id="defaultSnippet2" hidden="false">&abouthome.defaultSnippet2.v1;</span>-->
-        </div>
-        <!--<span id="rightsSnippet" hidden="false">&abouthome.rightsSnippet;</span>-->
-        <div id="snippets"/>
+        </div>          
+        <div id="snippets">
+            <span id="defaultSnippet1" hidden="false">&abouthome.defaultSnippet.searchEngine;</span>            
+            </div>
       </div>
     </div>
     <div class="spacer"/>
+      <!-- Custom Privafox -->
+      <div id="launcher" >
+          <button class="launchButton" id="downloads" hidden="false">&abouthome.downloadsButton.label;</button>
+          <button class="launchButton" id="bookmarks" hidden="false">&abouthome.bookmarksButton.label;</button>
+          <button class="launchButton" id="history" hidden="false">&abouthome.historyButton.label;</button>
+          <button class="launchButton" id="apps" hidden="false">&abouthome.appsButton2.label;</button>
+          <button class="launchButton" id="addons" hidden="false">&abouthome.addonsButton.label;</button>
+          <button class="launchButton" id="sync" hidden="false">&abouthome.syncButton.label;</button>
+          <!--#ifdef XP_WIN-->
+          <button class="launchButton" id="settings" hidden="false">&abouthome.preferencesButtonWin.label;</button>
+          <!--#else-->
+          <button class="launchButton" id="settings" hidden="false">&abouthome.preferencesButtonUnix.label;</button>
+          <!--#endif-->
+          <div id="restorePreviousSessionSeparator" hidden="false" />
+          <button class="launchButton" id="restorePreviousSession" hidden="false">&historyRestoreLastSession.label;</button>
+      </div>
 
-    <!--<div id="launcher">
-      <button class="launchButton" id="downloads" hidden="false">&abouthome.downloadsButton.label;</button>
-        <button class="launchButton" id="bookmarks" hidden="false">&abouthome.bookmarksButton.label;</button>
-        <button class="launchButton" id="history" hidden="false">&abouthome.historyButton.label;</button>
-      <button class="launchButton" id="apps">&abouthome.appsButton2.label;</button>
-      <button class="launchButton" id="addons">&abouthome.addonsButton.label;</button>
-      <button class="launchButton" id="sync">&abouthome.syncButton.label;</button>
-#ifdef XP_WIN
-      <button class="launchButton" id="settings">&abouthome.preferencesButtonWin.label;</button>
-#else
-      <button class="launchButton" id="settings">&abouthome.preferencesButtonUnix.label;</button>
-#endif
-      <div id="restorePreviousSessionSeparator"/>
-      <button class="launchButton" id="restorePreviousSession">&historyRestoreLastSession.label;</button>
-    </div>-->
-
-    <a id="aboutMozilla" href="https://www.privafox.com/about/?utm_source=about-home&amp;utm_medium=Referral"/>
+    <!--<a id="aboutMozilla" href="https://www.privafox.com/about/?utm_source=about-home&amp;utm_medium=Referral"/>-->
   </body>
 </html>

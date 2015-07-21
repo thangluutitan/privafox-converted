@@ -3,7 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 "use strict";
-
 const SEARCH_ENGINES = {
   "Google": {
     // This is the "2x" image designed for OS X retina resolution, Windows at 192dpi, etc.;
@@ -160,14 +159,15 @@ const SNIPPETS_OBJECTSTORE_NAME = "snippets";
 
 // This global tracks if the page has been set up before, to prevent double inits
 let gInitialized = false;
+
 let gObserver = new MutationObserver(function (mutations) {
   for (let mutation of mutations) {
-    if (mutation.attributeName == "searchEngineName") {
-      setupSearchEngine();
-      if (!gInitialized) {
-        ensureSnippetsMapThen(loadSnippets);
-        gInitialized = true;
-      }
+    if (mutation.attributeName == "searchEngineName") {            
+      setupSearchEngine();            
+      //if (!gInitialized) {
+      //  ensureSnippetsMapThen(loadSnippets);
+      //  gInitialized = true;
+      //}
       return;
     }
   }
@@ -175,20 +175,20 @@ let gObserver = new MutationObserver(function (mutations) {
 
 window.addEventListener("pageshow", function () {
   // Delay search engine setup, cause browser.js::BrowserOnAboutPageLoad runs
-  // later and may use asynchronous getters.
+    // later and may use asynchronous getters.
   window.gObserver.observe(document.documentElement, { attributes: true });
   fitToWidth();
   window.addEventListener("resize", fitToWidth);
-
   // Ask chrome to update snippets.
   var event = new CustomEvent("AboutHomeLoad", {bubbles:true});
   document.dispatchEvent(event);
 });
 
-window.addEventListener("pagehide", function() {
+window.addEventListener("pagehide", function() {   
   window.gObserver.disconnect();
   window.removeEventListener("resize", fitToWidth);
 });
+
 
 // This object has the same interface as Map and is used to store and retrieve
 // the snippets data.  It is lazily initialized by ensureSnippetsMapThen(), so
@@ -353,12 +353,14 @@ function setupSearchEngine()
 {
   // The "autofocus" attribute doesn't focus the form element
   // immediately when the element is first drawn, so the
-  // attribute is also used for styling when the page first loads.
+    // attribute is also used for styling when the page first loads.
   let searchText = document.getElementById("searchText");
   searchText.addEventListener("blur", function searchText_onBlur() {
     searchText.removeEventListener("blur", searchText_onBlur);
     searchText.removeAttribute("autofocus");
   });
+
+
  
   let searchEngineName = document.documentElement.getAttribute("searchEngineName");
   let searchEngineInfo = SEARCH_ENGINES[searchEngineName];
@@ -382,6 +384,7 @@ function setupSearchEngine()
                                        onSearchSubmit);
   }
   gSearchSuggestionController.engineName = searchEngineName;
+  loadSnippets();
 }
 
 /**
@@ -399,53 +402,55 @@ function loadCompleted()
  */
 function loadSnippets()
 {
-  if (!gSnippetsMap)
-    throw new Error("Snippets map has not properly been initialized");
+  //if (!gSnippetsMap)
+  //  throw new Error("Snippets map has not properly been initialized");
 
-  // Allow tests to modify the snippets map before using it.
-  var event = new CustomEvent("AboutHomeLoadSnippets", {bubbles:true});
-  document.dispatchEvent(event);
+  //// Allow tests to modify the snippets map before using it.
+  //var event = new CustomEvent("AboutHomeLoadSnippets", {bubbles:true});
+  //document.dispatchEvent(event);
 
-  // Check cached snippets version.
-  let cachedVersion = gSnippetsMap.get("snippets-cached-version") || 0;
-  let currentVersion = document.documentElement.getAttribute("snippetsVersion");
-  if (cachedVersion < currentVersion) {
-    // The cached snippets are old and unsupported, restart from scratch.
-    gSnippetsMap.clear();
-  }
+  //// Check cached snippets version.
+  //let cachedVersion = gSnippetsMap.get("snippets-cached-version") || 0;
+  //let currentVersion = document.documentElement.getAttribute("snippetsVersion");
+  //if (cachedVersion < currentVersion) {
+  //  // The cached snippets are old and unsupported, restart from scratch.
+  //  gSnippetsMap.clear();
+  //}
 
-  // Check last snippets update.
-  let lastUpdate = gSnippetsMap.get("snippets-last-update");
-  let updateURL = document.documentElement.getAttribute("snippetsURL");
-  let shouldUpdate = !lastUpdate ||
-                     Date.now() - lastUpdate > SNIPPETS_UPDATE_INTERVAL_MS;
-  if (updateURL && shouldUpdate) {
-    // Try to update from network.
-    let xhr = new XMLHttpRequest();
-    xhr.timeout = 5000;
-    try {
-      xhr.open("GET", updateURL, true);
-    } catch (ex) {
+  //// Check last snippets update.
+  //let lastUpdate = gSnippetsMap.get("snippets-last-update");
+  //let updateURL = document.documentElement.getAttribute("snippetsURL");
+  //let shouldUpdate = !lastUpdate ||
+  //                   Date.now() - lastUpdate > SNIPPETS_UPDATE_INTERVAL_MS;
+  //if (updateURL && shouldUpdate) {
+  //  // Try to update from network.
+  //  let xhr = new XMLHttpRequest();
+  //  xhr.timeout = 5000;
+  //  try {
+  //    xhr.open("GET", updateURL, true);
+  //  } catch (ex) {
+  //    showSnippets();
+  //    loadCompleted();
+  //    return;
+  //  }
+  //  // Even if fetching should fail we don't want to spam the server, thus
+  //  // set the last update time regardless its results.  Will retry tomorrow.
+  //  gSnippetsMap.set("snippets-last-update", Date.now());
+  //  xhr.onloadend = function (event) {
+  //    if (xhr.status == 200) {
+  //      gSnippetsMap.set("snippets", xhr.responseText);
+  //      gSnippetsMap.set("snippets-cached-version", currentVersion);
+  //    }
+  //    showSnippets();
+  //    loadCompleted();
+  //  };
+  //  xhr.send(null);
+  //} else {
+  //  showSnippets();
+  //  loadCompleted();
+  //}
       showSnippets();
-      loadCompleted();
-      return;
-    }
-    // Even if fetching should fail we don't want to spam the server, thus
-    // set the last update time regardless its results.  Will retry tomorrow.
-    gSnippetsMap.set("snippets-last-update", Date.now());
-    xhr.onloadend = function (event) {
-      if (xhr.status == 200) {
-        gSnippetsMap.set("snippets", xhr.responseText);
-        gSnippetsMap.set("snippets-cached-version", currentVersion);
-      }
-      showSnippets();
-      loadCompleted();
-    };
-    xhr.send(null);
-  } else {
-    showSnippets();
-    loadCompleted();
-  }
+      //loadCompleted();
 }
 
 /**
@@ -459,48 +464,28 @@ let _snippetsShown = false;
 function showSnippets()
 {
     let snippetsElt = document.getElementById("snippets");
-
-    // Show about:rights notification, if needed.
-    let showRights = document.documentElement.getAttribute("showKnowYourRights");
-    if (showRights) {
-        let rightsElt = document.getElementById("rightsSnippet");
-        let anchor = rightsElt.getElementsByTagName("a")[0];
-        anchor.href = "about:rights";
-        snippetsElt.appendChild(rightsElt);
-        rightsElt.removeAttribute("hidden");
-        return;
-    }
-
-    if (!gSnippetsMap)
-        throw new Error("Snippets map has not properly been initialized");
-    if (_snippetsShown) {
-        // There's something wrong with the remote snippets, just in case fall back
-        // to the default snippets.
-        showDefaultSnippets();
-        throw new Error("showSnippets should never be invoked multiple times");
-    }
-    _snippetsShown = true;
-
-    let snippets = gSnippetsMap.get("snippets");
-    // If there are remotely fetched snippets, try to to show them.
-    if (snippets) {
-        // Injecting snippets can throw if they're invalid XML.
-        try {
-            snippetsElt.innerHTML = snippets;
-            // Scripts injected by innerHTML are inactive, so we have to relocate them
-            // through DOM manipulation to activate their contents.
-            Array.forEach(snippetsElt.getElementsByTagName("script"), function(elt) {
-                let relocatedScript = document.createElement("script");
-                relocatedScript.type = "text/javascript;version=1.8";
-                relocatedScript.text = elt.text;
-                elt.parentNode.replaceChild(relocatedScript, elt);
-            });
-            return;
-        } catch (ex) {
-            // Bad content, continue to show default snippets.
-        }
-    }
-
+    //let snippets = gSnippetsMap.get("snippets");
+    //// If there are remotely fetched snippets, try to to show them.
+    //if (snippets) {
+    //    // Injecting snippets can throw if they're invalid XML.
+    //    try {
+    //        snippetsElt.innerHTML = snippets;
+    //        // Scripts injected by innerHTML are inactive, so we have to relocate them
+    //        // through DOM manipulation to activate their contents.
+    //        Array.forEach(snippetsElt.getElementsByTagName("script"), function(elt) {
+    //            let relocatedScript = document.createElement("script");
+    //            relocatedScript.type = "text/javascript;version=1.8";
+    //            relocatedScript.text = elt.text;
+    //            elt.parentNode.replaceChild(relocatedScript, elt);
+    //        });
+    //        window.alert('showSnippets return');
+    //        return;
+    //    } catch (ex) {
+    //        window.alert('showSnippets exp ' + ex);
+    //        // Bad content, continue to show default snippets.
+    //    }
+    //}
+    
     showDefaultSnippets();
 }
 //function showSnippets()
@@ -581,29 +566,28 @@ function showSnippets()
 // show notice if not default seach engine findx.com
 function showDefaultSnippets()
 {
-    // Clear eventual contents...
     let snippetsElt = document.getElementById("snippets");
-    snippetsElt.innerHTML = "";
-
-    // ...then show default snippets.
-    let defaultSnippetsElt = document.getElementById("defaultSnippets");
-    let entries = defaultSnippetsElt.querySelectorAll("span");
-    // Choose a random snippet.  Assume there is always at least one.
-    let randIndex = 0;
-    let entry = entries[randIndex];
-    // Inject url in the eventual link.
-    if (DEFAULT_SNIPPETS_URLS[randIndex]) {
-        let links = entry.getElementsByTagName("a");
-        // Default snippets can have only one link, otherwise something is messed
-        // up in the translation.
-        if (links.length == 1) {
-            links[0].href = DEFAULT_SNIPPETS_URLS[randIndex];
-        }
+    let entries = snippetsElt.querySelector("span");
+    
+    if(gSearchSuggestionController.engineName == 'Findx')
+    {        
+        entries.setAttribute("style","display:none");
+    }else{
+        entries.removeAttribute("style");
     }
-    // Move the default snippet to the snippets element.
-    snippetsElt.appendChild(entry);
+    let links = entries.getElementsByTagName("button");        
+    if (links.length == 1) {
+         links[0].id = "setDefaultEngineFindx";
+         links[0].className = "launchButtonToTextLink";                        
+    }            
+    let lblCurrentSearch = entries.getElementsByTagName("label");        
+    if(lblCurrentSearch.length > 0){
+        let engineNameDomain = document.documentElement.getAttribute("domainSearchEngine");        
+        lblCurrentSearch[0].innerHTML ="";
+        lblCurrentSearch[0].innerHTML = "<label>" + engineNameDomain + "</label>";
+    }
+    snippetsElt.appendChild(entries);
 }
-
 function fitToWidth() {
   if (window.scrollMaxX) {
     document.body.setAttribute("narrow", "true");
