@@ -1119,7 +1119,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
                        role="group"
                        class="search-panel-one-offs"/>
       <xul:vbox anonid="add-engines"/>
-      <xul:button anonid="search-settings"
+      <xul:button anonid="search-settings" style="display:none"
                   oncommand="BrowserUITelemetry.countSearchSettingsEvent('searchbar');openPreferences('paneSearch')"
                   class="search-setting-button search-panel-header"
                   label="&changeSearchSettings.button;"/>
@@ -2975,6 +2975,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
       <constructor><![CDATA[
         this._panel.addEventListener("popupshowing", this, false);
       ]]></constructor>
+      
 
       <destructor><![CDATA[
         this._panel.removeEventListener("popupshowing", this, false);

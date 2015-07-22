@@ -146,10 +146,10 @@
 
     <!-- for url bar autocomplete -->
     <panel type="autocomplete-richlistbox" id="PopupAutoCompleteRichResult" noautofocus="true" hidden="true">
-      <hbox id="urlbar-search-footer" flex="1" align="stretch" pack="end">
-        <button id="urlbar-search-settings" label="&changeSearchSettings.button;"
-                oncommand="BrowserUITelemetry.countSearchSettingsEvent('urlbar'); openPreferences('paneSearch')"/>
-      </hbox>
+      <!-- <hbox id="urlbar-search-footer" flex="1" align="stretch" pack="end">
+          <button id="urlbar-search-settings" label="&changeSearchSettings.button;"
+                oncommand="BrowserUITelemetry.countSearchSettingsEvent('urlbar'); openPreferences('paneSearch')"/> 
+      </hbox> -->
     </panel>
 
     <!-- for select dropdowns. The menupopup is what shows the list of options,
@@ -805,12 +805,12 @@
           </hbox>
         </toolbaritem>
 
-        <toolbaritem id="search-container" title="&searchItem.title;"
+       <toolbaritem id="search-container" title="&searchItem.title;"
                      align="center" class="chromeclass-toolbar-additional panel-wide-item"
                      cui-areatype="toolbar"
                      flex="100" persist="width" removable="true">
           <searchbar id="searchbar" flex="1"/>
-        </toolbaritem>
+        </toolbaritem> 
 
         <toolbarbutton id="bookmarks-menu-button"
                        class="toolbarbutton-1 chromeclass-toolbar-additional"

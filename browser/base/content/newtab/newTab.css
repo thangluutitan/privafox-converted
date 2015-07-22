@@ -1024,8 +1024,9 @@ display: -moz-box;
   display: block;
   min-height: 38px;
   background: 30px center no-repeat;
-  -moz-padding-start: 85px;
+  -moz-padding-start: 80px;
   width:500px;
+  max-width:600px;
 }
 
 /*#defaultSnippet1[hidden] {

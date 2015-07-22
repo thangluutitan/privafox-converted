@@ -43,9 +43,9 @@
             <div id="newtab-customize-classic" class="newtab-customize-panel-superitem newtab-customize-panel-item selectable">
                 <label>&newtab.customize.classic;</label>
             </div>
-            <div id="newtab-customize-enhanced" class="newtab-customize-panel-subitem">
+            <div id="newtab-customize-enhanced" class="newtab-customize-panel-subitem" style="display:none">
                 <label class="checkbox"></label>
-                <label>&newtab.customize.cog.enhanced;</label>
+                <!--<label>&newtab.customize.cog.enhanced;</label>-->
             </div>
         </div>
         <div id="newtab-customize-blank" class="newtab-customize-panel-item selectable">
