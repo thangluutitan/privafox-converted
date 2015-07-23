@@ -45,7 +45,7 @@ let gPage = {
    * Listens for notifications specific to this page.
    */
   observe: function Page_observe(aSubject, aTopic, aData) {
-    if (aTopic == "nsPref:changed") {
+      if (aTopic == "nsPref:changed") {
       gCustomize.updateSelected();
 
       let enabled = gAllPages.enabled;
