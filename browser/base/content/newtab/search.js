@@ -25,7 +25,6 @@ let gSearch = {
     if (this.useNewUI) {
       this._nodes.logo.classList.add("magnifier");
     }
-    //window.alert('Search Init');
     window.addEventListener("ContentSearchService", this);
     this._send("GetState");
    },    
@@ -95,34 +94,27 @@ let gSearch = {
     this._newEngines = data.engines;
     this._setCurrentEngine(data.currentEngine);    
     this._initWhenInitalStateReceived();    
-    
   },
  
   _showDefaultSnippets: function()
   {   
       let current = Services.search.getEngineByName(this.currentEngineName);
       let url = current.getSubmission("foo", "text/html").uri.spec;
-      let sourceString = url.replace('http://','').replace('https://','').replace('www.','').split(/[/?#]/)[0];
-      
-      let snippetsElt = document.getElementById("snippets");    
+      let sourceString = url.replace('http://','').replace('https://','').replace('www.','').split(/[/?#]/)[0];      
+      let snippetsElt = document.getElementById("snippets");         
       let defaultSnippetsElt = document.getElementById("defaultSnippets");
-      let entries = defaultSnippetsElt.querySelector("span");            
+      let entries ="";
+      if(defaultSnippetsElt.innerHTML.trim().length > 0){
+          entries = defaultSnippetsElt.querySelector("span");                    
+      }else{
+          entries = snippetsElt.querySelector("span");          
+      }
+      snippetsElt.innerHTML ="";               
     if(this.currentEngineName == 'Findx')
     {   
-       // window.alert('Hide notice : ' + entries.getAttribute('style'));
-        if(entries.getAttribute('style') == "display:inline-block"){
-            entries.getAttribute('style') == "display:none";
-        }else{
-            entries.setAttribute('style', 'display:none');   
-        }        
+         entries.setAttribute('style', 'display:none');   
     }else{        
-       // window.alert('show notice : ' + entries.getAttribute('style'));          
-        if(entries.getAttribute('style') == "display:none"){
-            entries.getAttribute('style') == "display:inline-block";
-        }else{
-            entries.getAttribute('style') == "display:inline-block";
-        }
-        
+          entries.removeAttribute('style');
     }
     let links = entries.getElementsByTagName("button");        
     if (links.length == 1) {
@@ -138,8 +130,8 @@ let gSearch = {
         links[0].removeEventListener("click", setDefaultEngineFindX);
         let engine = Services.search.getEngineByName("Findx");
         Services.search.currentEngine = engine;	
-        this.currentEngineName = engine;
-        entries.setAttribute('style', 'display:none');
+        this.currentEngineName = engine.name;
+        entries.removeAttribute('style');    
     });        
     snippetsElt.appendChild(entries);      
   },
@@ -174,11 +166,10 @@ let gSearch = {
 
 _initWhenInitalStateReceived: function () {
     this._nodes.form.addEventListener("submit", e => this.search(e));
-    //this._nodes.logo.addEventListener("click", e => this.showPanel());// Privafox hide Panel "Change Search Setting"
+    this._nodes.logo.addEventListener("click", e => this.showPanel());// Privafox hide Panel "Change Search Setting"
     this._nodes.manage.addEventListener("click", e => this.manageEngines());
     this._nodes.panel.addEventListener("popupshowing", e => this._setUpPanel());
     this._initialStateReceived = true;
-    this._showDefaultSnippets();
     this._initWhenInitalStateReceived = function () {};
     
   },
@@ -271,9 +262,10 @@ _initWhenInitalStateReceived: function () {
     return box;
   },
 
-  _setCurrentEngine: function (engine) {
+_setCurrentEngine: function (engine) {
+    
     this.currentEngineName = engine.name;
-
+    this._showDefaultSnippets();
     if (!this.useNewUI) {
       let type = "";
       let uri;

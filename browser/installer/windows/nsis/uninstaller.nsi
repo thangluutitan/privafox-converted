@@ -37,7 +37,7 @@ RequestExecutionLevel user
 !define NO_LOG
 
 !define MaintUninstallKey \
- "Software\Microsoft\Windows\CurrentVersion\Uninstall\MozillaMaintenanceService"
+ "Software\Microsoft\Windows\CurrentVersion\Uninstall\PrivacoreMaintenanceService"
 
 Var TmpVal
 Var MaintCertKey
@@ -188,7 +188,7 @@ Function un.UninstallServiceIfNotUsed
   ; Figure out the number of subkeys
   StrCpy $0 0
   ${Do}
-    EnumRegKey $1 HKLM "Software\Mozilla\MaintenanceService" $0
+    EnumRegKey $1 HKLM "Software\Privacore\MaintenanceService" $0
     ${If} "$1" == ""
       ${ExitDo}
     ${EndIf}
@@ -244,10 +244,10 @@ Section "Uninstall"
   ${EndIf}
 
   ; setup the application model id registration value
-  ${un.InitHashAppModelId} "$INSTDIR" "Software\Mozilla\${AppName}\TaskBarIDs"
+  ${un.InitHashAppModelId} "$INSTDIR" "Software\Privacore\${AppName}\TaskBarIDs"
 
   SetShellVarContext current  ; Set SHCTX to HKCU
-  ${un.RegCleanMain} "Software\Mozilla"
+  ${un.RegCleanMain} "Software\Privacore"
   ${un.RegCleanUninstall}
   ${un.DeleteShortcuts}
 
@@ -258,21 +258,21 @@ Section "Uninstall"
   ${EndIf}
 
   ; Remove the updates directory for Vista and above
-  ${un.CleanUpdateDirectories} "Mozilla\Firefox" "Mozilla\updates"
+  ${un.CleanUpdateDirectories} "Privacore\Privafox" "Privacore\updates"
 
   ; Remove any app model id's stored in the registry for this install path
-  DeleteRegValue HKCU "Software\Mozilla\${AppName}\TaskBarIDs" "$INSTDIR"
-  DeleteRegValue HKLM "Software\Mozilla\${AppName}\TaskBarIDs" "$INSTDIR"
+  DeleteRegValue HKCU "Software\Privacore\${AppName}\TaskBarIDs" "$INSTDIR"
+  DeleteRegValue HKLM "Software\Privacore\${AppName}\TaskBarIDs" "$INSTDIR"
 
   ClearErrors
-  WriteRegStr HKLM "Software\Mozilla" "${BrandShortName}InstallerTest" "Write Test"
+  WriteRegStr HKLM "Software\Privacore" "${BrandShortName}InstallerTest" "Write Test"
   ${If} ${Errors}
     StrCpy $TmpVal "HKCU" ; used primarily for logging
   ${Else}
     SetShellVarContext all  ; Set SHCTX to HKLM
-    DeleteRegValue HKLM "Software\Mozilla" "${BrandShortName}InstallerTest"
+    DeleteRegValue HKLM "Software\Privacore" "${BrandShortName}InstallerTest"
     StrCpy $TmpVal "HKLM" ; used primarily for logging
-    ${un.RegCleanMain} "Software\Mozilla"
+    ${un.RegCleanMain} "Software\Privacore"
     ${un.RegCleanUninstall}
     ${un.DeleteShortcuts}
     ${un.SetAppLSPCategories}
@@ -281,38 +281,38 @@ Section "Uninstall"
   ${If} ${AtLeastWin8}
     ${RemoveDEHRegistration} ${DELEGATE_EXECUTE_HANDLER_ID} \
                              $AppUserModelID \
-                             "FirefoxURL" \
-                             "FirefoxHTML"
+                             "PrivafoxURL" \
+                             "PrivafoxHTML"
   ${EndIf}
 
-  ${un.RegCleanAppHandler} "FirefoxURL"
-  ${un.RegCleanAppHandler} "FirefoxHTML"
+  ${un.RegCleanAppHandler} "PrivafoxURL"
+  ${un.RegCleanAppHandler} "PrivafoxHTML"
   ${un.RegCleanProtocolHandler} "ftp"
   ${un.RegCleanProtocolHandler} "http"
   ${un.RegCleanProtocolHandler} "https"
 
   ClearErrors
-  ReadRegStr $R9 HKCR "FirefoxHTML" ""
-  ; Don't clean up the file handlers if the FirefoxHTML key still exists since
+  ReadRegStr $R9 HKCR "PrivafoxHTML" ""
+  ; Don't clean up the file handlers if the PrivafoxHTML key still exists since
   ; there should be a second installation that may be the default file handler
   ${If} ${Errors}
-    ${un.RegCleanFileHandler}  ".htm"   "FirefoxHTML"
-    ${un.RegCleanFileHandler}  ".html"  "FirefoxHTML"
-    ${un.RegCleanFileHandler}  ".shtml" "FirefoxHTML"
-    ${un.RegCleanFileHandler}  ".xht"   "FirefoxHTML"
-    ${un.RegCleanFileHandler}  ".xhtml" "FirefoxHTML"
-    ${un.RegCleanFileHandler}  ".oga"  "FirefoxHTML"
-    ${un.RegCleanFileHandler}  ".ogg"  "FirefoxHTML"
-    ${un.RegCleanFileHandler}  ".ogv"  "FirefoxHTML"
-    ${un.RegCleanFileHandler}  ".pdf"  "FirefoxHTML"
-    ${un.RegCleanFileHandler}  ".webm"  "FirefoxHTML"
+    ${un.RegCleanFileHandler}  ".htm"   "PrivafoxHTML"
+    ${un.RegCleanFileHandler}  ".html"  "PrivafoxHTML"
+    ${un.RegCleanFileHandler}  ".shtml" "PrivafoxHTML"
+    ${un.RegCleanFileHandler}  ".xht"   "PrivafoxHTML"
+    ${un.RegCleanFileHandler}  ".xhtml" "PrivafoxHTML"
+    ${un.RegCleanFileHandler}  ".oga"  "PrivafoxHTML"
+    ${un.RegCleanFileHandler}  ".ogg"  "PrivafoxHTML"
+    ${un.RegCleanFileHandler}  ".ogv"  "PrivafoxHTML"
+    ${un.RegCleanFileHandler}  ".pdf"  "PrivafoxHTML"
+    ${un.RegCleanFileHandler}  ".webm"  "PrivafoxHTML"
   ${EndIf}
 
   SetShellVarContext all  ; Set SHCTX to HKLM
-  ${un.GetSecondInstallPath} "Software\Mozilla" $R9
+  ${un.GetSecondInstallPath} "Software\Privacore" $R9
   ${If} $R9 == "false"
     SetShellVarContext current  ; Set SHCTX to HKCU
-    ${un.GetSecondInstallPath} "Software\Mozilla" $R9
+    ${un.GetSecondInstallPath} "Software\Privacore" $R9
   ${EndIf}
 
   StrCpy $0 "Software\Clients\StartMenuInternet\${FileMainEXE}\shell\open\command"
@@ -324,7 +324,7 @@ Section "Uninstall"
   ; The StartMenuInternet registry key is independent of the default browser
   ; settings. The XPInstall base un-installer always removes this key if it is
   ; uninstalling the default browser and it will always replace the keys when
-  ; installing even if there is another install of Firefox that is set as the
+  ; installing even if there is another install of Privafox that is set as the
   ; default browser. Now the key is always updated on install but it is only
   ; removed if it refers to this install location.
   ${If} "$INSTDIR" == "$R1"
@@ -340,7 +340,7 @@ Section "Uninstall"
   ; The StartMenuInternet registry key is independent of the default browser
   ; settings. The XPInstall base un-installer always removes this key if it is
   ; uninstalling the default browser and it will always replace the keys when
-  ; installing even if there is another install of Firefox that is set as the
+  ; installing even if there is another install of Privafox that is set as the
   ; default browser. Now the key is always updated on install but it is only
   ; removed if it refers to this install location.
   ${If} "$INSTDIR" == "$R1"
@@ -358,7 +358,7 @@ Section "Uninstall"
     StrCpy $0 "Software\Microsoft\MediaPlayer\ShimInclusionList\plugin-container.exe"
     DeleteRegKey HKLM "$0"
     DeleteRegKey HKCU "$0"
-    StrCpy $0 "Software\Classes\MIME\Database\Content Type\application/x-xpinstall;app=firefox"
+    StrCpy $0 "Software\Classes\MIME\Database\Content Type\application/x-xpinstall;app=privafox"
     DeleteRegKey HKLM "$0"
     DeleteRegKey HKCU "$0"
   ${Else}
@@ -426,8 +426,8 @@ Section "Uninstall"
   ; Remove the installation directory if it is empty
   RmDir "$INSTDIR"
 
-  ; If firefox.exe was successfully deleted yet we still need to restart to
-  ; remove other files create a dummy firefox.exe.moz-delete to prevent the
+  ; If privafox.exe was successfully deleted yet we still need to restart to
+  ; remove other files create a dummy privafox.exe.moz-delete to prevent the
   ; installer from allowing an install without restart when it is required
   ; to complete an uninstall.
   ${If} ${RebootFlag}
