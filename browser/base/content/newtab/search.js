@@ -166,7 +166,7 @@ let gSearch = {
 
 _initWhenInitalStateReceived: function () {
     this._nodes.form.addEventListener("submit", e => this.search(e));
-    this._nodes.logo.addEventListener("click", e => this.showPanel());// Privafox hide Panel "Change Search Setting"
+    //this._nodes.logo.addEventListener("click", e => this.showPanel());// Privafox hide Panel "Change Search Setting"
     this._nodes.manage.addEventListener("click", e => this.manageEngines());
     this._nodes.panel.addEventListener("popupshowing", e => this._setUpPanel());
     this._initialStateReceived = true;
