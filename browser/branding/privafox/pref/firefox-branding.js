@@ -3,7 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 pref("startup.homepage_override_url","");
-pref("startup.homepage_welcome_url","https://www.privafox.com/%LOCALE%/firefox/%VERSION%/firstrun/");
+pref("startup.homepage_welcome_url","https://www.privafox.com/%LOCALE%/privafox/%VERSION%/firstrun/");
 // Interval: Time between checks for a new version (in seconds)
 pref("app.update.interval", 43200); // 12 hours
 // The time interval between the downloading of mar file chunks in the
@@ -13,10 +13,10 @@ pref("app.update.download.backgroundInterval", 60);
 pref("app.update.promptWaitTime", 172800);
 // URL user can browse to manually if for some reason all update installation
 // attempts fail.
-pref("app.update.url.manual", "https://www.privafox.com/firefox/");
+pref("app.update.url.manual", "https://www.privafox.com/privafox/");
 // A default value for the "More information about this update" link
 // supplied in the "An update is available" page of the update wizard. 
-pref("app.update.url.details", "https://www.privafox.com/%LOCALE%/firefox/notes");
+pref("app.update.url.details", "https://www.privafox.com/%LOCALE%/privafox/notes");
 
 // The number of days a binary is permitted to be old
 // without checking for an update.  This assumes that

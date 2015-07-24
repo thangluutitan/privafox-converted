@@ -1,7 +1,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
+# updates.privafox.com
 # NSIS branding defines for official release builds.
 # The nightly build branding.nsi is located in browser/installer/windows/nsis/
 # The unofficial build branding.nsi is located in browser/branding/unofficial/
@@ -11,7 +11,7 @@
 !define BrandFullNameInternal "Privafox"
 !define CompanyName           "Privacore ApS"
 !define URLInfoAbout          "https://www.privafox.com"
-!define URLUpdateInfo         "https://www.privafox.com/firefox/${AppVersion}/releasenotes"
+!define URLUpdateInfo         "https://updates.privafox.com/${AppVersion}/releasenotes"
 !define HelpLink              "https://support.privafox.com"
 
 ; The OFFICIAL define is a workaround to support different urls for Release and
@@ -19,7 +19,7 @@
 ; set the update channel to beta.
 !define OFFICIAL
 !define URLStubDownload "http://download.privafox.com/?os=win&lang=${AB_CD}&product=firefox-latest"
-!define URLManualDownload "https://www.privafox.com/${AB_CD}/firefox/installer-help/?channel=release&installer_lang=${AB_CD}"
+!define URLManualDownload "https://download.privafox.com/${AB_CD}/installer-help/?channel=release&installer_lang=${AB_CD}"
 !define Channel "release"
 
 # The installer's certificate name and issuer expected by the stub installer
