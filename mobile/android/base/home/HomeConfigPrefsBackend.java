@@ -69,14 +69,19 @@ class HomeConfigPrefsBackend implements HomeConfigBackend {
     private State loadDefaultConfig() {
         final ArrayList<PanelConfig> panelConfigs = new ArrayList<PanelConfig>();
 
-        panelConfigs.add(createBuiltinPanelConfig(mContext, PanelType.TOP_SITES,
-                                                  EnumSet.of(PanelConfig.Flags.DEFAULT_PANEL)));
+        /*
+            custom for Privafox only display BookMaks and Reading List with default BOOKMARKS
+         */
+//        panelConfigs.add(createBuiltinPanelConfig(mContext, PanelType.TOP_SITES,
+//                                                  EnumSet.of(PanelConfig.Flags.DEFAULT_PANEL)));
 
-        panelConfigs.add(createBuiltinPanelConfig(mContext, PanelType.BOOKMARKS));
+//        panelConfigs.add(createBuiltinPanelConfig(mContext, PanelType.BOOKMARKS));
+        panelConfigs.add(createBuiltinPanelConfig(mContext, PanelType.BOOKMARKS,
+                                                  EnumSet.of(PanelConfig.Flags.DEFAULT_PANEL)));
         panelConfigs.add(createBuiltinPanelConfig(mContext, PanelType.READING_LIST));
 
-        final PanelConfig historyEntry = createBuiltinPanelConfig(mContext, PanelType.HISTORY);
-        final PanelConfig recentTabsEntry = createBuiltinPanelConfig(mContext, PanelType.RECENT_TABS);
+//        final PanelConfig historyEntry = createBuiltinPanelConfig(mContext, PanelType.HISTORY);
+//        final PanelConfig recentTabsEntry = createBuiltinPanelConfig(mContext, PanelType.RECENT_TABS);
 
         // We disable Synced Tabs for guest mode profiles.
         final PanelConfig remoteTabsEntry;
@@ -89,17 +94,17 @@ class HomeConfigPrefsBackend implements HomeConfigBackend {
         // On tablets, we go [...|History|Recent Tabs|Synced Tabs].
         // On phones, we go [Synced Tabs|Recent Tabs|History|...].
         if (HardwareUtils.isTablet()) {
-            panelConfigs.add(historyEntry);
-            panelConfigs.add(recentTabsEntry);
-            if (remoteTabsEntry != null) {
-                panelConfigs.add(remoteTabsEntry);
-            }
+           // panelConfigs.add(historyEntry);
+            //panelConfigs.add(recentTabsEntry);
+//            if (remoteTabsEntry != null) {
+//                panelConfigs.add(remoteTabsEntry);
+//            }
         } else {
-            panelConfigs.add(0, historyEntry);
-            panelConfigs.add(0, recentTabsEntry);
-            if (remoteTabsEntry != null) {
-                panelConfigs.add(0, remoteTabsEntry);
-            }
+            //panelConfigs.add(0, historyEntry);
+            //panelConfigs.add(0, recentTabsEntry);
+//            if (remoteTabsEntry != null) {
+//                panelConfigs.add(0, remoteTabsEntry);
+//            }
         }
 
         return new State(panelConfigs, true);

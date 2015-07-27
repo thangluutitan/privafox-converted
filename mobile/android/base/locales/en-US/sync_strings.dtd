@@ -4,7 +4,7 @@
 
 <!-- Don't localize these. They're here until they have
      a better place to live. -->
-<!ENTITY syncBrand.fullName.label "Firefox Sync">
+<!ENTITY syncBrand.fullName.label "Privafox Sync">
 <!ENTITY syncBrand.shortName.label "Sync">
 
 <!-- Main titles. -->
@@ -16,7 +16,7 @@
 <!-- J-PAKE Key Screen -->
 <!ENTITY sync.subtitle.connect.label 'To activate your new device, select “Set up &syncBrand.shortName.label;” on the device.'>
 <!ENTITY sync.subtitle.header2.label 'Enter this code on your other device'>
-<!ENTITY sync.subtitle.connectlocation2.label 'Select “&sync.title.pair.label;” in the &syncBrand.shortName.label; section of your other device\&apos;s Firefox options.'>
+<!ENTITY sync.subtitle.connectlocation2.label 'Select “&sync.title.pair.label;” in the &syncBrand.shortName.label; section of your other device\&apos;s Privafox options.'>
 <!ENTITY sync.subtitle.pair.label 'To activate, select “Pair a device” on your other device.'>
 <!ENTITY sync.pin.default.label '...\n...\n...\n'>
 <!ENTITY sync.pin.oneline.label '...'>
@@ -42,7 +42,7 @@
 <!ENTITY sync.button.manual.label 'Manual Setup'>
 <!ENTITY sync.subtitle.nointernet.label 'No internet connection available.'>
 <!ENTITY sync.subtitle.failaccount.label 'Account creation on your device failed.'>
-<!ENTITY sync.subtitle.failmultiple.label 'Do you have more than one Firefox installed? Currently, &syncBrand.fullName.label; only supports one Firefox installation at a time. Please uninstall other instances to use &syncBrand.shortName.label;.'>
+<!ENTITY sync.subtitle.failmultiple.label 'Do you have more than one Privafox installed? Currently, &syncBrand.fullName.label; only supports one Privafox installation at a time. Please uninstall other instances to use &syncBrand.shortName.label;.'>
 
 <!-- Setup Success -->
 <!ENTITY sync.title.success.label 'Setup Complete'>
@@ -114,7 +114,7 @@
 
 <!-- Firefox Account strings. -->
 
-<!ENTITY fxaccount_full_label 'Firefox Accounts'>
+<!ENTITY fxaccount_full_label 'Privafox Accounts'>
 
 <!ENTITY fxaccount_custom_server_account_title 'Using account on server'>
 <!ENTITY fxaccount_custom_server_sync_title 'Storing Sync data on server'>
@@ -148,13 +148,13 @@
 <!-- Localization note: the Firefox below should not change with the
      particular version of Firefox installed (Release, Beta, Aurora,
      etc).  The account remains a "Firefox Account". -->
-<!ENTITY fxaccount_create_account_header2 'Create a Firefox Account'>
+<!ENTITY fxaccount_create_account_header2 'Create a Privafox Account'>
 <!ENTITY fxaccount_create_account_password_length_restriction 'Must be at least 8 characters'>
 <!ENTITY fxaccount_create_account_day_of_birth 'Day'>
 <!ENTITY fxaccount_create_account_month_of_birth 'Month'>
 <!ENTITY fxaccount_create_account_year_of_birth 'Year of birth'>
 <!-- Localization note: &formatS1; is fxaccount_policy_linktos, &formatS2; is fxaccount_policy_linkprivacy, both hyperlinked. -->
-<!ENTITY fxaccount_create_account_policy_text2 'By proceeding, I agree to the &formatS1; and &formatS2; of Firefox cloud services.'>
+<!ENTITY fxaccount_create_account_policy_text2 'By proceeding, I agree to the &formatS1; and &formatS2; of Privafox cloud services.'>
 <!ENTITY fxaccount_create_account_button 'Next'>
 <!ENTITY fxaccount_create_account_choose_what_to_sync 'Choose what to sync'>
 <!ENTITY fxaccount_create_account_sign_in_instead 'Already have an account? Sign in'>
@@ -195,7 +195,7 @@
 <!ENTITY fxaccount_finish_migrating_button_label 'Finish upgrading'>
 <!ENTITY fxaccount_finish_migrating_description 'Upgrading can transfer a lot of data. It\&apos;s best to be on a Wi-Fi network.'>
 
-<!ENTITY fxaccount_status_header2 'Firefox Account'>
+<!ENTITY fxaccount_status_header2 'Privafox Account'>
 <!ENTITY fxaccount_status_signed_in_as 'Signed in as'>
 <!ENTITY fxaccount_status_auth_server 'Account server'>
 <!ENTITY fxaccount_status_sync_now 'Sync now'>
@@ -209,7 +209,7 @@
 <!ENTITY fxaccount_status_needs_upgrade 'You need to upgrade &brandShortName; to sign in.'>
 <!ENTITY fxaccount_status_needs_master_sync_automatically_enabled '&syncBrand.shortName.label; is set up, but not syncing automatically. Toggle “Auto-sync data” in Android Settings &gt; Data Usage.'>
 <!ENTITY fxaccount_status_needs_master_sync_automatically_enabled_v21 '&syncBrand.shortName.label; is set up, but not syncing automatically. Toggle “Auto-sync data” in the menu of Android Settings &gt; Accounts.'>
-<!ENTITY fxaccount_status_needs_finish_migrating 'Tap to sign in to your new Firefox Account.'>
+<!ENTITY fxaccount_status_needs_finish_migrating 'Tap to sign in to your new Privafox Account.'>
 <!ENTITY fxaccount_status_bookmarks 'Bookmarks'>
 <!ENTITY fxaccount_status_history 'History'>
 <!ENTITY fxaccount_status_passwords2 'Logins'>
@@ -223,17 +223,17 @@
 <!ENTITY fxaccount_status_linkprivacy 'Privacy Notice'>
 <!ENTITY fxaccount_status_more 'More&ellipsis;'>
 
-<!ENTITY fxaccount_remove_account_dialog_title 'Remove Firefox Account?'>
+<!ENTITY fxaccount_remove_account_dialog_title 'Remove Privafox Account?'>
 <!ENTITY fxaccount_remove_account_dialog_message '&brandShortName; will stop syncing with your account, but won’t delete any of your browsing data on this device.'>
 <!-- Localization note: format string below will be replaced
      with the Firefox Account's email address. -->
-<!ENTITY fxaccount_remove_account_toast 'Firefox Account &formatS; removed.'>
+<!ENTITY fxaccount_remove_account_toast 'Privafox Account &formatS; removed.'>
 
 <!ENTITY fxaccount_remove_account_menu_item 'Remove Account'>
 
 <!-- Localization note: this is the name shown by the Android system
      itself for a Firefox Account. Don't localize this. -->
-<!ENTITY fxaccount_account_type_label 'Firefox'>
+<!ENTITY fxaccount_account_type_label 'Privafox'>
 
 <!-- Localization note: these are shown by the Android system itself,
      when the user navigates to the Android > Accounts > {Firefox
@@ -246,7 +246,7 @@
 <!-- Localization note: these error messages are shown after a request
      has been made to the remote server, and an error of some type has
      been returned. -->
-<!ENTITY fxaccount_remote_error_UPGRADE_REQUIRED 'You need to upgrade Firefox'>
+<!ENTITY fxaccount_remote_error_UPGRADE_REQUIRED 'You need to upgrade Privafox'>
 
 <!-- Localization note: the format string will be fxaccount_sign_in_button_label, linkified. -->
 <!ENTITY fxaccount_remote_error_ATTEMPT_TO_CREATE_AN_ACCOUNT_THAT_ALREADY_EXISTS_2 'Account already exists. &formatS1;'>
