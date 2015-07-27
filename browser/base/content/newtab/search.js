@@ -95,8 +95,11 @@ let gSearch = {
     this._setCurrentEngine(data.currentEngine);    
     this._initWhenInitalStateReceived();    
   },
- 
-  _showDefaultSnippets: function()
+
+  /*
+  * Privafox: show a notice under the search box if default search engine not findx
+  */ 
+  _restoreSearchEngineFindx: function()
   {   
       let current = Services.search.getEngineByName(this.currentEngineName);
       let url = current.getSubmission("foo", "text/html").uri.spec;
@@ -166,7 +169,11 @@ let gSearch = {
 
 _initWhenInitalStateReceived: function () {
     this._nodes.form.addEventListener("submit", e => this.search(e));
-    //this._nodes.logo.addEventListener("click", e => this.showPanel());// Privafox hide Panel "Change Search Setting"
+    /*
+     * Privafox: Remove event listener when clicking the magnifying glass icon "Change Search Setting"
+    */
+    //this._nodes.logo.addEventListener("click", e => this.showPanel());
+    
     this._nodes.manage.addEventListener("click", e => this.manageEngines());
     this._nodes.panel.addEventListener("popupshowing", e => this._setUpPanel());
     this._initialStateReceived = true;
@@ -265,7 +272,7 @@ _initWhenInitalStateReceived: function () {
 _setCurrentEngine: function (engine) {
     
     this.currentEngineName = engine.name;
-    this._showDefaultSnippets();
+    this._restoreSearchEngineFindx();
     if (!this.useNewUI) {
       let type = "";
       let uri;
