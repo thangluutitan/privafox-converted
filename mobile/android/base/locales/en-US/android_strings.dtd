@@ -123,7 +123,7 @@
 <!-- Localization note (overlay_no_synced_devices) : Used when the menu option
      to send a tab to a synced device is pressed and no other synced devices
      are found. -->
-<!ENTITY overlay_no_synced_devices "No Firefox Account connected devices found">
+<!ENTITY overlay_no_synced_devices "No Privafox Account connected devices found">
 <!-- Localization note (overlay_share_tab_not_sent) : Used when the menu option
      to send a tab to a synced device is pressed and there is an error
      connecting to the server so the tab could not be sent. The text should be
@@ -502,11 +502,11 @@ size. -->
 <!ENTITY home_remote_tabs_title "Synced Tabs">
 <!ENTITY home_remote_tabs_empty "Your tabs from other devices show up here.">
 <!ENTITY home_remote_tabs_unable_to_connect "Unable to connect">
-<!ENTITY home_remote_tabs_need_to_sign_in "Please sign in to reconnect your Firefox Account and continue syncing.">
-<!ENTITY home_remote_tabs_need_to_finish_migrating "Your new Firefox Account is ready!">
+<!ENTITY home_remote_tabs_need_to_sign_in "Please sign in to reconnect your Privafox Account and continue syncing.">
+<!ENTITY home_remote_tabs_need_to_finish_migrating "Your new Privafox Account is ready!">
 
 <!ENTITY home_remote_tabs_trouble_verifying "Trouble verifying your account?">
-<!ENTITY home_remote_tabs_need_to_verify "Please verify your Firefox Account to start syncing.">
+<!ENTITY home_remote_tabs_need_to_verify "Please verify your Privafox Account to start syncing.">
 
 <!ENTITY home_remote_tabs_one_hidden_device "1 device hidden">
 <!-- Localization note (home_remote_tabs_many_hidden_devices) : The

@@ -18,15 +18,9 @@ MOZ_ANDROID_MIN_SDK_VERSION=9
 
 # There are several entry points into the Firefox application.  These are the names of some of the classes that are
 # listed in the Android manifest.  They are specified in here to avoid hard-coding them in source code files.
-if test "$MOZ_APP_DEFINE_PRIVAFOX"; then
-    MOZ_ANDROID_APPLICATION_CLASS=com.privacore.privafox.PrivafoxApplication
-    MOZ_ANDROID_BROWSER_INTENT_CLASS=com.privacore.privafox.BrowserApp
-    MOZ_ANDROID_SEARCH_INTENT_CLASS=com.privacore.search.SearchActivity
-else
-    MOZ_ANDROID_APPLICATION_CLASS=org.mozilla.gecko.GeckoApplication
-    MOZ_ANDROID_BROWSER_INTENT_CLASS=org.mozilla.gecko.BrowserApp
-    MOZ_ANDROID_SEARCH_INTENT_CLASS=org.mozilla.search.SearchActivity
-fi
+MOZ_ANDROID_APPLICATION_CLASS=org.mozilla.gecko.GeckoApplication
+MOZ_ANDROID_BROWSER_INTENT_CLASS=org.mozilla.gecko.BrowserApp
+MOZ_ANDROID_SEARCH_INTENT_CLASS=org.mozilla.search.SearchActivity
 
 
 MOZ_SAFE_BROWSING=1
