@@ -18,7 +18,7 @@
 ; Beta since they share the same branding when building with other branches that
 ; set the update channel to beta.
 !define OFFICIAL
-!define URLStubDownload "http://download.privafox.com/?os=win&lang=${AB_CD}&product=firefox-latest"
+!define URLStubDownload "http://download.privafox.com/?os=win&lang=${AB_CD}&product=privafox-latest"
 !define URLManualDownload "https://download.privafox.com/${AB_CD}/installer-help/?channel=release&installer_lang=${AB_CD}"
 !define Channel "release"
 
