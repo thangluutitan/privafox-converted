@@ -1,17 +1,105 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg width="133pt" height="37pt" viewBox="0 0 133 37" version="1.1" xmlns="http://www.w3.org/2000/svg">
-<path fill="#ffffff" d=" M 0.00 0.00 L 133.00 0.00 L 133.00 37.00 L 0.00 37.00 L 0.00 0.00 Z" />
-<path fill="#55575c" d=" M 87.01 9.05 C 89.06 7.01 92.16 7.37 94.80 7.12 C 94.77 8.46 94.74 9.80 94.71 11.14 C 91.53 10.52 89.90 13.09 90.32 15.97 C 91.55 15.98 92.77 16.00 94.00 16.01 C 94.00 16.87 94.00 18.59 94.00 19.45 C 92.82 19.46 91.65 19.47 90.48 19.49 C 90.46 24.66 90.47 29.83 90.46 35.00 C 88.73 35.00 87.00 35.00 85.26 34.99 C 85.27 29.83 85.27 24.67 85.26 19.51 C 84.63 19.49 83.37 19.45 82.73 19.43 C 82.73 18.58 82.73 16.88 82.73 16.03 C 83.34 16.02 84.56 15.99 85.17 15.97 C 85.33 13.61 85.05 10.80 87.01 9.05 Z" />
-<path fill="#55575c" d=" M 37.27 7.73 C 39.00 7.73 40.73 7.73 42.46 7.73 C 42.47 9.24 42.47 10.75 42.46 12.26 C 40.73 12.27 39.00 12.27 37.27 12.27 C 37.26 10.76 37.27 9.24 37.27 7.73 Z" />
-<path fill="#55575c" d=" M 1.26 34.99 C 1.26 26.50 1.27 18.00 1.26 9.51 C 6.30 9.91 11.64 8.62 16.45 10.57 C 21.27 12.72 22.31 19.97 18.33 23.40 C 15.14 26.39 10.46 25.66 6.47 25.75 C 6.47 28.83 6.46 31.92 6.47 35.00 C 4.73 35.00 3.00 34.99 1.26 34.99 Z" />
-<path fill="#ffffff" d=" M 6.48 13.45 C 8.62 13.47 10.80 13.31 12.92 13.70 C 16.22 14.79 16.48 20.03 13.29 21.38 C 11.07 21.98 8.73 21.69 6.46 21.74 C 6.47 18.98 6.46 16.22 6.48 13.45 Z" />
-<path fill="#55575c" d=" M 24.00 15.96 C 26.01 16.21 29.25 15.03 29.28 18.10 C 30.55 16.50 32.35 15.69 34.36 15.47 C 34.42 17.12 34.46 18.76 34.52 20.41 C 32.77 20.51 31.01 20.61 29.26 20.71 C 29.27 25.47 29.26 30.23 29.26 35.00 C 27.51 35.00 25.76 35.00 24.00 35.00 C 24.00 28.65 24.00 22.31 24.00 15.96 Z" />
-<path fill="#55575c" d=" M 37.26 16.01 C 39.00 16.00 40.73 16.00 42.46 16.00 C 42.47 22.33 42.47 28.67 42.46 35.00 C 40.73 35.00 39.00 35.00 37.26 35.00 C 37.27 28.67 37.27 22.34 37.26 16.01 Z" />
-<path fill="#55575c" d=" M 44.29 16.00 C 46.09 16.01 47.89 16.01 49.69 16.02 C 50.83 20.67 52.22 25.25 53.29 29.92 C 54.20 25.22 55.60 20.64 56.75 16.00 C 58.54 16.00 60.33 16.00 62.11 16.00 C 59.96 22.33 57.83 28.67 55.63 34.99 C 53.99 35.00 52.35 35.00 50.71 35.00 C 48.62 28.65 46.41 22.34 44.29 16.00 Z" />
-<path fill="#55575c" d=" M 65.18 17.07 C 68.97 15.94 73.11 15.02 76.96 16.40 C 78.96 16.98 80.25 19.00 80.37 21.01 C 80.64 25.69 80.38 30.37 80.47 35.05 C 78.74 34.70 75.77 35.96 75.52 33.38 C 71.92 36.69 64.08 35.71 63.98 29.94 C 63.70 24.02 71.00 23.01 75.42 23.99 C 75.16 22.57 75.54 20.66 73.92 19.94 C 71.27 19.28 68.63 20.30 66.09 20.93 C 65.86 19.96 65.41 18.04 65.18 17.07 Z" />
-<path fill="#55575c" d=" M 100.27 16.39 C 103.56 15.16 107.50 15.56 110.39 17.57 C 112.87 19.56 113.33 23.03 113.29 26.01 C 113.24 29.14 112.25 32.82 109.13 34.21 C 104.53 36.55 97.07 35.27 95.72 29.59 C 94.61 24.96 94.94 18.21 100.27 16.39 Z" />
-<path fill="#55575c" d=" M 114.51 16.00 C 116.41 16.00 118.31 15.99 120.21 15.99 C 121.23 18.05 122.22 20.12 123.23 22.18 C 124.21 20.12 125.16 18.06 126.12 16.00 C 128.04 16.00 129.97 16.00 131.90 16.01 C 130.06 19.15 128.15 22.25 126.22 25.34 C 128.14 28.59 130.14 31.78 132.16 34.96 C 130.22 34.97 128.29 34.99 126.35 35.01 C 125.32 32.94 124.30 30.87 123.27 28.81 C 122.21 30.86 121.18 32.93 120.14 35.00 C 118.21 35.00 116.28 34.99 114.36 34.99 C 116.35 31.78 118.33 28.57 120.23 25.31 C 118.32 22.21 116.42 19.11 114.51 16.00 Z" />
-<path fill="#ffffff" d=" M 102.33 20.18 C 106.83 17.76 109.02 23.69 107.95 27.20 C 108.45 30.90 103.08 32.90 101.19 29.68 C 100.15 26.76 99.63 22.33 102.33 20.18 Z" />
-<path fill="#ffffff" d=" M 70.19 27.15 C 71.76 26.36 73.57 26.92 75.23 26.99 C 75.26 28.30 75.27 29.61 75.29 30.92 C 73.49 31.27 71.67 31.50 69.83 31.61 C 69.56 30.19 68.59 28.17 70.19 27.15 Z" />
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   id="svg3336"
+   version="1.1"
+   inkscape:version="0.91 r13725"
+   width="175"
+   height="40"
+   viewBox="0 0 175 40"
+   sodipodi:docname="priva1.svg">
+  <metadata
+     id="metadata3342">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs3340" />
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1680"
+     inkscape:window-height="998"
+     id="namedview3338"
+     showgrid="false"
+     inkscape:zoom="8.7142857"
+     inkscape:cx="87.5"
+     inkscape:cy="20"
+     inkscape:window-x="1672"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg3336" />
+  <image
+     width="175"
+     height="40"
+     preserveAspectRatio="none"
+     xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAK8AAAAoCAYAAACIJ6oVAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJ
+bWFnZVJlYWR5ccllPAAAAyJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdp
+bj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6
+eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMy1jMDExIDY2LjE0
+NTY2MSwgMjAxMi8wMi8wNi0xNDo1NjoyNyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJo
+dHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlw
+dGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAv
+IiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RS
+ZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpD
+cmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNiAoV2luZG93cykiIHhtcE1NOkluc3RhbmNl
+SUQ9InhtcC5paWQ6OUE4NzVDNzEzMTc1MTFFNUE1N0RCOEFERUY4MEI2NDYiIHhtcE1NOkRvY3Vt
+ZW50SUQ9InhtcC5kaWQ6OUE4NzVDNzIzMTc1MTFFNUE1N0RCOEFERUY4MEI2NDYiPiA8eG1wTU06
+RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo5QTg3NUM2RjMxNzUxMUU1QTU3
+REI4QURFRjgwQjY0NiIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo5QTg3NUM3MDMxNzUxMUU1
+QTU3REI4QURFRjgwQjY0NiIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1w
+bWV0YT4gPD94cGFja2V0IGVuZD0iciI/PgpEFJwAAAXbSURBVHja7F3bkaM6ENVMOQE2BCYEbgg4
+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
+WQAAAABJRU5ErkJggg==
+"
+     id="image3344"
+     x="0"
+     y="0" />
 </svg>
