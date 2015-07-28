@@ -33,7 +33,7 @@
     <!-- Front End MetaData -->
     <em:name>Mobile Addon-SDK utility addon</em:name>
     <em:description>Allow better integration with cfx tool.</em:description>
-    <em:creator>Mozilla Corporation</em:creator>
+    <em:creator>Privacore</em:creator>
 
   </Description>
 </RDF>
