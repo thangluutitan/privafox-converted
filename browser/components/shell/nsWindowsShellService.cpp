@@ -151,7 +151,8 @@ typedef struct {
   const char* oldValueData;
 } SETTING;
 
-#define APP_REG_NAME L"Firefox"
+//#define APP_REG_NAME L"Firefox"
+#define APP_REG_NAME L"Privafox"
 #define VAL_FILE_ICON "%APPPATH%,1"
 #define VAL_OPEN "\"%APPPATH%\" -osint -url \"%1\""
 #define OLD_VAL_OPEN "\"%APPPATH%\" -requestPending -osint -url \"%1\""
@@ -177,11 +178,11 @@ static SETTING gSettings[] = {
   // File Handler Class
   // ***keep this as the first entry because when aForAllTypes is not set below
   // it will skip over this check.***
-  { MAKE_KEY_NAME1("FirefoxHTML", SOC), VAL_OPEN, OLD_VAL_OPEN },
-
+  //{ MAKE_KEY_NAME1("FirefoxHTML", SOC), VAL_OPEN, OLD_VAL_OPEN },
+  { MAKE_KEY_NAME1("PrivafoxHTML", SOC), VAL_OPEN, OLD_VAL_OPEN },
   // Protocol Handler Class - for Vista and above
-  { MAKE_KEY_NAME1("FirefoxURL", SOC), VAL_OPEN, OLD_VAL_OPEN },
-
+  //{ MAKE_KEY_NAME1("FirefoxURL", SOC), VAL_OPEN, OLD_VAL_OPEN },
+  { MAKE_KEY_NAME1("PrivafoxURL", SOC), VAL_OPEN, OLD_VAL_OPEN },
   // Protocol Handlers
   { MAKE_KEY_NAME1("HTTP", DI), VAL_FILE_ICON },
   { MAKE_KEY_NAME1("HTTP", SOC), VAL_OPEN, OLD_VAL_OPEN },
@@ -194,10 +195,10 @@ static SETTING gSettings[] = {
 // are incorrect they are fixed without notifying the user.
 static SETTING gDDESettings[] = {
   // File Handler Class
-  { MAKE_KEY_NAME1("Software\\Classes\\FirefoxHTML", SOD) },
+  { MAKE_KEY_NAME1("Software\\Classes\\PrivafoxHTML", SOD) },
 
   // Protocol Handler Class - for Vista and above
-  { MAKE_KEY_NAME1("Software\\Classes\\FirefoxURL", SOD) },
+  { MAKE_KEY_NAME1("Software\\Classes\\PrivafoxURL", SOD) },
 
   // Protocol Handlers
   { MAKE_KEY_NAME1("Software\\Classes\\FTP", SOD) },
@@ -329,7 +330,7 @@ IsAARDefaultHTTP(IApplicationAssociationRegistration* pAAR,
   HRESULT hr = pAAR->QueryCurrentDefault(L"http", AT_URLPROTOCOL, AL_EFFECTIVE,
                                          &registeredApp);
   if (SUCCEEDED(hr)) {
-    LPCWSTR firefoxHTTPProgID = L"FirefoxURL";
+    LPCWSTR firefoxHTTPProgID = L"PrivafoxURL";
     *aIsDefaultBrowser = !wcsicmp(registeredApp, firefoxHTTPProgID);
     CoTaskMemFree(registeredApp);
   } else {
@@ -346,7 +347,7 @@ IsAARDefaultHTML(IApplicationAssociationRegistration* pAAR,
   HRESULT hr = pAAR->QueryCurrentDefault(L".html", AT_FILEEXTENSION, AL_EFFECTIVE,
                                          &registeredApp);
   if (SUCCEEDED(hr)) {
-    LPCWSTR firefoxHTMLProgID = L"FirefoxHTML";
+    LPCWSTR firefoxHTMLProgID = L"PrivafoxHTML";
     *aIsDefaultBrowser = !wcsicmp(registeredApp, firefoxHTMLProgID);
     CoTaskMemFree(registeredApp);
   } else {
