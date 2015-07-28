@@ -65,7 +65,7 @@ PRBool usePthread_atfork;
  */
 
 /* The next three strings must be exactly 32 characters long */
-static char *manufacturerID      = "Mozilla Foundation              ";
+static char *manufacturerID      = "Privacore              ";
 static char manufacturerID_space[33];
 static char *libraryDescription  = "NSS Internal Crypto Services    ";
 static char libraryDescription_space[33];

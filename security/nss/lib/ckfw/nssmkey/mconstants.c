@@ -24,7 +24,7 @@ nss_ckmk_CryptokiVersion =  {
 		NSS_CKMK_CRYPTOKI_VERSION_MINOR };
 
 NSS_IMPLEMENT_DATA const NSSUTF8 *
-nss_ckmk_ManufacturerID = (NSSUTF8 *) "Mozilla Foundation";
+nss_ckmk_ManufacturerID = (NSSUTF8 *) "Privacore";
 
 NSS_IMPLEMENT_DATA const NSSUTF8 *
 nss_ckmk_LibraryDescription = (NSSUTF8 *) "NSS Access to Mac OS X Key Ring";

@@ -26,7 +26,7 @@ nss_ckcapi_CryptokiVersion =  {
 		NSS_CKCAPI_CRYPTOKI_VERSION_MINOR };
 
 NSS_IMPLEMENT_DATA const NSSUTF8 *
-nss_ckcapi_ManufacturerID = (NSSUTF8 *) "Mozilla Foundation";
+nss_ckcapi_ManufacturerID = (NSSUTF8 *) "Privacore";
 
 NSS_IMPLEMENT_DATA const NSSUTF8 *
 nss_ckcapi_LibraryDescription = (NSSUTF8 *) "NSS Access to Microsoft Certificate Store";

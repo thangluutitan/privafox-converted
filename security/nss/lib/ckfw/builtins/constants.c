@@ -41,7 +41,7 @@ nss_builtins_FirmwareVersion = {
 	NSS_BUILTINS_FIRMWARE_VERSION_MINOR };
 
 const NSSUTF8 
-nss_builtins_ManufacturerID[] = { "Mozilla Foundation" };
+nss_builtins_ManufacturerID[] = { "Privacore" };
 
 const NSSUTF8 
 nss_builtins_LibraryDescription[] = { "NSS Builtin Object Cryptoki Module" };
