@@ -86,7 +86,7 @@ nss_dbm_mdInstance_GetManufacturerID
   CK_RV *pError
 )
 {
-  return "Mozilla Foundation";
+  return "Privacore";
 }
 
 static NSSUTF8 *
