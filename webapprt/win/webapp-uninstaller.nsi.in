@@ -39,8 +39,8 @@ Var TmpVal
 !include "WordFunc.nsh"
 
 ; File properties, version strings, etc
-!define CompanyName           "Mozilla Corporation"
-!define UninstallerName       "Mozilla Webapp Runtime App Uninstaller"
+!define CompanyName           "Privacore"
+!define UninstallerName       "Privacore Webapp Runtime App Uninstaller"
 !define UninstallerFilename   "webapp-uninstaller.exe"
 !define AppVersion            "@APP_VERSION@"
 VIProductVersion "1.0.0.0"
