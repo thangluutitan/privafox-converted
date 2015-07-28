@@ -8,7 +8,7 @@
                                     !('@mozilla.org/widget/nativemenuservice;1' in Cc))
                                   this.setAttribute('openedwithkey',
                                                     event.target.parentNode.openedWithKey);"
-                style="border:0px;padding:0px;margin:0px;-moz-appearance:none">
+                style="border:0px;padding:0px;margin:0px;-moz-appearance:block">
             <menu id="file-menu" label="&fileMenu.label;"
                   accesskey="&fileMenu.accesskey;">
               <menupopup id="menu_FilePopup">
@@ -206,10 +206,11 @@
                     <menuitem id="menu_bookmarksSidebar"
                               key="viewBookmarksSidebarKb"
                               observes="viewBookmarksSidebar"/>
-                    <menuitem id="menu_historySidebar"
+				<!-- Privafox : remove history-->
+                 <!--   <menuitem id="menu_historySidebar"
                               key="key_gotoHistory"
                               observes="viewHistorySidebar"
-                              label="&historyButton.label;"/>
+                              label="&historyButton.label;"/> -->
                     <menuitem id="menu_readingListSidebar"
                               key="key_readingListSidebar"
                               observes="readingListSidebar"
@@ -312,8 +313,8 @@
                                              .sendAsyncMessage('SwitchDocumentDirection');"/>
               </menupopup>
             </menu>
-
-            <menu id="history-menu"
+			<!-- Privafox : Remove history-->
+            <!--  <menu id="history-menu"
                   label="&historyMenu.label;"
                   accesskey="&historyMenu.accesskey;">
               <menupopup id="goPopup"
@@ -370,8 +371,8 @@
                 <menuseparator id="startHistorySeparator"
                                class="hide-if-empty-places-result"/>
               </menupopup>
-            </menu>
-
+            </menu> -->
+			
   <menu id="bookmarksMenu"
         label="&bookmarksMenu.label;"
         accesskey="&bookmarksMenu.accesskey;"
