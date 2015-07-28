@@ -561,7 +561,7 @@
 <deck flex="1" id="tab-view-deck">
 <vbox flex="1" id="browser-panel">
 
-  <toolbox id="navigator-toolbox" mode="icons">
+  <toolbox id="navigator-toolbox" mode="icons" >
     <!-- Menu -->
     <toolbar type="menubar" id="toolbar-menubar" class="chromeclass-menubar" customizable="true"
              defaultset="menubar-items"
@@ -574,11 +574,11 @@
 #endif
 #endif
              context="toolbar-context-menu">
-      <toolbaritem id="menubar-items" align="center">
+      <toolbaritem id="menubar-items" align="center" >
 # The entire main menubar is placed into browser-menubar.inc, so that it can be shared by
 # hiddenWindow.xul.
 #include browser-menubar.inc
-      </toolbaritem>
+     </toolbaritem>
 
 #ifdef CAN_DRAW_IN_TITLEBAR
 #ifndef XP_MACOSX

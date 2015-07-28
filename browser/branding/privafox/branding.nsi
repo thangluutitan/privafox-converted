@@ -9,7 +9,7 @@
 # BrandFullNameInternal is used for some registry and file system values
 # instead of BrandFullName and typically should not be modified.
 !define BrandFullNameInternal "Privafox"
-!define CompanyName           "Privacore ApS"
+!define CompanyName           "Privacore"
 !define URLInfoAbout          "https://www.privafox.com"
 !define URLUpdateInfo         "https://updates.privafox.com/${AppVersion}/releasenotes"
 !define HelpLink              "https://support.privafox.com"
@@ -23,7 +23,7 @@
 !define Channel "release"
 
 # The installer's certificate name and issuer expected by the stub installer
-!define CertNameDownload   "Privafox Corporation"
+!define CertNameDownload   "Privacore"
 !define CertIssuerDownload "DigiCert Assured ID Code Signing CA-1"
 
 # Dialog units are used so the UI displays correctly with the system's DPI

@@ -36,7 +36,7 @@
 !endif
 !define BrandFullName         "${BrandFullNameInternal}"
 
-!define CERTIFICATE_NAME      "Privacore Corporation"
+!define CERTIFICATE_NAME      "Privacore"
 !define CERTIFICATE_ISSUER    "DigiCert Assured ID Code Signing CA-1"
 
 # LSP_CATEGORIES is the permitted LSP categories for the application. Each LSP

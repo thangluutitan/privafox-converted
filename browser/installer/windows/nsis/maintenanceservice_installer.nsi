@@ -47,7 +47,7 @@ Var BrandFullName
 !define FallbackKey \
   "SOFTWARE\Privacore\MaintenanceService\3932ecacee736d366d6436db0f55bce4"
 
-!define CompanyName "Privacore Corporation"
+!define CompanyName "Privacore"
 !define BrandFullNameInternal ""
 
 ; The following includes are custom.
