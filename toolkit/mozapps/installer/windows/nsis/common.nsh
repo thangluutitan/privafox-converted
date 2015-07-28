@@ -212,7 +212,7 @@
 
 !macroend
 
-; Modified version of the following MUI macros to support Mozilla localization.
+; Modified version of the following MUI macros to support Privacore localization.
 ; MUI_LANGUAGE
 ; MUI_LANGUAGEFILE_BEGIN
 ; MOZ_MUI_LANGUAGEFILE_END
@@ -1654,7 +1654,7 @@
  * registry hive so you must call SetShellVarContext first.
  *
  * @param   _KEY
- *          The registry subkey (typically this will be Software\Mozilla).
+ *          The registry subkey (typically this will be Software\Privacore).
  * @return  _RESULT
  *          false if a second install isn't found, path to the main exe if a
  *          second install is found.
@@ -1772,7 +1772,7 @@
  * first.
  *
  * @param   _KEY
- *          The registry subkey (typically this will be Software\Mozilla\App Name).
+ *          The registry subkey (typically this will be Software\Privacore\App Name).
  * @return  _RESULT
  *          false if a single install location for this app name isn't found,
  *          path to the install directory if a single install location is found.
@@ -2144,17 +2144,17 @@
 * above and to verify existence if necessary.
 *
 * Examples:
-* In:  C:\PROGRA~1\MOZILL~1\FIREFOX.EXE -flag "%1"
-* In:  C:\PROGRA~1\MOZILL~1\FIREFOX.EXE,0
-* In:  C:\PROGRA~1\MOZILL~1\FIREFOX.EXE
-* In:  "C:\PROGRA~1\MOZILL~1\FIREFOX.EXE"
-* In:  "C:\PROGRA~1\MOZILL~1\FIREFOX.EXE" -flag "%1"
-* Out: C:\PROGRA~1\MOZILL~1\FIREFOX.EXE
+* In:  C:\PROGRA~1\MOZILL~1\PRIVAFOX.EXE -flag "%1"
+* In:  C:\PROGRA~1\MOZILL~1\PRIVAFOX.EXE,0
+* In:  C:\PROGRA~1\MOZILL~1\PRIVAFOX.EXE
+* In:  "C:\PROGRA~1\MOZILL~1\PRIVAFOX.EXE"
+* In:  "C:\PROGRA~1\MOZILL~1\PRIVAFOX.EXE" -flag "%1"
+* Out: C:\PROGRA~1\MOZILL~1\PRIVAFOX.EXE
 *
-* In:  "C:\Program Files\Mozilla Firefox\firefox.exe" -flag "%1"
-* In:  C:\Program Files\Mozilla Firefox\firefox.exe,0
-* In:  "C:\Program Files\Mozilla Firefox\firefox.exe"
-* Out: C:\Program Files\Mozilla Firefox\firefox.exe
+* In:  "C:\Program Files\Privacore Privafox\privafox.exe" -flag "%1"
+* In:  C:\Program Files\Privacore Privafox\privafox.exe,0
+* In:  "C:\Program Files\Privacore Privafox\privafox.exe"
+* Out: C:\Program Files\Privacore Privafox\privafox.exe
 *
 * @param   _IN_PATH
 *          The string containing the path.
@@ -2471,9 +2471,9 @@
  * call SetShellVarContext first.
  *
  * @param   _KEY
- *          The registry subkey (typically this will be Software\Mozilla).
+ *          The registry subkey (typically this will be Software\Privafox).
  *
- * XXXrstrong - there is the potential for Key: Software/Mozilla/AppName,
+ * XXXrstrong - there is the potential for Key: Software/Privafox/AppName,
  * ValueName: CurrentVersion, ValueData: AppVersion to reference a key that is
  * no longer available due to this cleanup. This should be no worse than prior
  * to this reg cleanup since the referenced key would be for an app that is no
@@ -3636,28 +3636,28 @@
  * [SMPROGRAMS]
  * ; RelativePath is the directory relative from the Start Menu
  * ; Programs directory.
- * RelativePath=Mozilla App
+ * RelativePath=Privacore App
  * ; Shortcut1 is the first shortcut, Shortcut2 is the second shortcut, and so
  * ; on. There must not be a break in the sequence of the numbers.
- * Shortcut1=Mozilla App.lnk
- * Shortcut2=Mozilla App (Safe Mode).lnk
+ * Shortcut1=Privacore App.lnk
+ * Shortcut2=Privacore App (Safe Mode).lnk
  * [DESKTOP]
  * ; Shortcut1 is the first shortcut, Shortcut2 is the second shortcut, and so
  * ; on. There must not be a break in the sequence of the numbers.
- * Shortcut1=Mozilla App.lnk
- * Shortcut2=Mozilla App (Safe Mode).lnk
+ * Shortcut1=Privacore App.lnk
+ * Shortcut2=Privacore App (Safe Mode).lnk
  * [QUICKLAUNCH]
  * ; Shortcut1 is the first shortcut, Shortcut2 is the second shortcut, and so
  * ; on. There must not be a break in the sequence of the numbers for the
  * ; suffix.
- * Shortcut1=Mozilla App.lnk
- * Shortcut2=Mozilla App (Safe Mode).lnk
+ * Shortcut1=Privacore App.lnk
+ * Shortcut2=Privacore App (Safe Mode).lnk
  * [STARTMENU]
  * ; Shortcut1 is the first shortcut, Shortcut2 is the second shortcut, and so
  * ; on. There must not be a break in the sequence of the numbers for the
  * ; suffix.
- * Shortcut1=Mozilla App.lnk
- * Shortcut2=Mozilla App (Safe Mode).lnk
+ * Shortcut1=Privacore App.lnk
+ * Shortcut2=Privacore App (Safe Mode).lnk
  *
  * $R4 = counter for appending to Shortcut for enumerating the ini file entries
  * $R5 = return value from ShellLink::GetShortCutTarget and
@@ -5280,7 +5280,7 @@
 !ifmacrodef InitHashAppModelId
       ; setup the application model id registration value
       !ifdef AppName
-      ${InitHashAppModelId} "$INSTDIR" "Software\Mozilla\${AppName}\TaskBarIDs"
+      ${InitHashAppModelId} "$INSTDIR" "Software\Privacore\${AppName}\TaskBarIDs"
       !endif
 !endif
 
@@ -5525,12 +5525,12 @@
 
 !ifndef NO_INSTDIR_FROM_REG
       SetShellVarContext all      ; Set SHCTX to HKLM
-      ${GetSingleInstallPath} "Software\Mozilla\${BrandFullNameInternal}" $R9
+      ${GetSingleInstallPath} "Software\Privacore\${BrandFullNameInternal}" $R9
 
       StrCmp "$R9" "false" +1 finish_get_install_dir
 
       SetShellVarContext current  ; Set SHCTX to HKCU
-      ${GetSingleInstallPath} "Software\Mozilla\${BrandFullNameInternal}" $R9
+      ${GetSingleInstallPath} "Software\Privacore\${BrandFullNameInternal}" $R9
 
       finish_get_install_dir:
       StrCmp "$R9" "false" +2 +1
@@ -7217,7 +7217,7 @@
  *          The main application executable path
  * @param   _REG_PATH
  *          The HKLM/HKCU agnostic registry path where the key hash should
- *          be stored. ex: "Software\Mozilla\Firefox\TaskBarIDs"
+ *          be stored. ex: "Software\Privacore\Privafox\TaskBarIDs"
  * @result  (Var) $AppUserModelID contains the app model id.
  */
 !macro InitHashAppModelId
