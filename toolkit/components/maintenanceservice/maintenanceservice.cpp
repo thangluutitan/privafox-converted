@@ -136,7 +136,7 @@ GetLogDirectoryPath(WCHAR *path)
     return FALSE;
   }
 
-  if (!PathAppendSafe(path, L"Mozilla")) {
+  if (!PathAppendSafe(path, L"Privacore")) {
     return FALSE;
   }
   // The directory should already be created from the installer, but
