@@ -1938,14 +1938,14 @@ function attemptServiceInstall() {
   // This will return an empty string on our Win XP build systems.
   let maintSvcDir = getSpecialFolderDir(CSIDL_PROGRAM_FILESX86);
   if (maintSvcDir) {
-    maintSvcDir.append("Mozilla Maintenance Service");
+    maintSvcDir.append("Privacore Maintenance Service");
     debugDump("using CSIDL_PROGRAM_FILESX86 - maintenance service install " +
               "directory path: " + maintSvcDir.path);
   }
   if (!maintSvcDir || !maintSvcDir.exists()) {
     maintSvcDir = getSpecialFolderDir(CSIDL_PROGRAM_FILES);
     if (maintSvcDir) {
-      maintSvcDir.append("Mozilla Maintenance Service");
+      maintSvcDir.append("Privacore Maintenance Service");
       debugDump("using CSIDL_PROGRAM_FILES - maintenance service install " +
                 "directory path: " + maintSvcDir.path);
     }
