@@ -326,7 +326,7 @@ static const char contentSandboxRules[] =
   "    (allow file-read*\n"
   "        (home-regex \"/Library/Application Support/[^/]+/Extensions/[^/]/\")\n"
   "        (resolving-regex \"/Library/Application Support/[^/]+/Extensions/[^/]/\")\n"
-  "        (home-regex \"/Library/Application Support/Firefox/Profiles/[^/]+/extensions/\"))\n"
+  "        (home-regex \"/Library/Application Support/Privafox/Profiles/[^/]+/extensions/\"))\n"
   "\n"
   "; the following rules should be removed when printing and \n"
   "; opening a file from disk are brokered through the main process\n"

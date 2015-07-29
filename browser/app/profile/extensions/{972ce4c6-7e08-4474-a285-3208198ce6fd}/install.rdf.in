@@ -28,8 +28,8 @@
     <em:description>The default theme.</em:description>
 
     <!-- Front End Integration Hooks (used by Theme Manager)-->
-    <em:creator>Mozilla</em:creator>
-    <em:contributor>Mozilla Contributors</em:contributor>
+    <em:creator>Privacore</em:creator>
+    <em:contributor>Privacore Contributors</em:contributor>
 
     <!-- Allow lightweight themes to apply to this theme -->
     <em:skinnable>true</em:skinnable>
