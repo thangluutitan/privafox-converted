@@ -23,7 +23,7 @@
 #pragma comment(lib, "version.lib")
 
 // This uninstall key is defined originally in maintenanceservice_installer.nsi
-#define MAINT_UNINSTALL_KEY L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\MozillaMaintenanceService"
+#define MAINT_UNINSTALL_KEY L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\PrivacoreMaintenanceService"
 
 static BOOL
 UpdateUninstallerVersionString(LPWSTR versionString)
@@ -56,7 +56,7 @@ ReadMaintenanceServiceStrings(LPCWSTR path,
 {
   // Read in the maintenance service description string if specified.
   const unsigned int kNumStrings = 1;
-  const char *kServiceKeys = "MozillaMaintenanceDescription\0";
+  const char *kServiceKeys = "PrivacoreMaintenanceDescription\0";
   char serviceStrings[kNumStrings][MAX_TEXT_LEN];
   int result = ReadStrings(path, kServiceKeys, 
                            kNumStrings, serviceStrings);
@@ -210,12 +210,12 @@ FixServicePath(SC_HANDLE service,
     currentServicePath[currentServicePathLen - 1] == L'\"';
 
   if (doesServiceHaveCorrectPath) {
-    LOG(("The MozillaMaintenance service path is correct."));
+    LOG(("The PrivacoreMaintenance service path is correct."));
     servicePathWasWrong = FALSE;
     return TRUE;
   }
   // This is a recoverable situation so not logging as a warning
-  LOG(("The MozillaMaintenance path is NOT correct. It was: %ls",
+  LOG(("The PrivacoreMaintenance path is NOT correct. It was: %ls",
        currentServicePath));
 
   servicePathWasWrong = TRUE;

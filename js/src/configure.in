@@ -763,7 +763,7 @@ ASM_SUFFIX=s
 IMPORT_LIB_SUFFIX=
 TARGET_MD_ARCH=unix
 DIRENT_INO=d_ino
-MOZ_USER_DIR=".mozilla"
+MOZ_USER_DIR=".privacore"
 
 MOZ_FIX_LINK_PATHS='-Wl,-rpath-link,$(LIBXUL_DIST)/bin -Wl,-rpath-link,$(prefix)/lib'
 
@@ -1850,7 +1850,7 @@ ia64*-hpux*)
     TARGET_MD_ARCH=win32
     _PLATFORM_DEFAULT_TOOLKIT='cairo-windows'
     BIN_SUFFIX='.exe'
-    MOZ_USER_DIR="Mozilla"
+    MOZ_USER_DIR="Privacore"
 
     dnl Hardcode to win95 for now - cls
     TARGET_NSPR_MDCPUCFG='\"md/_win95.cfg\"'
