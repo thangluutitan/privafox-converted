@@ -3,10 +3,10 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 MOZ_APP_BASENAME=B2G
-MOZ_APP_VENDOR=Mozilla
+MOZ_APP_VENDOR=Privacore
 
 MOZ_APP_VERSION=42.0a1
-MOZ_APP_UA_NAME=Firefox
+MOZ_APP_UA_NAME=Privafox
 
 MOZ_UA_OS_AGNOSTIC=1
 

@@ -327,7 +327,7 @@ else
     case "$target" in
     *-android*|*-linuxandroid*)
         if test -z "$ANDROID_PACKAGE_NAME" ; then
-            ANDROID_PACKAGE_NAME='org.mozilla.$(MOZ_APP_NAME)'
+            ANDROID_PACKAGE_NAME='com.privacore.$(MOZ_APP_NAME)'
         fi
         MOZ_CHROME_FILE_FORMAT=omni
         ZLIB_DIR=yes
@@ -1014,7 +1014,7 @@ ASM_SUFFIX=s
 IMPORT_LIB_SUFFIX=
 TARGET_MD_ARCH=unix
 DIRENT_INO=d_ino
-MOZ_USER_DIR=".mozilla"
+MOZ_USER_DIR=".privacore"
 
 MOZ_FIX_LINK_PATHS='-Wl,-rpath-link,$(LIBXUL_DIST)/bin -Wl,-rpath-link,$(prefix)/lib'
 
@@ -2373,7 +2373,7 @@ ia64*-hpux*)
     TARGET_MD_ARCH=win32
     _PLATFORM_DEFAULT_TOOLKIT='cairo-windows'
     BIN_SUFFIX='.exe'
-    MOZ_USER_DIR="Mozilla"
+    MOZ_USER_DIR="Privacore"
 
     dnl Hardcode to win95 for now - cls
     TARGET_NSPR_MDCPUCFG='\"md/_win95.cfg\"'
@@ -4334,7 +4334,7 @@ cairo-cocoa)
     TK_CFLAGS="-DNO_X11"
     CFLAGS="$CFLAGS $TK_CFLAGS"
     CXXFLAGS="$CXXFLAGS $TK_CFLAGS"
-    MOZ_USER_DIR="Mozilla"
+    MOZ_USER_DIR="Privacore"
     MOZ_FS_LAYOUT=bundle
     # skip event loop instrumentation on UIKit for now
     if test "$MOZ_WIDGET_TOOLKIT" == "cocoa"; then
@@ -4350,7 +4350,7 @@ cairo-uikit)
     TK_LIBS='-Wl,-framework,Foundation -Wl,-framework,CoreFoundation -Wl,-framework,CoreGraphics -Wl,-framework,CoreText -Wl,-framework,AVFoundation -Wl,-framework,AudioToolbox -Wl,-framework,CoreMedia -Wl,-framework,CoreVideo -Wl,-framework,OpenGLES -Wl,-framework,QuartzCore'
     CFLAGS="$CFLAGS $TK_CFLAGS"
     CXXFLAGS="$CXXFLAGS $TK_CFLAGS"
-    MOZ_USER_DIR="Mozilla"
+    MOZ_USER_DIR="Privacore"
     MOZ_FS_LAYOUT=bundle
     ;;
 
@@ -4710,12 +4710,12 @@ dnl = Distribution ID
 dnl ========================================================
 MOZ_ARG_WITH_STRING(distribution-id,
 [  --with-distribution-id=ID
-                          Set distribution-specific id (default=org.mozilla)],
+                          Set distribution-specific id (default=com.privacore)],
 [ val=`echo $withval`
     MOZ_DISTRIBUTION_ID="$val"])
 
 if test -z "$MOZ_DISTRIBUTION_ID"; then
-   MOZ_DISTRIBUTION_ID="org.mozilla"
+   MOZ_DISTRIBUTION_ID="com.privacore"
 fi
 
 AC_DEFINE_UNQUOTED(MOZ_DISTRIBUTION_ID,"$MOZ_DISTRIBUTION_ID")
@@ -7821,7 +7821,7 @@ dnl ========================================================
 dnl = Location of the mozilla user directory (default is ~/.mozilla).],
 dnl ========================================================
 MOZ_ARG_WITH_STRING(user-appdir,
-[  --with-user-appdir=DIR  Set user-specific appdir (default=.mozilla)],
+[  --with-user-appdir=DIR  Set user-specific appdir (default=.privacore)],
 [ val=`echo $withval`
 if echo "$val" | grep "\/" >/dev/null; then
     AC_MSG_ERROR("Homedir must be single relative path.")
