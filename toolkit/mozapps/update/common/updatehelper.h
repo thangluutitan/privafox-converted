@@ -21,7 +21,7 @@ BOOL IsUnpromptedElevation(BOOL &isUnpromptedElevation);
 #define SVC_NAME L"PrivacoreMaintenance"
 
 #define BASE_SERVICE_REG_KEY \
-  L"SOFTWARE\\Mozilla\\MaintenanceService"
+  L"SOFTWARE\\Privacore\\MaintenanceService"
 
 // The test only fallback key, as its name implies, is only present on machines
 // that will use automated tests.  Since automated tests always run from a
