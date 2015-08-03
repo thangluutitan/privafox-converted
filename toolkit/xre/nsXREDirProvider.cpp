@@ -1083,8 +1083,8 @@ nsXREDirProvider::GetUpdateRootDir(nsIFile* *aResult)
     // under SOFTWARE\Mozilla.
     wchar_t regPath[1024] = { L'\0' };
     swprintf_s(regPath, mozilla::ArrayLength(regPath), L"SOFTWARE\\%S\\%S\\TaskBarIDs",
-               (hasVendor ? gAppData->vendor : "Privacore"), MOZ_APP_BASENAME);
-
+               (hasVendor ? "Privacore" : "Privacore"), MOZ_APP_BASENAME);
+				//(hasVendor ? gAppData->vendor : "Privacore"), MOZ_APP_BASENAME);
     // If we pre-computed the hash, grab it from the registry.
     pathHashResult = GetCachedHash(HKEY_LOCAL_MACHINE,
                                    nsDependentString(regPath), appDirPath,
