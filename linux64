@@ -18,3 +18,5 @@ ac_add_options --disable-crashreporter
 ac_add_options --disable-maintenance-service
 ac_add_options --enable-installer
 ac_add_options --disable-webrtc
+#fix for Ubuntu low version <= 14.0.4
+ac_add_options --enable-stdcxx-compat
