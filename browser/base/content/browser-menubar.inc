@@ -206,7 +206,7 @@
                     <menuitem id="menu_bookmarksSidebar"
                               key="viewBookmarksSidebarKb"
                               observes="viewBookmarksSidebar"/>
-				<!-- Privafox : remove history-->
+				<!-- Privafox-MBV-3 : remove history-->
                  <!--   <menuitem id="menu_historySidebar"
                               key="key_gotoHistory"
                               observes="viewHistorySidebar"
@@ -313,7 +313,7 @@
                                              .sendAsyncMessage('SwitchDocumentDirection');"/>
               </menupopup>
             </menu>
-			<!-- Privafox : Remove history-->
+			<!-- Privafox-MBH-1 : Remove history-->
             <!--  <menu id="history-menu"
                   label="&historyMenu.label;"
                   accesskey="&historyMenu.accesskey;">
@@ -500,10 +500,11 @@
                         accesskey="&addons.accesskey;"
                         key="key_openAddons"
                         command="Tools:Addons"/>
-              <menuitem id="menu_openApps"
+			 <!-- Privafox-MBT-2 : Remove "Apps" from Tools-->			  			  						
+              <!-- <menuitem id="menu_openApps"
                         label="&webapps.label;"
                         accesskey="&webapps.accesskey;"
-                        oncommand="BrowserOpenApps();"/>
+                        oncommand="BrowserOpenApps();"/> -->
 #ifdef MOZ_SERVICES_SYNC
               <!-- only one of sync-setup or sync-menu will be showing at once -->
               <menuitem id="sync-setup"
@@ -523,7 +524,8 @@
                         oncommand="gSyncUI.openSignInAgainPage('menubar');"/>
 #endif
               <menuseparator id="devToolsSeparator"/>
-              <menu id="webDeveloperMenu"
+			 <!-- Privafox-MBT-3 : Remove "Web Developer" from Tools-->			  			  
+             <!-- <menu id="webDeveloperMenu"
                     label="&webDeveloperMenu.label;"
                     accesskey="&webDeveloperMenu.accesskey;">
                 <menupopup id="menuWebDeveloperPopup">
@@ -571,7 +573,12 @@
                             observes="devtoolsMenuBroadcaster_GetMoreTools"
                             accesskey="&getMoreDevtoolsCmd.accesskey;"/>
                 </menupopup>
-              </menu>
+              </menu> -->
+			  
+			 <!-- Privafox-MBT-4 : Move Page Source from Tools/Web Developer - Tools-->			  
+			  <menuitem id="menu_pageSource"
+                            observes="devtoolsMenuBroadcaster_PageSource"
+                            accesskey="&pageSourceCmd.accesskey;"/>			  
               <menuitem id="menu_pageInfo"
                         accesskey="&pageInfoCmd.accesskey;"
                         label="&pageInfoCmd.label;"
