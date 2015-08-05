@@ -4991,18 +4991,18 @@ var TabsInTitlebar = {
     CustomizableUI.addListener(this);
     this._initialized = true;
     /*
-    * Privafox : Enable default menuBar & Bookmarks Toolbars
+    * Privafox-MBV-1: Enable default menuBar & Bookmarks Toolbars
     */
-    menu.setAttribute('autohide','false');
-    let toolbarNodes = getTogglableToolbars();
-      for (let toolbar of toolbarNodes) {
-        let menuItem = document.createElement("menuitem");
-        if(toolbar.getAttribute("type") != "menubar")
-        {
-           menuItem.setAttribute('checked','true');
-           CustomizableUI.setToolbarVisibility(toolbar.id, true);
-        }
-      }    
+    //menu.setAttribute('autohide','false');
+    //let toolbarNodes = getTogglableToolbars();
+    //  for (let toolbar of toolbarNodes) {
+    //    let menuItem = document.createElement("menuitem");
+    //    if(toolbar.getAttribute("type") != "menubar")
+    //    {
+    //       menuItem.setAttribute('checked','true');
+    //       CustomizableUI.setToolbarVisibility(toolbar.id, true);
+    //    }
+    //  }    
 #endif
     
   },

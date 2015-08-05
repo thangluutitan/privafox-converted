@@ -22,5 +22,5 @@
 
 <!ENTITY removeEngine.label                    "Remove">
 <!ENTITY removeEngine.accesskey                "r">
-
-<!ENTITY addMoreSearchEngines.label            "Add more search engines…">
+<!-- Privafox-MBT-11 -->
+<!ENTITY addMoreSearchEngines.label            "Copyright 2015 © &vendorShortName; Aps - Strickly confidential 7">
