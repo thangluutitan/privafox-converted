@@ -6,7 +6,7 @@ MOZ_APP_BASENAME=Privafox
 MOZ_APP_VENDOR=Privacore
 
 MOZ_APP_VERSION=42.0a1
-MOZ_APP_UA_NAME=Privafox
+MOZ_APP_UA_NAME=Firefox
 
 MOZ_BRANDING_DIRECTORY=mobile/android/branding/privafox
 MOZ_OFFICIAL_BRANDING_DIRECTORY=mobile/android/branding/privafox
