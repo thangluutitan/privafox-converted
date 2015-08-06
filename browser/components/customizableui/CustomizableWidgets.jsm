@@ -345,8 +345,7 @@ const CustomizableWidgets = [
         win.BrowserOpenFileWindow();
       }
     }
-  },
- /*  {
+  }, {
     id: "developer-button",
     type: "view",
     viewId: "PanelUI-developer",
@@ -375,9 +374,7 @@ const CustomizableWidgets = [
       clearSubview(developerItems);
       fillSubviewFromMenuItems(itemsToDisplay, developerItems);
     }
-  }, 
-  */
-  {
+  }, {
     id: "sidebar-button",
     type: "view",
     viewId: "PanelUI-sidebar",

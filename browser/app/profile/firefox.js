@@ -252,11 +252,7 @@ pref("browser.uitour.url", "https://www.mozilla.org/%LOCALE%/firefox/%VERSION%/t
 pref("browser.uitour.readerViewTrigger", "^https:\\/\\/www\\.mozilla\\.org\\/[^\\/]+\\/firefox\\/reading\\/start");
 
 pref("browser.customizemode.tip0.shown", false);
-// pref("browser.customizemode.tip0.learnMoreUrl", "https://support.mozilla.org/1/firefox/%VERSION%/%OS%/%LOCALE%/customize");
-/*
-* Privafox MBT-8
-*/
-pref("browser.customizemode.tip0.learnMoreUrl", "https://www.privafox.com/support/prefs-main.html?v=%VERSION%&l=%LOCALE%&os=%OS%/customize");
+pref("browser.customizemode.tip0.learnMoreUrl", "https://support.mozilla.org/1/firefox/%VERSION%/%OS%/%LOCALE%/customize");
 
 pref("keyword.enabled", true);
 pref("browser.fixup.domainwhitelist.localhost", true);
@@ -392,11 +388,9 @@ pref("browser.download.panel.shown", false);
 #ifndef XP_MACOSX
 pref("browser.helperApps.deleteTempFileOnExit", true);
 #endif
-/*
-* Privafox MBT-11
-*/
+
 // search engines URL
-pref("browser.search.searchEnginesURL",      "https://www.privafox.com/add-ons/search.html?l=%LOCALE%");
+pref("browser.search.searchEnginesURL",      "https://addons.privafox.com/%LOCALE%/firefox/search-engines/");
 
 // Tell the search service to load search plugins from the locale JAR
 pref("browser.search.loadFromJars", true);
@@ -1167,8 +1161,7 @@ pref("toolkit.crashreporter.infoURL",
      "https://www.mozilla.org/legal/privacy/firefox.html#crash-reporter");
 
 // base URL for web-based support pages
-// pref("app.support.baseURL", "https://support.mozilla.org/1/firefox/%VERSION%/%OS%/%LOCALE%/");
-pref("app.support.baseURL", "https://www.privafox.com/support/%VERSION%/%OS%/%LOCALE%/");
+pref("app.support.baseURL", "https://support.mozilla.org/1/firefox/%VERSION%/%OS%/%LOCALE%/");
 
 // base url for web-based feedback pages
 #ifdef MOZ_DEV_EDITION
@@ -1389,7 +1382,7 @@ pref("devtools.errorconsole.enabled", false);
 
 // Developer toolbar preferences
 pref("devtools.toolbar.enabled", true);
-pref("devtools.toolbar.visible", true);
+pref("devtools.toolbar.visible", false);
 
 // Enable the app manager
 pref("devtools.appmanager.enabled", true);

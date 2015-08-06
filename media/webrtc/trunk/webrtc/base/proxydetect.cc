@@ -50,7 +50,7 @@
 #define USE_FIREFOX_PROFILES_INI 1
 
 static const size_t kMaxLineLength = 1024;
-static const char kFirefoxPattern[] = "Privafox";
+static const char kFirefoxPattern[] = "Firefox";
 static const char kInternetExplorerPattern[] = "MSIE";
 
 struct StringMap {
@@ -382,8 +382,8 @@ bool GetFirefoxProfilePath(Pathname* path) {
     return false;
   }
   path->SetFolder(ToUtf8(w_path, wcslen(w_path)));
-  path->AppendFolder("Privacore");
-  path->AppendFolder("Privafox");
+  path->AppendFolder("Mozilla");
+  path->AppendFolder("Firefox");
 #elif defined(WEBRTC_MAC) && !defined(WEBRTC_IOS)
   FSRef fr;
   if (0 != FSFindFolder(kUserDomain, kApplicationSupportFolderType,
@@ -398,15 +398,15 @@ bool GetFirefoxProfilePath(Pathname* path) {
     return false;
   }
   path->SetFolder(std::string(buffer));
-  path->AppendFolder("Privafox");
+  path->AppendFolder("Firefox");
 #else
   char* user_home = getenv("HOME");
   if (user_home == NULL) {
     return false;
   }
   path->SetFolder(std::string(user_home));
-  path->AppendFolder(".privacore");
-  path->AppendFolder("privafox");
+  path->AppendFolder(".mozilla");
+  path->AppendFolder("firefox");
 #endif  // WEBRTC_WIN 
   return true;
 }
@@ -636,7 +636,7 @@ bool IsDefaultBrowserFirefox() {
       for (size_t i = 0; i < size; ++i) {
         value[i] = tolowercase(value[i]);
       }
-      success = (NULL != strstr(value, L"privafox.exe"));
+      success = (NULL != strstr(value, L"firefox.exe"));
     }
     delete[] value;
   }
