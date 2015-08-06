@@ -517,7 +517,7 @@
   <binding id="menubar" role="xul:menubar" 
            extends="chrome://global/content/bindings/toolbar.xml#toolbar-base" display="xul:menubar">
     <implementation>
-       <field name="_active">true</field>
+       <field name="_active">false</field>
        <field name="_statusbar">null</field>
        <field name="_originalStatusText">null</field>
        <property name="statusbar" onget="return this.getAttribute('statusbar');"

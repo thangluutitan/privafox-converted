@@ -3530,6 +3530,7 @@ if test -z "$RELEASE_BUILD"; then
 fi
 
 AC_SUBST(E10S_TESTING_ONLY)
+
 dnl ========================================================
 dnl system libevent Support
 dnl ========================================================
