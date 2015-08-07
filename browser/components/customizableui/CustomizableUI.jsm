@@ -167,7 +167,7 @@ let CustomizableUIInternal = {
       "find-button",
       "preferences-button",
       "add-ons-button",
-#ifndef MOZ_DEV_EDITION
+#ifdef PRIVAFOX_DEV
       "developer-button",
 #endif
     ];
@@ -199,7 +199,7 @@ let CustomizableUIInternal = {
     let navbarPlacements = [
       "urlbar-container",
       "search-container",
-#ifdef MOZ_DEV_EDITION
+#ifdef PRIVAFOX_DEV
       "developer-button",
 #endif
       "bookmarks-menu-button",
