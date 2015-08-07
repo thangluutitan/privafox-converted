@@ -455,7 +455,7 @@ NS_CreateNativeAppSupport( nsINativeAppSupport **aResult ) {
 }
 
 // Constants
-#define MOZ_DDE_APPLICATION    "Mozilla"
+#define MOZ_DDE_APPLICATION    "Privacore"
 #define MOZ_MUTEX_NAMESPACE    L"Local\\"
 #define MOZ_STARTUP_MUTEX_NAME L"StartupMutex"
 #define MOZ_DDE_START_TIMEOUT 30000
@@ -974,10 +974,10 @@ nsNativeAppSupportWin::HandleDDENotification( UINT uType,       // transaction t
                     ParseDDEArg(hsz2, 2, windowID);
                     // "" means to open the URL in a new window.
                     if ( windowID.IsEmpty() ) {
-                        url.Insert(NS_LITERAL_STRING("mozilla -new-window "), 0);
+                        url.Insert(NS_LITERAL_STRING("privacore -new-window "), 0);
                     }
                     else {
-                        url.Insert(NS_LITERAL_STRING("mozilla -url "), 0);
+                        url.Insert(NS_LITERAL_STRING("privacore -url "), 0);
                     }
 
 #if MOZ_DEBUG_DDE
@@ -1144,10 +1144,10 @@ nsNativeAppSupportWin::HandleDDENotification( UINT uType,       // transaction t
 
             // "" means to open the URL in a new window.
             if ( windowID.IsEmpty() ) {
-                url.Insert(NS_LITERAL_STRING("mozilla -new-window "), 0);
+                url.Insert(NS_LITERAL_STRING("privacore -new-window "), 0);
             }
             else {
-                url.Insert(NS_LITERAL_STRING("mozilla -url "), 0);
+                url.Insert(NS_LITERAL_STRING("privacore -url "), 0);
             }
 #if MOZ_DEBUG_DDE
             printf( "Handling dde XTYP_REQUEST request: [%s]...\n", NS_ConvertUTF16toUTF8(url).get() );

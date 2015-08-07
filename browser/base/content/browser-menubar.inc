@@ -500,10 +500,13 @@
                         accesskey="&addons.accesskey;"
                         key="key_openAddons"
                         command="Tools:Addons"/>
-              <menuitem id="menu_openApps"
+            <!-- Privafox-MBT-2 : Remove Menu Apps -->
+#ifdef PRIVAFOX_DEV
+            <menuitem id="menu_openApps"
                         label="&webapps.label;"
                         accesskey="&webapps.accesskey;"
                         oncommand="BrowserOpenApps();"/>
+#endif
 #ifdef MOZ_SERVICES_SYNC
               <!-- only one of sync-setup or sync-menu will be showing at once -->
               <menuitem id="sync-setup"
@@ -523,6 +526,7 @@
                         oncommand="gSyncUI.openSignInAgainPage('menubar');"/>
 #endif
               <menuseparator id="devToolsSeparator"/>
+             <!-- Privafox-MBT-3 : Remove Menu Web Developer -->
               <menu id="webDeveloperMenu"
                     label="&webDeveloperMenu.label;"
                     accesskey="&webDeveloperMenu.accesskey;">
@@ -572,7 +576,11 @@
                             accesskey="&getMoreDevtoolsCmd.accesskey;"/>
                 </menupopup>
               </menu>
-              <menuitem id="menu_pageInfo"
+               <!-- Privafox-MBT-4 Move menu Web Developer/PageSoure to Tools -->
+               <menuitem id="menu_pageSource"
+                            observes="devtoolsMenuBroadcaster_PageSource"
+                            accesskey="&pageSourceCmd.accesskey;"/>
+                <menuitem id="menu_pageInfo"
                         accesskey="&pageInfoCmd.accesskey;"
                         label="&pageInfoCmd.label;"
 #ifndef XP_WIN
