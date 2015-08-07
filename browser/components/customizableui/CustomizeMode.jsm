@@ -1366,8 +1366,11 @@ CustomizeMode.prototype = {
                                                            Ci.nsISupportsString).data;
       recommendedThemes = JSON.parse(recommendedThemes);
       let sb = Services.strings.createBundle("chrome://browser/locale/lightweightThemes.properties");
+	  let recommendedThemesCount = 0;
       for (let theme of recommendedThemes) {
         theme.name = sb.GetStringFromName("lightweightThemes." + theme.id + ".name");
+		recommendedThemesCount++;
+		if (theme.name == "A Web Browser Renaissance") continue;
         theme.description = sb.GetStringFromName("lightweightThemes." + theme.id + ".description");
         let tbb = buildToolbarButton(theme);
         tbb.addEventListener("command", function() {

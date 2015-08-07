@@ -719,13 +719,7 @@ BrowserGlue.prototype = {
     let themeName = gBrowserBundle.GetStringFromName("deveditionTheme.name");
     let vendorShortName = gBrandBundle.GetStringFromName("vendorShortName");
 
-    LightweightThemeManager.addBuiltInTheme({
-      id: "firefox-devedition@mozilla.org",
-      name: themeName,
-      headerURL: "resource:///chrome/browser/content/browser/defaultthemes/devedition.header.png",
-      iconURL: "resource:///chrome/browser/content/browser/defaultthemes/devedition.icon.png",
-      author: vendorShortName,
-    });
+    
 #endif
 
 #ifdef MOZ_CRASHREPORTER

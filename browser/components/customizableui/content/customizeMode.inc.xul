@@ -29,6 +29,8 @@
       <button id="customization-toolbar-visibility-button" label="&customizeMode.toolbars;" class="customizationmode-button" type="menu">
         <menupopup id="customization-toolbar-menu" onpopupshowing="onViewToolbarsPopupShowing(event)"/>
       </button>
+	  
+	  
       <button id="customization-lwtheme-button" label="&customizeMode.lwthemes;" class="customizationmode-button" type="menu">
         <panel type="arrow" id="customization-lwtheme-menu"
                onpopupshowing="gCustomizeMode.onLWThemesMenuShowing(event);"
