@@ -40,8 +40,12 @@ static RedirEntry kRedirMap[] = {
     nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT
   },
   {
-    "mozilla", "chrome://global/content/mozilla.xhtml",
+    "privacore", "chrome://global/content/mozilla.xhtml",
     nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT
+  },
+  {
+	 "privafox", "chrome://global/content/about.xhtml",
+	 nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT
   },
   {
     "plugins", "chrome://global/content/plugins.html",

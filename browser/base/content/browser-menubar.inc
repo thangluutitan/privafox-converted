@@ -527,7 +527,8 @@
 #endif
               <menuseparator id="devToolsSeparator"/>
              <!-- Privafox-MBT-3 : Remove Menu Web Developer -->
-              <menu id="webDeveloperMenu"
+#ifdef PRIVAFOX_WEB_DEVELOPER
+             <menu id="webDeveloperMenu"
                     label="&webDeveloperMenu.label;"
                     accesskey="&webDeveloperMenu.accesskey;">
                 <menupopup id="menuWebDeveloperPopup">
@@ -576,6 +577,7 @@
                             accesskey="&getMoreDevtoolsCmd.accesskey;"/>
                 </menupopup>
               </menu>
+#endif
                <!-- Privafox-MBT-4 Move menu Web Developer/PageSoure to Tools -->
                <menuitem id="menu_pageSource"
                             observes="devtoolsMenuBroadcaster_PageSource"

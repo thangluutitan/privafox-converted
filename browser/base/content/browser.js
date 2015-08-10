@@ -1390,9 +1390,10 @@ var gBrowserInit = {
 
     gBrowserThumbnails.init();
 
-    // Add Devtools menuitems and listeners
+// Add Devtools menuitems and listeners
+#ifdef PRIVAFOX_WEB_DEVELOPER
     gDevToolsBrowser.registerBrowserWindow(window);
-
+#endif
     gMenuButtonUpdateBadge.init();
 
     window.addEventListener("mousemove", MousePosTracker, false);
@@ -1487,9 +1488,9 @@ var gBrowserInit = {
     // load completes). In that case, there's nothing to do here.
     if (!this._loadHandled)
       return;
-
+#ifdef PRIVAFOX_WEB_DEVELOPER
     gDevToolsBrowser.forgetBrowserWindow(window);
-
+#endif
     let desc = Object.getOwnPropertyDescriptor(window, "DeveloperToolbar");
     if (desc && !desc.get) {
       DeveloperToolbar.destroy();

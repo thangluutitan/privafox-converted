@@ -830,7 +830,6 @@ let gDevToolsBrowser = {
       let broadcaster = win.document.getElementById("devtoolsMenuBroadcaster_DevToolbox");
       broadcaster.removeAttribute("key");
     }
-
     let tabContainer = win.document.getElementById("tabbrowser-tabs");
     tabContainer.addEventListener("TabSelect", this, false);
     tabContainer.addEventListener("TabOpen", this, false);
