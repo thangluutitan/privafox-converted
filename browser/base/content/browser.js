@@ -4990,12 +4990,21 @@ var TabsInTitlebar = {
         this._update(true);
     };
     CustomizableUI.addListener(this);
-    this._initialized = true;
+    this._initialized = true;    
+          
     /*
     * Privafox : Enable default menuBar & Bookmarks Toolbars
     */
-    menu.setAttribute('autohide','false');
-    let toolbarNodes = getTogglableToolbars();
+    const startupMenubar = "browser.startup.menubar.enable";        
+    const startupBookmarks = "browser.startup.bookmarksToolbar.enable";     
+    if (Services.prefs.getIntPref(startupMenubar) == 1) 
+    {
+        Services.prefs.setIntPref(startupMenubar, 100);
+        menu.setAttribute('autohide','false');        
+    }
+    if (Services.prefs.getIntPref(startupBookmarks) == 1) { 
+        Services.prefs.setIntPref(startupBookmarks, 100);
+        let toolbarNodes = getTogglableToolbars();
       for (let toolbar of toolbarNodes) {
         let menuItem = document.createElement("menuitem");
         if(toolbar.getAttribute("type") != "menubar")
@@ -5003,7 +5012,8 @@ var TabsInTitlebar = {
            menuItem.setAttribute('checked','true');
            CustomizableUI.setToolbarVisibility(toolbar.id, true);
         }
-      }    
+    }    
+    }
 #endif
     
   },
