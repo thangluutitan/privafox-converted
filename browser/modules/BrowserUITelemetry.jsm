@@ -490,14 +490,12 @@ this.BrowserUITelemetry = {
     // Determine if the Bookmarks bar is currently visible
     let bookmarksBar = document.getElementById("PersonalToolbar");
     result.bookmarksBarEnabled = bookmarksBar && !bookmarksBar.collapsed;
-
     // Determine if the menubar is currently visible. On OS X, the menubar
     // is never shown, despite not having the collapsed attribute set.
     let menuBar = document.getElementById("toolbar-menubar");
     result.menuBarEnabled =
       menuBar && Services.appinfo.OS != "Darwin"
               && menuBar.getAttribute("autohide") != "true";
-
     // Determine if the titlebar is currently visible.
     result.titleBarEnabled = !Services.prefs.getBoolPref("browser.tabs.drawInTitlebar");
 

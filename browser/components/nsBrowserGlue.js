@@ -1699,7 +1699,7 @@ BrowserGlue.prototype = {
     const BROWSER_DOCURL = "chrome://browser/content/browser.xul";
     let currentUIVersion = 0;
     try {
-      currentUIVersion = Services.prefs.getIntPref("browser.migration.version");
+        currentUIVersion = Services.prefs.getIntPref("browser.migration.version");
     } catch(ex) {}
     if (currentUIVersion >= UI_VERSION)
       return;
@@ -1882,7 +1882,7 @@ BrowserGlue.prototype = {
                       "addon-bar", "TabsToolbar", "toolbar-menubar"];
       for (let resourceName of ["mode", "iconsize"]) {
         for (let toolbarId of toolbars) {
-          xulStore.removeValue(BROWSER_DOCURL, toolbarId, resourceName);
+           xulStore.removeValue(BROWSER_DOCURL, toolbarId, resourceName);
         }
       }
     }
