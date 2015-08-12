@@ -417,7 +417,7 @@
                 label="&bidiSwitchPageDirectionItem.label;"
                 accesskey="&bidiSwitchPageDirectionItem.accesskey;"
                 oncommand="gContextMenu.switchPageDirection();"/>
-
+#ifdef PRIVAFOX_WEB_DEVELOPER
       <menuseparator id="inspect-separator" hidden="true"/>
       <menuitem id="context-inspect"
                 hidden="true"
@@ -432,5 +432,4 @@
                 accesskey="&emeLearnMoreContextMenu.accesskey;"
                 oncommand="gContextMenu.drmLearnMore(event);"
                 onclick="checkForMiddleClick(this, event);"/>
-#ifdef PRIVAFOX_WEB_DEVELOPER
 #endif
