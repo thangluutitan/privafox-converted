@@ -6139,6 +6139,8 @@ i?86-*-linux*|x86_64-*-linux*|arm-*-linux*)
   MOZ_CRASHREPORTER=1
   ;;
 esac
+# Privafox-MBH-5 Remove Crash Report
+MOZ_CRASHREPORTER=0
 
 MOZ_ARG_DISABLE_BOOL(crashreporter,
 [  --disable-crashreporter Disable breakpad crash reporting],

@@ -1169,15 +1169,16 @@ pref("toolkit.crashreporter.infoURL",
      "https://www.privafox.com/legal/privacy/firefox.html#crash-reporter");
 
 // base URL for web-based support pages
+//pref("app.support.baseURL", "https://support.privafox.com/1/firefox/%VERSION%/%OS%/%LOCALE%/");
 pref("app.support.baseURL", "https://www.privafox.com/support/index.html?v=%VERSION%&l=%LOCALE%&os=%OS%&op=");
-
 // base url for web-based feedback pages
-#ifdef MOZ_DEV_EDITION
-pref("app.feedback.baseURL", "https://input.privafox.com/%LOCALE%/feedback/firefoxdev/%VERSION%/");
-#else
-pref("app.feedback.baseURL", "https://input.privafox.com/%LOCALE%/feedback/%APP%/%VERSION%/");
-#endif
-
+// Privafox : MBH-7
+//#ifdef MOZ_DEV_EDITION
+//pref("app.feedback.baseURL", "https://input.privafox.com/%LOCALE%/feedback/privafoxdev/%VERSION%/");
+//#else
+//pref("app.feedback.baseURL", "https://input.privafox.com/%LOCALE%/feedback/%APP%/%VERSION%/");
+//#endif
+pref("app.feedback.baseURL", "https://www..privafox.com/support/feedback.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
 
 // Name of alternate about: page for certificate errors (when undefined, defaults to about:neterror)
 pref("security.alternate_certificate_error_page", "certerror");
