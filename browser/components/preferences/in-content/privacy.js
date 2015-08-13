@@ -156,9 +156,22 @@ var gPrivacyPane = {
   _checkDefaultValues: function(aPrefs) {
     for (let i = 0; i < aPrefs.length; ++i) {
       let pref = document.getElementById(aPrefs[i]);
-      if (pref.value != pref.defaultValue)
-        return false;
+	  
+	  if(aPrefs[i] == "privacy.sanitize.sanitizeOnShutdown" || aPrefs[i] == "network.cookie.cookieBehavior") 
+	  {
+		if (pref.value == pref.defaultValue) {
+			
+			return false;			
+		}
+	  }
+	  
+      if (pref.value != pref.defaultValue && aPrefs[i] != "privacy.sanitize.sanitizeOnShutdown" && aPrefs[i] != "network.cookie.cookieBehavior"){
+		  return false;
+	  }
+        
+	  
     }
+	
     return true;
   },
 
@@ -179,7 +192,7 @@ var gPrivacyPane = {
     }
     else
       mode = "custom";
-
+	//alert(mode);
     document.getElementById("historyMode").value = mode;
   },
 
@@ -200,6 +213,7 @@ var gPrivacyPane = {
       selectedIndex = 2;
       break;
     }
+	
     document.getElementById("historyPane").selectedIndex = selectedIndex;
   },
 
@@ -412,7 +426,6 @@ var gPrivacyPane = {
     var acceptThirdPartyMenu = document.getElementById("acceptThirdPartyMenu");
     var keepUntil = document.getElementById("keepUntil");
     var menu = document.getElementById("keepCookiesUntil");
-
     // enable the rest of the UI for anything other than "disable all cookies"
     var acceptCookies = (pref.value != 2);
 

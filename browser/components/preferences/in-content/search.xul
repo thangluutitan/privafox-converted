@@ -24,7 +24,7 @@
       <label class="header-name">&paneSearch.title;</label>
     </hbox>
 
-    <!-- Default Search Engine -->
+    <!-- Default Search Engine disabled="true" -->
     <groupbox id="defaultEngineGroup" align="start" data-category="paneSearch">
       <caption label="&defaultSearchEngine.label;"/>
       <label>&chooseYourDefaultSearchEngine.label;</label>
@@ -36,7 +36,7 @@
                 accesskey="&provideSearchSuggestions.accesskey;"
                 preference="browser.search.suggest.enabled"/>
     </groupbox>
-
+	<!-- preference="browser.search.suggest.enabled -->
     <groupbox id="oneClickSearchProvidersGroup" data-category="paneSearch">
       <caption label="&oneClickSearchEngines.label;"/>
       <label>&chooseWhichOneToDisplay.label;</label>
