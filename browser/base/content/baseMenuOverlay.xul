@@ -52,23 +52,23 @@
 #else
                   />
 #endif
-        <menuitem id="menu_openTour"
+        <!-- <menuitem id="menu_openTour"
                   oncommand="openTourPage();"
                   label="&helpShowTour2.label;"
-                  accesskey="&helpShowTour2.accesskey;"/>
+                  accesskey="&helpShowTour2.accesskey;"/> -->
         <menuitem id="menu_keyboardShortcuts"
                   oncommand="openHelpLink('keyboard-shortcuts')"
                   onclick="checkForMiddleClick(this, event);"
                   label="&helpKeyboardShortcuts.label;"
                   accesskey="&helpKeyboardShortcuts.accesskey;"/>
 #ifdef MOZ_SERVICES_HEALTHREPORT
-        <menuitem id="healthReport"
+       <!-- <menuitem id="healthReport"
                   label="&healthReport2.label;"
                   accesskey="&healthReport2.accesskey;"
                   oncommand="openHealthReport()"
-                  onclick="checkForMiddleClick(this, event);"/>
+                  onclick="checkForMiddleClick(this, event);"/> -->
 #endif
-        <menuitem id="troubleShooting"
+      <menuitem id="troubleShooting"
                   accesskey="&helpTroubleshootingInfo.accesskey;"
                   label="&helpTroubleshootingInfo.label;"
                   oncommand="openTroubleshootingPage()"
@@ -78,12 +78,12 @@
                   label="&helpFeedbackPage.label;"
                   oncommand="openFeedbackPage()"
                   onclick="checkForMiddleClick(this, event);"/>
-        <menuitem id="helpSafeMode"
+        <!-- <menuitem id="helpSafeMode"
                   accesskey="&helpSafeMode.accesskey;"
                   label="&helpSafeMode.label;"
                   stopaccesskey="&helpSafeMode.stop.accesskey;"
                   stoplabel="&helpSafeMode.stop.label;"
-                  oncommand="safeModeRestart();"/>
+                  oncommand="safeModeRestart();"/> -->
         <menuseparator id="aboutSeparator"/>
         <menuitem id="aboutName"
                   accesskey="&aboutProduct2.accesskey;"

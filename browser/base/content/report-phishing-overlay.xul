@@ -12,11 +12,12 @@
 
 <overlay id="reportPhishingMenuOverlay"
          xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
-  <broadcasterset id="mainBroadcasterSet">
+	<!--Privafox-MBH-9 Remove Menu Help/ Report Web Forgery -->
+  <!--<broadcasterset id="mainBroadcasterSet">
     <broadcaster id="reportPhishingBroadcaster" disabled="true"/>
     <broadcaster id="reportPhishingErrorBroadcaster" disabled="true"/>
-  </broadcasterset>
-  <menupopup id="menu_HelpPopup">
+  </broadcasterset>-->
+  <!--<menupopup id="menu_HelpPopup">
     <menuitem id="menu_HelpPopup_reportPhishingtoolmenu"
               label="&reportPhishSiteMenu.title2;"
               accesskey="&reportPhishSiteMenu.accesskey;"
@@ -31,5 +32,5 @@
               observes="reportPhishingErrorBroadcaster"
               oncommand="openUILinkIn(gSafeBrowsing.getReportURL('PhishMistake'), 'tab');"
               onclick="checkForMiddleClick(this, event);"/>
-  </menupopup>
+  </menupopup>-->
 </overlay>
