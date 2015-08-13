@@ -252,7 +252,8 @@ pref("browser.uitour.url", "https://www.mozilla.org/%LOCALE%/firefox/%VERSION%/t
 pref("browser.uitour.readerViewTrigger", "^https:\\/\\/www\\.mozilla\\.org\\/[^\\/]+\\/firefox\\/reading\\/start");
 
 pref("browser.customizemode.tip0.shown", false);
-pref("browser.customizemode.tip0.learnMoreUrl", "https://support.mozilla.org/1/firefox/%VERSION%/%OS%/%LOCALE%/customize");
+pref("browser.customizemode.tip0.learnMoreUrl", "https://www.privafox.com/support/customize.html?v=%VERSION%&l=%LOCALE%&os=%OS%/customize11");
+//pref("browser.customizemode.tip0.learnMoreUrl", "https://support.mozilla.org/1/firefox/%VERSION%/%OS%/%LOCALE%/customize");
 
 pref("keyword.enabled", true);
 pref("browser.fixup.domainwhitelist.localhost", true);
@@ -346,8 +347,8 @@ pref("browser.urlbar.match.url", "@");
 
 // The default behavior for the urlbar can be configured to use any combination
 // of the match filters with each additional filter adding more results (union).
-pref("browser.urlbar.suggest.history",              true);
-pref("browser.urlbar.suggest.bookmark",             true);
+pref("browser.urlbar.suggest.history",              false);
+pref("browser.urlbar.suggest.bookmark",             false);
 pref("browser.urlbar.suggest.openpage",             true);
 #ifdef NIGHTLY_BUILD
 pref("browser.urlbar.suggest.searches",             true);
@@ -390,8 +391,8 @@ pref("browser.helperApps.deleteTempFileOnExit", true);
 #endif
 
 // search engines URL
-pref("browser.search.searchEnginesURL",      "https://addons.privafox.com/%LOCALE%/firefox/search-engines/");
-
+pref("browser.search.searchEnginesURL",      "https://www.privafox.com/add-ons/search.html?l=%LOCALE%");
+//pref("browser.search.searchEnginesURL",      "https://addons.privafox.com/%LOCALE%/firefox/search-engines/");
 // Tell the search service to load search plugins from the locale JAR
 pref("browser.search.loadFromJars", true);
 pref("browser.search.jarURIs", "chrome://browser/locale/searchplugins/");
@@ -544,8 +545,8 @@ pref("privacy.clearOnShutdown.downloads",   true);
 pref("privacy.clearOnShutdown.cookies",     true);
 pref("privacy.clearOnShutdown.cache",       true);
 pref("privacy.clearOnShutdown.sessions",    true);
-pref("privacy.clearOnShutdown.offlineApps", false);
-pref("privacy.clearOnShutdown.siteSettings", false);
+pref("privacy.clearOnShutdown.offlineApps", true);
+pref("privacy.clearOnShutdown.siteSettings", true);
 pref("privacy.clearOnShutdown.openWindows", false);
 
 pref("privacy.cpd.history",                 true);
@@ -568,9 +569,14 @@ pref("privacy.cpd.openWindows",             false);
 // 5 - Last 5 minutes
 // 6 - Last 24 hours
 pref("privacy.sanitize.timeSpan", 1);
-pref("privacy.sanitize.sanitizeOnShutdown", false);
-
+pref("privacy.sanitize.sanitizeOnShutdown", true);
+pref("network.cookie.cookieBehavior", 3);
+pref("browser.search.suggest.enabled",    false);
 pref("privacy.sanitize.migrateFx3Prefs",    false);
+pref("privacy.donottrackheader.enabled",    true);
+
+
+
 
 pref("privacy.panicButton.enabled",         true);
 
@@ -1100,7 +1106,9 @@ pref("browser.sessionstore.cleanup.forget_closed_after", 1209600000);
 pref("accessibility.blockautorefresh", false);
 
 // Whether history is enabled or not.
-pref("places.history.enabled", true);
+pref("places.history.enabled", false);
+pref("browser.formfill.enable", false);
+
 
 // the (maximum) number of the recent visits to sample
 // when calculating frecency
@@ -1161,7 +1169,7 @@ pref("toolkit.crashreporter.infoURL",
      "https://www.privafox.com/legal/privacy/firefox.html#crash-reporter");
 
 // base URL for web-based support pages
-pref("app.support.baseURL", "https://support.privafox.com/1/firefox/%VERSION%/%OS%/%LOCALE%/");
+pref("app.support.baseURL", "https://www.privafox.com/support/index.html?v=%VERSION%&l=%LOCALE%&os=%OS%&op=");
 
 // base url for web-based feedback pages
 #ifdef MOZ_DEV_EDITION
@@ -1301,7 +1309,7 @@ pref("services.sync.prefs.sync.addons.ignoreUserEnabledChanges", true);
 // source, and this would propagate automatically to other,
 // uncompromised Sync-connected devices.
 pref("services.sync.prefs.sync.app.update.mode", true);
-pref("services.sync.prefs.sync.browser.formfill.enable", true);
+pref("services.sync.prefs.sync.browser.formfill.enable", false);
 pref("services.sync.prefs.sync.browser.link.open_newwindow", true);
 pref("services.sync.prefs.sync.browser.newtabpage.enabled", true);
 pref("services.sync.prefs.sync.browser.newtabpage.enhanced", true);

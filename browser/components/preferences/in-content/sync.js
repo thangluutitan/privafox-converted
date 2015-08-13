@@ -217,10 +217,10 @@ let gSyncPane = {
       gSyncPane.signIn();
       return false;
     });
-    setEventListener("noFxaUseOldSync", "click", function () {
-      gSyncPane.openOldSyncSupportPage();
-      return false;
-    });
+    //setEventListener("noFxaUseOldSync", "click", function () {
+    //  gSyncPane.openOldSyncSupportPage();
+    //  return false;
+    //});
     setEventListener("verifiedManage", "command",
       gSyncPane.manageFirefoxAccount);
     setEventListener("fxaUnlinkButton", "click", function () {
