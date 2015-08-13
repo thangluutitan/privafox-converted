@@ -248,7 +248,8 @@ var gPrivacyPane = {
 	let rememberFormCheckbox = document.getElementById("rememberForms");
 	let rememberHistoryCheckbox = document.getElementById("rememberHistory");
 	let alwaysClearCheckbox = document.getElementById("alwaysClear");
-	
+	let acceptThirdPartyMenu = document.getElementById("acceptThirdPartyMenu");
+	let accept = document.getElementById("acceptCookies");
     switch (document.getElementById("historyMode").value) {
     case "remember":
       if (pref.value)
@@ -262,9 +263,10 @@ var gPrivacyPane = {
         rememberFormCheckbox.checked = true;
 	  if (alwaysClearCheckbox.checked)
         rememberFormCheckbox.checked = false;	
-
-	
-		
+	  alert("accept:"+ accept.checked + "selected:" + acceptThirdPartyMenu.selectedIndex);	
+	  if(accept.checked)	
+		acceptThirdPartyMenu.selectedIndex = 0;	
+	  alert("accept:"+ accept.checked + "selected:" + acceptThirdPartyMenu.selectedIndex);
       // select the remember forms history option
       document.getElementById("browser.formfill.enable").value = true;
 	  document.getElementById("browser.history.enable").value = true;
@@ -277,7 +279,7 @@ var gPrivacyPane = {
 	//	alert("all is default with FF");
 	  //}
       document.getElementById("network.cookie.lifetimePolicy").value = 0;
-
+	  
       // select the clear on close option
       document.getElementById("privacy.sanitize.sanitizeOnShutdown").value = false;
       break;
@@ -294,7 +296,13 @@ var gPrivacyPane = {
 		if (rememberFormCheckbox.checked)
 			rememberFormCheckbox.checked = false;	
 		if (!alwaysClearCheckbox.checked)
-			rememberFormCheckbox.checked = true;
+			alwaysClearCheckbox.checked = true;
+		
+		alert("accept:"+ accept.checked + "selected:" + acceptThirdPartyMenu.selectedIndex);	
+		if(accept.checked)	
+			acceptThirdPartyMenu.selectedIndex = 1;
+		alert("accept:"+ accept.checked + "selected:" + acceptThirdPartyMenu.selectedIndex);
+		
 		document.getElementById("browser.formfill.enable").value = false;
 		document.getElementById("browser.history.enable").value = false;
 
@@ -303,6 +311,7 @@ var gPrivacyPane = {
 		// select the cookie lifetime policy option
 		document.getElementById("network.cookie.lifetimePolicy").value = 0;
 		document.getElementById("privacy.sanitize.sanitizeOnShutdown").value = true;
+		
 	  break;
     }
   },
