@@ -80,6 +80,7 @@ var gPrivacyPane = {
     setEventListener("browser.privatebrowsing.autostart", "change",
                      gPrivacyPane.updatePrivacyMicroControls);
     setEventListener("historyMode", "command", function () {
+	  gPrivacyPane._updateSanitizeSettingsButton();
       gPrivacyPane.updateHistoryModePane();
       gPrivacyPane.updateHistoryModePrefs();
       gPrivacyPane.updatePrivacyMicroControls();
@@ -154,9 +155,26 @@ var gPrivacyPane = {
    *                  false otherwise
    */
   _checkDefaultValues: function(aPrefs) {
-    for (let i = 0; i < aPrefs.length; ++i) {
-      let pref = document.getElementById(aPrefs[i]);
 	  
+	  /* prefsForDefault: [
+    "places.history.enabled",
+    "browser.formfill.enable",
+    "network.cookie.cookieBehavior",
+    "network.cookie.lifetimePolicy",
+    "privacy.sanitize.sanitizeOnShutdown"
+  ], */
+	  
+	if(document.getElementById(aPrefs[0]).value == true && document.getElementById(aPrefs[1]).value == true && 	document.getElementById(aPrefs[2]).value == 0 && document.getElementById(aPrefs[3]).value == 0)
+	{
+		//alert("like default");
+		return true;
+	}
+		
+	//alert("not like default");
+	return false;
+    /* for (let i = 0; i < aPrefs.length; ++i) {
+      let pref = document.getElementById(aPrefs[i]);
+	  alert(aPrefs[i]+":"+pref.value+" -- Default is:" + pref.defaultValue);
 	  if(aPrefs[i] == "privacy.sanitize.sanitizeOnShutdown" || aPrefs[i] == "network.cookie.cookieBehavior") 
 	  {
 		if (pref.value == pref.defaultValue) {
@@ -170,9 +188,10 @@ var gPrivacyPane = {
 	  }
         
 	  
-    }
+    } 
+	return true;*/
 	
-    return true;
+    
   },
 
   /**
@@ -192,7 +211,9 @@ var gPrivacyPane = {
     }
     else
       mode = "custom";
-	//alert(mode);
+	/* if (this._checkDefaultValues(this.prefsForDefault)) {
+		alert("all is default with FF");
+	} */
     document.getElementById("historyMode").value = mode;
   },
 
@@ -224,22 +245,37 @@ var gPrivacyPane = {
   updateHistoryModePrefs: function PPP_updateHistoryModePrefs()
   {
     let pref = document.getElementById("browser.privatebrowsing.autostart");
+	let rememberFormCheckbox = document.getElementById("rememberForms");
+	let rememberHistoryCheckbox = document.getElementById("rememberHistory");
+	let alwaysClearCheckbox = document.getElementById("alwaysClear");
+	
     switch (document.getElementById("historyMode").value) {
     case "remember":
       if (pref.value)
         pref.value = false;
 
       // select the remember history option if needed
-      let rememberHistoryCheckbox = document.getElementById("rememberHistory");
+      
       if (!rememberHistoryCheckbox.checked)
         rememberHistoryCheckbox.checked = true;
+	  if (!rememberFormCheckbox.checked)
+        rememberFormCheckbox.checked = true;
+	  if (alwaysClearCheckbox.checked)
+        rememberFormCheckbox.checked = false;	
 
+	
+		
       // select the remember forms history option
       document.getElementById("browser.formfill.enable").value = true;
+	  document.getElementById("browser.history.enable").value = true;
 
       // select the allow cookies option
       document.getElementById("network.cookie.cookieBehavior").value = 0;
       // select the cookie lifetime policy option
+	  //alert(document.getElementById("network.cookie.lifetimePolicy").value);
+	  //if (this._checkDefaultValues(this.prefsForDefault)) {
+	//	alert("all is default with FF");
+	  //}
       document.getElementById("network.cookie.lifetimePolicy").value = 0;
 
       // select the clear on close option
@@ -249,6 +285,25 @@ var gPrivacyPane = {
       if (!pref.value)
         pref.value = true;
       break;
+	case "custom":
+		if (pref.value)
+			pref.value = false;
+		//let rememberHistoryCheckbox = document.getElementById("rememberHistory");
+		if (rememberHistoryCheckbox.checked)
+			rememberHistoryCheckbox.checked = false;
+		if (rememberFormCheckbox.checked)
+			rememberFormCheckbox.checked = false;	
+		if (!alwaysClearCheckbox.checked)
+			rememberFormCheckbox.checked = true;
+		document.getElementById("browser.formfill.enable").value = false;
+		document.getElementById("browser.history.enable").value = false;
+
+		// select the allow cookies option
+		document.getElementById("network.cookie.cookieBehavior").value = 3;
+		// select the cookie lifetime policy option
+		document.getElementById("network.cookie.lifetimePolicy").value = 0;
+		document.getElementById("privacy.sanitize.sanitizeOnShutdown").value = true;
+	  break;
     }
   },
 
@@ -277,6 +332,7 @@ var gPrivacyPane = {
       });
 
       // adjust the cookie controls status
+	  
       this.readAcceptCookies();
       document.getElementById("keepCookiesUntil").value = disabled ? 2 :
         document.getElementById("network.cookie.lifetimePolicy").value;

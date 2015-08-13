@@ -31,10 +31,10 @@
               type="bool"/>
   <preference id="browser.urlbar.suggest.bookmark"
               name="browser.urlbar.suggest.bookmark"
-              type="bool"/>
+              type="bool" value="false"/>
   <preference id="browser.urlbar.suggest.history"
               name="browser.urlbar.suggest.history"
-              type="bool"/>
+              type="bool" value="false"/>
   <preference id="browser.urlbar.suggest.openpage"
               name="browser.urlbar.suggest.openpage"
               type="bool"/>
