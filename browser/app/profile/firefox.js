@@ -347,8 +347,8 @@ pref("browser.urlbar.match.url", "@");
 
 // The default behavior for the urlbar can be configured to use any combination
 // of the match filters with each additional filter adding more results (union).
-pref("browser.urlbar.suggest.history",              false);
-pref("browser.urlbar.suggest.bookmark",             false);
+pref("browser.urlbar.suggest.history",              true);
+pref("browser.urlbar.suggest.bookmark",             true);
 pref("browser.urlbar.suggest.openpage",             true);
 #ifdef NIGHTLY_BUILD
 pref("browser.urlbar.suggest.searches",             true);
@@ -542,11 +542,11 @@ pref("privacy.clearOnShutdown.history",     true);
 pref("privacy.clearOnShutdown.formdata",    true);
 pref("privacy.clearOnShutdown.passwords",   false);
 pref("privacy.clearOnShutdown.downloads",   true);
-pref("privacy.clearOnShutdown.cookies",     true);
+pref("privacy.clearOnShutdown.cookies",     false);
 pref("privacy.clearOnShutdown.cache",       true);
 pref("privacy.clearOnShutdown.sessions",    true);
-pref("privacy.clearOnShutdown.offlineApps", true);
-pref("privacy.clearOnShutdown.siteSettings", true);
+pref("privacy.clearOnShutdown.offlineApps", false);
+pref("privacy.clearOnShutdown.siteSettings", false);
 pref("privacy.clearOnShutdown.openWindows", false);
 
 pref("privacy.cpd.history",                 true);
@@ -568,20 +568,12 @@ pref("privacy.cpd.openWindows",             false);
 // 4 - Today
 // 5 - Last 5 minutes
 // 6 - Last 24 hours
+// ThangLuu add Config to change default setting
 pref("privacy.sanitize.timeSpan", 1);
-pref("privacy.sanitize.sanitizeOnShutdown", true);
-pref("network.cookie.cookieBehavior", 3);
-pref("browser.search.suggest.enabled",    false);
+pref("privacy.sanitize.sanitizeOnShutdown", false);
 pref("privacy.sanitize.migrateFx3Prefs",    false);
-pref("privacy.donottrackheader.enabled",    true);
-
-
-
-
 pref("privacy.panicButton.enabled",         true);
-
 pref("network.proxy.share_proxy_settings",  false); // use the same proxy settings for all protocols
-
 // simple gestures support
 pref("browser.gesture.swipe.left", "Browser:BackOrBackDuplicate");
 pref("browser.gesture.swipe.right", "Browser:ForwardOrForwardDuplicate");
@@ -1106,8 +1098,8 @@ pref("browser.sessionstore.cleanup.forget_closed_after", 1209600000);
 pref("accessibility.blockautorefresh", false);
 
 // Whether history is enabled or not.
-pref("places.history.enabled", false);
-pref("browser.formfill.enable", false);
+pref("places.history.enabled", true);
+pref("browser.formfill.enable", true);
 
 
 // the (maximum) number of the recent visits to sample
@@ -1310,7 +1302,7 @@ pref("services.sync.prefs.sync.addons.ignoreUserEnabledChanges", true);
 // source, and this would propagate automatically to other,
 // uncompromised Sync-connected devices.
 pref("services.sync.prefs.sync.app.update.mode", true);
-pref("services.sync.prefs.sync.browser.formfill.enable", false);
+pref("services.sync.prefs.sync.browser.formfill.enable", true);
 pref("services.sync.prefs.sync.browser.link.open_newwindow", true);
 pref("services.sync.prefs.sync.browser.newtabpage.enabled", true);
 pref("services.sync.prefs.sync.browser.newtabpage.enhanced", true);

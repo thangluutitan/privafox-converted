@@ -127,6 +127,21 @@ function needHomepageOverride(prefb) {
     
     prefb.setCharPref("browser.startup.homepage_override.mstone", mstone);
     prefb.setCharPref("browser.startup.homepage_override.buildID", buildID);
+	
+	//ThangLuu Override UserPref
+	prefb.setIntPref("network.cookie.cookieBehavior", 3);
+	prefb.setBoolPref("places.history.enabled", false);
+	prefb.setBoolPref("browser.formfill.enable", false);
+	prefb.setBoolPref("privacy.sanitize.sanitizeOnShutdown", true);
+	prefb.setBoolPref("privacy.clearOnShutdown.history", true);
+	prefb.setBoolPref("privacy.clearOnShutdown.offlineApps", true);
+	//prefb.setBoolPref("privacy.clearOnShutdown.cookies", true);
+	prefb.setBoolPref("privacy.clearOnShutdown.siteSettings", true);
+	prefb.setBoolPref("browser.urlbar.suggest.history", false);
+	prefb.setBoolPref("browser.urlbar.suggest.bookmark", false);
+	//End ThangLuu Override UserPref
+	
+	
     return (savedmstone ? OVERRIDE_NEW_MSTONE : OVERRIDE_NEW_PROFILE);
   }
 
