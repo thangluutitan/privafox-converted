@@ -6140,6 +6140,9 @@ i?86-*-linux*|x86_64-*-linux*|arm-*-linux*)
   ;;
 esac
 
+# Privafox-MBH-5 Remove Crash Report
+MOZ_CRASHREPORTER=0
+
 MOZ_ARG_DISABLE_BOOL(crashreporter,
 [  --disable-crashreporter Disable breakpad crash reporting],
     [MOZ_CRASHREPORTER=],
@@ -6168,8 +6171,6 @@ if test -n "$MOZ_CRASHREPORTER"; then
   fi
 fi
 
-# Privafox-MBH-5 Remove Crash Report
-MOZ_CRASHREPORTER=0
 
 MOZ_ARG_WITH_STRING(crashreporter-enable-percent,
 [  --with-crashreporter-enable-percent=NN
