@@ -1,4 +1,4 @@
-﻿# -*- indent-tabs-mode: nil; js-indent-level: 2 -*-
+# -*- indent-tabs-mode: nil; js-indent-level: 2 -*-
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -4990,21 +4990,12 @@ var TabsInTitlebar = {
         this._update(true);
     };
     CustomizableUI.addListener(this);
-    this._initialized = true;    
-          
+    this._initialized = true;
     /*
     * Privafox : Enable default menuBar & Bookmarks Toolbars
     */
-    const startupMenubar = "browser.startup.menubar.enable";        
-    const startupBookmarks = "browser.startup.bookmarksToolbar.enable";     
-    if (Services.prefs.getIntPref(startupMenubar) == 1) 
-    {
-        Services.prefs.setIntPref(startupMenubar, 100);
-        menu.setAttribute('autohide','false');        
-    }
-    if (Services.prefs.getIntPref(startupBookmarks) == 1) { 
-        Services.prefs.setIntPref(startupBookmarks, 100);
-        let toolbarNodes = getTogglableToolbars();
+    menu.setAttribute('autohide','false');
+    let toolbarNodes = getTogglableToolbars();
       for (let toolbar of toolbarNodes) {
         let menuItem = document.createElement("menuitem");
         if(toolbar.getAttribute("type") != "menubar")
@@ -5012,8 +5003,7 @@ var TabsInTitlebar = {
            menuItem.setAttribute('checked','true');
            CustomizableUI.setToolbarVisibility(toolbar.id, true);
         }
-    }    
-    }
+      }    
 #endif
     
   },
