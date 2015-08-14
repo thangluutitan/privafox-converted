@@ -4994,7 +4994,7 @@ var TabsInTitlebar = {
     /*
     * Privafox : Enable default menuBar & Bookmarks Toolbars
     */
-    menu.setAttribute('autohide','false');
+    menu.setAttribute('autohide','false');  
     let toolbarNodes = getTogglableToolbars();
       for (let toolbar of toolbarNodes) {
         let menuItem = document.createElement("menuitem");
