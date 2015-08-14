@@ -729,10 +729,10 @@ function populateActionBox() {
     $("reset-box").style.display = "block";
     $("action-box").style.display = "block";
   }
-  //if (!Services.appinfo.inSafeMode) {
-  //  $("safe-mode-box").style.display = "block";
-  //  $("action-box").style.display = "block";
-  //}
+  if (!Services.appinfo.inSafeMode) {
+    $("safe-mode-box").style.display = "block";
+    $("action-box").style.display = "block";
+  }
 }
 
 // Prompt user to restart the browser in safe mode
