@@ -1,0 +1,22 @@
+# Build Firefox for Window App:
+# Common Section:
+mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/privafox-x32-new
+ac_add_options --enable-application=browser
+ac_add_options --enable-optimize
+ac_add_options --disable-debug
+ac_add_options --with-app-name=privafox
+ac_add_options --with-branding=browser/branding/privafox
+ac_add_options --disable-mochitest
+ac_add_options --disable-mochitests
+ac_add_options --disable-tests
+ac_add_options --disable-ipdl-tests
+#mk_add_options AUTOCLOBBER=1#ac_add_options --disable-jemalloc
+#ac_add_options --disable-verify-mar
+#ac_add_options --disable-accessibility
+#ac_add_options --disable-maintenance-service
+ac_add_options --disable-system-extension-dirs
+#ac_add_options --disable-services-healthreport
+#ac_add_options --disable-telemetry-reporting 
+# for X86
+WIN32_REDIST_DIR=$VCINSTALLDIR/redist/x86/Microsoft.VC120.CRT
+

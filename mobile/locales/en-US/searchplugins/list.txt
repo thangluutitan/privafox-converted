@@ -1,0 +1,8 @@
+findx
+amazondotcom
+google
+twitter
+wikipedia
+yahoo
+bing
+duckduckgo
