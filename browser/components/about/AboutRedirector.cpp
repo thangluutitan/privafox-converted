@@ -95,10 +95,6 @@ static RedirEntry kRedirMap[] = {
     nsIAboutModule::ALLOW_SCRIPT },
   { "downloads", "chrome://browser/content/downloads/contentAreaDownloadsView.xul",
     nsIAboutModule::ALLOW_SCRIPT },
-#ifdef MOZ_SERVICES_HEALTHREPORT
-  { "healthreport", "chrome://browser/content/abouthealthreport/abouthealth.xhtml",
-    nsIAboutModule::ALLOW_SCRIPT },
-#endif
   { "accounts", "chrome://browser/content/aboutaccounts/aboutaccounts.xhtml",
     nsIAboutModule::ALLOW_SCRIPT },
   { "app-manager", "chrome://browser/content/devtools/app-manager/index.xul",
