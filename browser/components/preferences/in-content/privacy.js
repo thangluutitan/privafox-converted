@@ -180,8 +180,8 @@ var gPrivacyPane = {
     else
       mode = "custom";
 
-	if (getVal("browser.privatebrowsing.autostart"))
-        mode = "dontremember";
+	//if (getVal("browser.privatebrowsing.autostart"))
+    //    mode = "dontremember";
     document.getElementById("historyMode").value = mode;
   },
 
@@ -225,10 +225,10 @@ var gPrivacyPane = {
 
       // select the remember forms history option
       document.getElementById("browser.formfill.enable").value = true;
-	  document.getElementById("places.history.enabled").value = true;
+	  //document.getElementById("places.history.enabled").value = true;
 	  
       // select the allow cookies option
-      document.getElementById("network.cookie.cookieBehavior").value = 0;
+      //document.getElementById("network.cookie.cookieBehavior").value = 0;
       // select the cookie lifetime policy option
       document.getElementById("network.cookie.lifetimePolicy").value = 0;
 
