@@ -228,7 +228,7 @@ var gPrivacyPane = {
 	  //document.getElementById("places.history.enabled").value = true;
 	  
       // select the allow cookies option
-      //document.getElementById("network.cookie.cookieBehavior").value = 0;
+      document.getElementById("network.cookie.cookieBehavior").value = 0;
       // select the cookie lifetime policy option
       document.getElementById("network.cookie.lifetimePolicy").value = 0;
 

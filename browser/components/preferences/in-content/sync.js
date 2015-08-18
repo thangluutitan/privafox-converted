@@ -582,13 +582,15 @@ let gSyncPane = {
   },
 
   signUp: function() {
-    this.openContentInBrowser("about:accounts?action=signup&entrypoint=preferences", {
+	  //this.openContentInBrowser("about:accounts?action=signup&entrypoint=preferences", {
+    this.openContentInBrowser("https://accounts.privafox.com/signup.html?service=sync", {
       replaceQueryString: true
     });
   },
 
   signIn: function() {
-    this.openContentInBrowser("about:accounts?action=signin&entrypoint=preferences", {
+	  //this.openContentInBrowser("about:accounts?action=signin&entrypoint=preferences", {
+    this.openContentInBrowser("https://accounts.privafox.com/signin.html?service=sync", {
       replaceQueryString: true
     });
   },

@@ -1057,7 +1057,7 @@ pref("content.sink.pending_event_mode", 0);
 pref("privacy.popups.disable_from_plugins", 2);
 
 // send "do not track" HTTP header, disabled by default
-pref("privacy.donottrackheader.enabled",    false);
+pref("privacy.donottrackheader.enabled",    true);
 // Enforce tracking protection in all modes
 pref("privacy.trackingprotection.enabled",  false);
 // Enforce tracking protection in Private Browsing mode
@@ -4836,7 +4836,7 @@ pref("browser.search.log", false);
 pref("browser.search.update", true);
 pref("browser.search.update.log", false);
 pref("browser.search.update.interval", 21600);
-pref("browser.search.suggest.enabled", true);
+pref("browser.search.suggest.enabled", false);
 pref("browser.search.geoSpecificDefaults", false);
 pref("browser.search.geoip.url", "https://location.services.mozilla.com/v1/country?key=%MOZILLA_API_KEY%");
 // NOTE: this timeout figure is also the "high" value for the telemetry probe

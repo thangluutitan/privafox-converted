@@ -1,29 +1,22 @@
 # Build Firefox for Window App:
 # Common Config Section
 ac_add_options --enable-application=browser
-ac_add_options --enable-optimize
-ac_add_options --disable-debug
 ac_add_options --with-app-name=privafox
 ac_add_options --with-branding=browser/branding/privafox
-ac_add_options --disable-system-extension-dirs
 ac_add_options --disable-mochitest
 ac_add_options --disable-mochitests
 ac_add_options --disable-tests
 ac_add_options --disable-ipdl-tests
-# End Common Config Section
+ac_add_options --disable-crashreporter
+mk_add_options AUTOCLOBBER=1
+#Fix auto create mozilla folder
+ac_add_options --disable-sandbox
+ac_add_options --disable-system-extension-dirs
 mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/privafox-x64
-#mk_add_options MOZ_MAKE_FLAGS="-s -j4"
 # for 64-bit build
 ac_add_options --target=x86_64-pc-mingw32
 ac_add_options --host=x86_64-pc-mingw32
 # for 64-bit build
-#ac_add_options --disable-jemalloc
-#ac_add_options --disable-verify-mar
-#ac_add_options --disable-accessibility
-#ac_add_options --disable-maintenance-service
-#ac_add_options --disable-services-healthreport
-#ac_add_options --disable-telemetry-reporting 
-#mk_add_options AUTOCLOBBER=1
 export MOZ_OPTIMIZE_LDFLAGS="-MACHINE:X64 -OPT:REF,ICF -FORCE"
 mk_add_options MOZ_OPTIMIZE_LDFLAGS="-MACHINE:X64 -OPT:REF,ICF -FORCE"
 WIN32_REDIST_DIR=$VCINSTALLDIR/redist/x64/Microsoft.VC120.CRT
