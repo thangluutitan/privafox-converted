@@ -159,6 +159,32 @@ function helpButtonCommand() {
   let categories = document.getElementById("categories");
   let helpTopic = categories.querySelector(".category[value=" + pane + "]")
                             .getAttribute("helpTopic");
+  let advancedTabs = document.getElementById("tabsElement");	
+  //alert("selectedItem:"+advancedTabs.selectedIndex);
+  switch (advancedTabs.selectedIndex) {
+	case 0:
+		//helpTopic = helpTopic.replace("prefs-advanced-general","prefs-advanced");
+	break
+	case 1:
+		helpTopic = helpTopic.replace("prefs-advanced-general","prefs-advanced-network");
+	break;
+	case 2:
+		helpTopic = helpTopic.replace("prefs-advanced-general","prefs-advanced-update");
+	break;
+	case 3:
+		helpTopic = helpTopic.replace("prefs-advanced-general","prefs-advanced-certificates");
+	break;
+  
+  }
+  helpTopic = helpTopic.replace("prefs-weave","prefs-sync");
+  //if(advancedTabs.selectedIndex ==)
+	//if(helpTopic == "prefs-advanced-general"){
+	//let testValue = categories.querySelector(".category[value="+'updateTab'+"]")
+     //                       .getAttribute("helpTopic"); 
+							
+    //let activeTab = getActiveTab(window);
+	
+  						
   openHelpLink(helpTopic);
 }
 

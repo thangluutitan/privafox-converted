@@ -38,13 +38,7 @@ var gAdvancedPane = {
     this.updateReadPrefs();
 #endif
     this.updateOfflineApps();
-#ifdef MOZ_CRASHREPORTER
-    this.initSubmitCrashes();
-#endif
     this.initTelemetry();
-#ifdef MOZ_SERVICES_HEALTHREPORT
-    this.initSubmitHealthReport();
-#endif
     this.updateCacheSizeInputField();
     this.updateActualCacheSize();
     this.updateActualAppCacheSize();
@@ -53,14 +47,6 @@ var gAdvancedPane = {
                      gAdvancedPane.updateHardwareAcceleration);
     setEventListener("advancedPrefs", "select",
                      gAdvancedPane.tabSelectionChanged);
-#ifdef MOZ_SERVICES_HEALTHREPORT
-    setEventListener("submitHealthReportBox", "command",
-                     gAdvancedPane.updateSubmitHealthReport);
-#endif
-#ifdef MOZ_CRASHREPORTER
-    setEventListener("submitCrashesBox", "command",
-                     gAdvancedPane.updateSubmitCrashes);
-#endif
     setEventListener("connectionSettings", "command",
                      gAdvancedPane.showConnections);
     setEventListener("clearCacheButton", "command",
@@ -221,36 +207,7 @@ var gAdvancedPane = {
     }
   },
 
-  /**
-   *
-   */
-  initSubmitCrashes: function ()
-  {
-    this._setupLearnMoreLink("toolkit.crashreporter.infoURL",
-                             "crashReporterLearnMore");
-
-    var checkbox = document.getElementById("submitCrashesBox");
-    try {
-      var cr = Components.classes["@mozilla.org/toolkit/crash-reporter;1"].
-               getService(Components.interfaces.nsICrashReporter);
-      checkbox.checked = cr.submitReports;
-    } catch (e) {
-      checkbox.style.display = "none";
-    }
-  },
-
-  /**
-   *
-   */
-  updateSubmitCrashes: function ()
-  {
-    var checkbox = document.getElementById("submitCrashesBox");
-    try {
-      var cr = Components.classes["@mozilla.org/toolkit/crash-reporter;1"].
-               getService(Components.interfaces.nsICrashReporter);
-      cr.submitReports = checkbox.checked;
-    } catch (e) { }
-  },
+  
 
   /**
    * The preference/checkbox is configured in XUL.
@@ -282,48 +239,7 @@ var gAdvancedPane = {
 #endif
   },
 
-#ifdef MOZ_SERVICES_HEALTHREPORT
-  /**
-   * Initialize the health report service reference and checkbox.
-   */
-  initSubmitHealthReport: function () {
-    this._setupLearnMoreLink("datareporting.healthreport.infoURL", "FHRLearnMore");
 
-    let policy = Components.classes["@mozilla.org/datareporting/service;1"]
-                                   .getService(Components.interfaces.nsISupports)
-                                   .wrappedJSObject
-                                   .policy;
-
-    let checkbox = document.getElementById("submitHealthReportBox");
-
-    if (!policy || policy.healthReportUploadLocked) {
-      checkbox.setAttribute("disabled", "true");
-      return;
-    }
-
-    checkbox.checked = policy.healthReportUploadEnabled;
-    this.setTelemetrySectionEnabled(checkbox.checked);
-  },
-
-  /**
-   * Update the health report policy acceptance with state from checkbox.
-   */
-  updateSubmitHealthReport: function () {
-    let policy = Components.classes["@mozilla.org/datareporting/service;1"]
-                                   .getService(Components.interfaces.nsISupports)
-                                   .wrappedJSObject
-                                   .policy;
-
-    if (!policy) {
-      return;
-    }
-
-    let checkbox = document.getElementById("submitHealthReportBox");
-    policy.recordHealthReportUploadEnabled(checkbox.checked,
-                                           "Checkbox from preferences pane");
-    this.setTelemetrySectionEnabled(checkbox.checked);
-  },
-#endif
 
   // NETWORK TAB
 

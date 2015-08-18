@@ -13,8 +13,8 @@ host	uitour	1	support.privacore.com
 host	uitour	1	about:home
 
 # XPInstall
-host	install	1	addons.privacore.com
-host	install	1	marketplace.privacore.com
+host	install	1	addons.privafox.com
+host	install	1	update.privafox.com
 
 # Remote troubleshooting
 host	remote-troubleshooting	1	input.privacore.com

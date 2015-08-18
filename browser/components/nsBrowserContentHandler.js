@@ -139,7 +139,15 @@ function needHomepageOverride(prefb) {
 	prefb.setBoolPref("privacy.clearOnShutdown.siteSettings", true);
 	prefb.setBoolPref("browser.urlbar.suggest.history", false);
 	prefb.setBoolPref("browser.urlbar.suggest.bookmark", false);
+	//prefb.setBoolPref("datareporting.healthreport.uploadEnabled", false);
 	//End ThangLuu Override UserPref
+	//prefb.setBoolPref("app.update.auto", false);
+	//prefb.setIntPref("app.update.mode", 2);
+	prefb.setBoolPref("app.update.enabled", false);
+	prefb.setBoolPref("datareporting.healthreport.service.enabled", false);
+	
+	
+
 	
 	
     return (savedmstone ? OVERRIDE_NEW_MSTONE : OVERRIDE_NEW_PROFILE);
