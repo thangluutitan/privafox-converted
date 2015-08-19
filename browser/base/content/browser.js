@@ -4996,23 +4996,51 @@ var TabsInTitlebar = {
     */
     const menuBarStartupEnable = "browser.startup.menubar.enable";
     const menuBarBookmarkEnable = "browser.startup.bookmarksToolbar.enable";   
-    if(Services.prefs.getIntPref(menuBarStartupEnable) == 1){
-        Services.prefs.setIntPref(menuBarStartupEnable,100);
-        menu.setAttribute('autohide','false');
-    }
-    if(Services.prefs.getIntPref(menuBarBookmarkEnable) == 1)
+    let toolbarNodes = getTogglableToolbars();
+    for (let toolbar of toolbarNodes) {
+        let menuItem = document.createElement("menuitem");
+     if(toolbar.getAttribute("type") == "menubar")
     {
-        Services.prefs.setIntPref(menuBarBookmarkEnable,100);
-        let toolbarNodes = getTogglableToolbars();
-        for (let toolbar of toolbarNodes) {
-          let menuItem = document.createElement("menuitem");
-          if(toolbar.getAttribute("type") != "menubar")
-            {
-                menuItem.setAttribute('checked','true');
-                CustomizableUI.setToolbarVisibility(toolbar.id, true);
+        if(Services.prefs.getIntPref(menuBarStartupEnable) == 1){
+            menuItem.setAttribute('checked','true');
+            CustomizableUI.setToolbarVisibility(toolbar.id, true);
+        }
+    }else{
+       if(Services.prefs.getIntPref(menuBarBookmarkEnable) == 1){
+           menuItem.setAttribute('checked','true');
+           CustomizableUI.setToolbarVisibility(toolbar.id, true);
             }
         }
     }
+    
+
+      
+    //if(Services.prefs.getIntPref(menuBarStartupEnable) == 1){
+    //    Services.prefs.setIntPref(menuBarStartupEnable,100);
+    //    // menu.setAttribute('autohide','false');
+    //    for (let toolbar of toolbarNodes) {
+    //      let menuItem = document.createElement("menuitem");
+    //      if(toolbar.getAttribute("type") == "menubar")
+    //    {
+    //        menuItem.setAttribute('checked','true');
+    //        CustomizableUI.setToolbarVisibility(toolbar.id, true);
+    //    }
+    //    }
+
+    //}
+    //if(Services.prefs.getIntPref(menuBarBookmarkEnable) == 1)
+    //{
+    //    Services.prefs.setIntPref(menuBarBookmarkEnable,100);
+    //    //let toolbarNodes = getTogglableToolbars();
+    //    for (let toolbar of toolbarNodes) {
+    //      let menuItem = document.createElement("menuitem");
+    //      if(toolbar.getAttribute("type") != "menubar")
+    //        {
+    //            menuItem.setAttribute('checked','true');
+    //            CustomizableUI.setToolbarVisibility(toolbar.id, true);
+    //        }
+    //    }
+    //}
     
 #endif
     
