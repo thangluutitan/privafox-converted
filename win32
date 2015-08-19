@@ -8,9 +8,9 @@ ac_add_options --disable-debug
 ac_add_options --disable-mochitest
 ac_add_options --disable-mochitests
 ac_add_options --disable-tests
-ac_add_options --disable-ipdl-tests
+#ac_add_options --disable-ipdl-tests
 ac_add_options --disable-crashreporter
-mk_add_options AUTOCLOBBER=1
+#mk_add_options AUTOCLOBBER=1
 #Fix auto create mozilla folder
 ac_add_options --disable-sandbox
 ac_add_options --disable-system-extension-dirs

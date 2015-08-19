@@ -145,6 +145,10 @@ function needHomepageOverride(prefb) {
 	//prefb.setIntPref("app.update.mode", 2);
 	prefb.setBoolPref("app.update.enabled", false);
 	prefb.setBoolPref("datareporting.healthreport.service.enabled", false);
+	prefb.setBoolPref("datareporting.policy.dataSubmissionEnabled", false);
+	prefb.setBoolPref("datareporting.healthreport.uploadEnabled", false);
+	
+	
 	
 	
 
