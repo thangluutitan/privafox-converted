@@ -5002,11 +5002,13 @@ var TabsInTitlebar = {
      if(toolbar.getAttribute("type") == "menubar")
     {
         if(Services.prefs.getIntPref(menuBarStartupEnable) == 1){
+            Services.prefs.setIntPref(menuBarStartupEnable,100);
             menuItem.setAttribute('checked','true');
             CustomizableUI.setToolbarVisibility(toolbar.id, true);
         }
     }else{
        if(Services.prefs.getIntPref(menuBarBookmarkEnable) == 1){
+           Services.prefs.setIntPref(menuBarBookmarkEnable,100);
            menuItem.setAttribute('checked','true');
            CustomizableUI.setToolbarVisibility(toolbar.id, true);
             }
