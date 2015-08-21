@@ -185,7 +185,11 @@ pref("app.update.badge", false);
 pref("app.update.staging.enabled", true);
 
 // Update service URL:
-pref("app.update.url", "https://aus4.mozilla.org/update/3/%PRODUCT%/%VERSION%/%BUILD_ID%/%BUILD_TARGET%/%LOCALE%/%CHANNEL%/%OS_VERSION%/%DISTRIBUTION%/%DISTRIBUTION_VERSION%/update.xml");
+//pref("app.update.url", "https://updates.privafox.com/%PRODUCT%/%VERSION%/%BUILD_ID%/%BUILD_TARGET%/%LOCALE%/%CHANNEL%/%OS_VERSION%/%DISTRIBUTION%/%DISTRIBUTION_VERSION%/update.xml?v=%VERSION%&l=%LOCALE%&os=%OS%");
+//pref("app.update.url","https://onedrive.live.com/redir?resid=EE4C4C4FD8BDFAF3!2373&authkey=!AKk-dszO0M2_g_k&ithint=file%2cxml");"
+pref("app.update.url", "https://updates.privafox.com/browser.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
+//pref("app.update.url", "https://aus4.mozilla.org/update/3/%PRODUCT%/%VERSION%/%BUILD_ID%/%BUILD_TARGET%/%LOCALE%/%CHANNEL%/%OS_VERSION%/%DISTRIBUTION%/%DISTRIBUTION_VERSION%/update.xml");
+//pref("app.update.url", "https://aus4.mozilla.org/update/3/Firefox/%VERSION%/%BUILD_ID%/%BUILD_TARGET%/%LOCALE%/%CHANNEL%/%OS_VERSION%/%DISTRIBUTION%/%DISTRIBUTION_VERSION%/update.xml");
 // app.update.url.manual is in branding section
 // app.update.url.details is in branding section
 
@@ -196,6 +200,7 @@ pref("app.update.url", "https://aus4.mozilla.org/update/3/%PRODUCT%/%VERSION%/%B
 // app.update.promptWaitTime is in branding section
 
 // Show the Update Checking/Ready UI when the user was idle for x seconds
+//pref("app.update.idletime", 6);
 pref("app.update.idletime", 60);
 
 // Whether or not we show a dialog box informing the user that the update was
