@@ -10,7 +10,6 @@ const {classes: Cc, interfaces: Ci, utils: Cu, results: Cr} = Components;
 
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/AppConstants.jsm");
-
 const MOZ_APP_NAME = AppConstants.MOZ_APP_NAME;
 const MOZ_BUILD_APP = AppConstants.MOZ_BUILD_APP;
 
@@ -27,9 +26,8 @@ this.ResetProfile = {
 
     // Reset is only supported for the default profile if the self-migrator used for reset exists.
     try {
-      return currentProfileDir.equals(profileService.selectedProfile.rootDir) 
-	 //&&
-      //  ("@mozilla.org/profile/migrator;1?app=" + MOZ_BUILD_APP + "&type=" + MOZ_APP_NAME in Cc);
+      return currentProfileDir.equals(profileService.selectedProfile.rootDir) &&
+        ("@mozilla.org/profile/migrator;1?app=" + MOZ_BUILD_APP + "&type=" + MOZ_APP_NAME in Cc);
     } catch (e) {
       // Catch exception when there is no selected profile.
       Cu.reportError(e);
