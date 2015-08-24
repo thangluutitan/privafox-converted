@@ -27,8 +27,9 @@ this.ResetProfile = {
 
     // Reset is only supported for the default profile if the self-migrator used for reset exists.
     try {
-      return currentProfileDir.equals(profileService.selectedProfile.rootDir) &&
-        ("@mozilla.org/profile/migrator;1?app=" + MOZ_BUILD_APP + "&type=" + MOZ_APP_NAME in Cc);
+      return currentProfileDir.equals(profileService.selectedProfile.rootDir) 
+	 //&&
+      //  ("@mozilla.org/profile/migrator;1?app=" + MOZ_BUILD_APP + "&type=" + MOZ_APP_NAME in Cc);
     } catch (e) {
       // Catch exception when there is no selected profile.
       Cu.reportError(e);
