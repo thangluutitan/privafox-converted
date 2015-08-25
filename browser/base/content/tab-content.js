@@ -144,19 +144,20 @@ let AboutHomeListener = {
   },
 
   onUpdate: function(aData) {
-    let doc = content.document;
+     let doc = content.document;
     if (aData.showRestoreLastSession && !PrivateBrowsingUtils.isContentWindowPrivate(content))
       doc.getElementById("launcher").setAttribute("session", "true");
     // Inject search engine and snippets URL.
     let docElt = doc.documentElement;
     // set the following attributes BEFORE searchEngineName, which triggers to
     // show the snippets when it's set.
-    docElt.setAttribute("snippetsURL", aData.snippetsURL);
-    if (aData.showKnowYourRights)
-      docElt.setAttribute("showKnowYourRights", "true");
-    docElt.setAttribute("snippetsVersion", aData.snippetsVersion);
+    //docElt.setAttribute("snippetsURL", aData.snippetsURL);
+    //if (aData.showKnowYourRights)
+    //  docElt.setAttribute("showKnowYourRights", "true");
+    //docElt.setAttribute("snippetsVersion", aData.snippetsVersion);
     docElt.setAttribute("searchEngineName", aData.defaultEngineName);
     docElt.setAttribute("domainSearchEngine", aData.domainSearchEngineName);
+    //docElt.setAttribute("domainSearchEngineTest", aData.defaultEngineNameTest);    
   },
 
   onPageLoad: function() {    

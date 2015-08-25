@@ -249,15 +249,11 @@ let AboutHome = {
   // Send all the chrome-privileged data needed by about:home. This
   // gets re-sent when the search engine changes.
   sendAboutHomeData: function(target) {
-  
     let wrapper = {};
-    Components.utils.import("resource:///modules/sessionstore/SessionStore.jsm",
-      wrapper);
+    Components.utils.import("resource:///modules/sessionstore/SessionStore.jsm",wrapper);
     let ss = wrapper.SessionStore;
-
     ss.promiseInitialized.then(function() {
       let deferred = Promise.defer();
-
       Services.search.init(function (status){
         if (!Components.isSuccessCode(status)) {
           deferred.reject(status);
@@ -269,22 +265,31 @@ let AboutHome = {
       return deferred.promise;
     }).then(function(engineName) {
 		let current = Services.search.getEngineByName(engineName);
+
 		let url = current.getSubmission("foo", "text/html").uri.spec;
 		let sourceString = url.replace('http://','').replace('https://','').replace('www.','').split(/[/?#]/)[0];      
+
+		/**
+		let enginesVisible = Services.search.getEngines();
+        for (let engineItem of enginesVisible) {
+          if (engineItem.name == "Findx") {
+            Services.search.defaultEngine = engineItem;
+			break;
+          }
+        }
+		let engineTest = Services.search.defaultEngine.name;
+		*/
       let data = {
         showRestoreLastSession: ss.canRestoreLastSession,
-        snippetsURL: AboutHomeUtils.snippetsURL,
-        showKnowYourRights: AboutHomeUtils.showKnowYourRights,
-        snippetsVersion: AboutHomeUtils.snippetsVersion,
         defaultEngineName: engineName,
 		domainSearchEngineName:sourceString
       };
 
-      if (AboutHomeUtils.showKnowYourRights) {
+      //if (AboutHomeUtils.showKnowYourRights) {
         // Set pref to indicate we've shown the notification.
-        let currentVersion = Services.prefs.getIntPref("browser.rights.version");
-        Services.prefs.setBoolPref("browser.rights." + currentVersion + ".shown", true);
-      }
+       // let currentVersion = Services.prefs.getIntPref("browser.rights.version");
+       // Services.prefs.setBoolPref("browser.rights." + currentVersion + ".shown", true);
+      //}
 
       if (target && target.messageManager) {
         target.messageManager.sendAsyncMessage("AboutHome:Update", data);
