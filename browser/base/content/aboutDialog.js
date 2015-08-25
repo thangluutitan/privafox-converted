@@ -49,6 +49,15 @@ function init(aEvent)
     document.getElementById("communityDesc").hidden = true;
   }
 
+#ifdef MOZ_UPDATER
+  gAppUpdater = new appUpdater();
+  let defaults = Services.prefs.getDefaultBranch("");
+  let channelLabel = document.getElementById("currentChannel");
+  let currentChannelText = document.getElementById("currentChannelText");
+  channelLabel.value = UpdateChannel.get();
+  if (/^release($|\-)/.test(channelLabel.value))
+      currentChannelText.hidden = true;
+#endif
 #ifdef XP_MACOSX
   // it may not be sized at this point, and we need its width to calculate its position
   window.sizeToContent();

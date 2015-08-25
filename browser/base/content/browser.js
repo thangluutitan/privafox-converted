@@ -7506,7 +7506,8 @@ XPCOMUtils.defineLazyModuleGetter(this, "gDevTools",
 
 XPCOMUtils.defineLazyModuleGetter(this, "gDevToolsBrowser",
                                   "resource:///modules/devtools/gDevTools.jsm");
-
+#ifdef PRIVAFOX_WEB_DEVELOPER
+#endif
 Object.defineProperty(this, "HUDService", {
   get: function HUDService_getter() {
     let devtools = Cu.import("resource://gre/modules/devtools/Loader.jsm", {}).devtools;

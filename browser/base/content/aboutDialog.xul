@@ -54,7 +54,7 @@
                 <button id="checkForUpdatesButton" align="start"
                         label="&update.checkForUpdatesButton.label;"
                         accesskey="&update.checkForUpdatesButton.accesskey;"
-                        oncommand="clickCheckUpdate();"/>
+                        oncommand="gAppUpdater.checkForUpdates();"/>
                 <spacer flex="1"/>
               </hbox>
               <hbox id="downloadAndInstall" align="center">
