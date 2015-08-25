@@ -5,8 +5,6 @@
 
 MOZ_APP_BASENAME=Privafox
 MOZ_APP_VENDOR=Privacore
-MOZ_MAR_CHANNEL=release
-MOZ_UPDATE_CHANNEL=release
 MOZ_UPDATER=1
 MOZ_PHOENIX=1
 if test "$OS_ARCH" = "WINNT"; then
