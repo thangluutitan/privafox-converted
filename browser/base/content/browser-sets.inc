@@ -415,15 +415,6 @@
     <key id="key_stop_mac" modifiers="accel" key="&stopCmd.macCommandKey;" command="Browser:Stop"/>
 #endif
 
-    <key id="key_gotoHistory"
-         key="&historySidebarCmd.commandKey;"
-#ifdef XP_MACOSX
-         modifiers="accel,shift"
-#else
-         modifiers="accel"
-#endif
-         command="viewHistorySidebar"/>
-
     <key id="key_readingListSidebar"
          key="&readingList.sidebar.commandKey;"
          modifiers="accel,alt"
