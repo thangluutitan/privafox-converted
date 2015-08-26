@@ -3,7 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 MOZ_APP_DISPLAYNAME=Privafox
-MOZ_APP_UA_NAME=Firefox
-ANDROID_PACKAGE_NAME=org.mozilla.firefox
-MOZ_UPDATER=
+ANDROID_PACKAGE_NAME=com.privacore.privafox
+MOZ_UPDATER=1
 MOZ_ANDROID_ANR_REPORTER=
+MOZ_APP_UA_NAME=FireFox

@@ -49,7 +49,7 @@ public class FxAccountGetStartedActivity extends AccountAuthenticatorActivity {
 
     setContentView(R.layout.fxaccount_get_started);
 
-    linkifyOldFirefoxLink();
+    //linkifyOldFirefoxLink();
 
     View button = findViewById(R.id.get_started_button);
     button.setOnClickListener(new OnClickListener() {
@@ -160,7 +160,8 @@ public class FxAccountGetStartedActivity extends AccountAuthenticatorActivity {
       this.finish();
     }
   }
-
+ /*
+ * Privafox - MBT-39 - Remove Old Firefox
   protected void linkifyOldFirefoxLink() {
     TextView oldFirefox = (TextView) findViewById(R.id.old_firefox);
     String text = getResources().getString(R.string.fxaccount_getting_started_old_firefox);
@@ -168,4 +169,5 @@ public class FxAccountGetStartedActivity extends AccountAuthenticatorActivity {
     FxAccountUtils.pii(LOG_TAG, "Old Firefox url is: " + url); // Don't want to leak locale in particular.
     ActivityUtils.linkTextView(oldFirefox, text, url);
   }
+  */
 }

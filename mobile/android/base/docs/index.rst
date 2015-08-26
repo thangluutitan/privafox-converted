@@ -1,5 +1,5 @@
 ===================
-Firefox for Android
+Privafox for Android
 ===================
 
 .. toctree::

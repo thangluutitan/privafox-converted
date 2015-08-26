@@ -3459,7 +3459,7 @@ public class BrowserApp extends GeckoApp
             final String OS = AppConstants.OS_TARGET;
             final String LOCALE = Locales.getLanguageTag(Locale.getDefault());
 
-            final String URL = getResources().getString(R.string.help_link, VERSION, OS, LOCALE);
+            final String URL = getResources().getString(R.string.help_link, VERSION, LOCALE, OS);
             Tabs.getInstance().loadUrlInTab(URL);
             return true;
         }

@@ -22,10 +22,6 @@ let modules = {
     privileged: true,
     hide: true
   },
-  get firefox() {
-    return this.fennec
-  },
-
   // about:blank has some bad loading behavior we can avoid, if we use an alias
   empty: {
     uri: "about:blank",
@@ -74,6 +70,11 @@ let modules = {
   privatebrowsing: {
     uri: "chrome://browser/content/aboutPrivateBrowsing.xhtml",
     privileged: true
+  },
+  privafox: {
+    uri: "chrome://browser/content/about.xhtml",
+    privileged: true,
+    hide: true
   },
 }
 

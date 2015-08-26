@@ -43,10 +43,11 @@
             style="@style/FxAccountButton"
             android:text="@string/fxaccount_getting_started_get_started" />
 
-        <TextView
-            android:id="@+id/old_firefox"
-            style="@style/FxAccountLinkifiedItem"
-            android:text="@string/fxaccount_getting_started_old_firefox" />
+        <!--<TextView-->
+            <!--android:id="@+id/old_firefox"-->
+            <!--style="@style/FxAccountLinkifiedItem"-->
+            <!--android:-->
+            <!--android:text="@string/fxaccount_getting_started_old_firefox" />-->
 
         <LinearLayout style="@style/FxAccountSpacer" />
 

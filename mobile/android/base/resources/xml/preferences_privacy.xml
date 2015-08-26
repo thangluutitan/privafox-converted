@@ -17,7 +17,7 @@
             android:key="android.not_a_preference.trackingprotection.learn_more"
             android:title="@string/pref_learn_more"
             android:persistent="false"
-            url="https://support.mozilla.org/kb/firefox-android-tracking-protection" />
+            url="https://www.privafox.com/support/tracking-protection.html" />
 
     <CheckBoxPreference android:key="privacy.donottrackheader.enabled"
                         android:title="@string/pref_donottrack_title"
@@ -28,12 +28,13 @@
             android:key="android.not_a_preference.donottrackheader.learn_more"
             android:title="@string/pref_learn_more"
             android:persistent="false"
-            url="https://www.mozilla.org/firefox/dnt/" />
+            url="https://www.privafox.com/support/do-not-track.html" />
 
     <ListPreference android:key="network.cookie.cookieBehavior"
                     android:title="@string/pref_cookies_menu"
                     android:entries="@array/pref_cookies_entries"
                     android:entryValues="@array/pref_cookies_values"
+                    android:defaultValue="1"
                     android:persistent="false" />
 
     <PreferenceCategory android:title="@string/pref_category_logins">
@@ -71,10 +72,8 @@
                             gecko:entries="@array/pref_private_data_entries"
                             gecko:entryValues="@array/pref_private_data_values"
                             gecko:initialValues="@array/pref_clear_on_exit_defaults"
-
                             android:title="@string/pref_clear_on_exit_title"
                             android:summary="@string/pref_clear_on_exit_summary2"
-
                             android:dialogTitle="@string/pref_clear_on_exit_dialog_title"
                             android:positiveButtonText="@string/button_set"/>
 

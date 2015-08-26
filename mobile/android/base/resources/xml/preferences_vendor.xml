@@ -23,7 +23,7 @@
                                                   android:persistent="false"
                                                   url="about:feedback" />
 
-    <PreferenceCategory android:key="android.not_a_preference.datareporting.preferences"
+  <!--  <PreferenceCategory android:key="android.not_a_preference.datareporting.preferences"
                         android:title="@string/pref_category_datareporting">
 
         <CheckBoxPreference android:key="toolkit.telemetry.enabled"
@@ -54,6 +54,6 @@
                                                                 android:persistent="false"
                                                                 url="about:healthreport" />
 
-    </PreferenceCategory>
+    </PreferenceCategory> -->
 
 </PreferenceScreen>

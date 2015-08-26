@@ -139,7 +139,8 @@
 <!ENTITY pref_category_privacy_short "Privacy">
 <!ENTITY pref_category_privacy_summary2 "Control logins, cookies, tracking, data">
 <!ENTITY pref_category_vendor "&vendorShortName;">
-<!ENTITY pref_category_vendor_summary "About &brandShortName;, FAQs, data choices">
+<!-- <!ENTITY pref_category_vendor_summary "About &brandShortName;, FAQs, data choices"> -->
+<!ENTITY pref_category_vendor_summary "About &brandShortName;, FAQs">
 <!ENTITY pref_category_datareporting "Data choices">
 <!ENTITY pref_learn_more "Learn more">
 <!ENTITY pref_category_installed_search_engines "Installed search engines">
