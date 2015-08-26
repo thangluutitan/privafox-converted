@@ -6,7 +6,7 @@ MOZ_APP_BASENAME=Privafox
 MOZ_APP_VENDOR=Privacore
 
 MOZ_APP_VERSION=42.0a1
-MOZ_APP_UA_NAME=Firefox
+MOZ_APP_UA_NAME=FireFox
 
 MOZ_BRANDING_DIRECTORY=mobile/android/branding/privafox
 MOZ_OFFICIAL_BRANDING_DIRECTORY=mobile/android/branding/privafox
@@ -21,7 +21,6 @@ MOZ_ANDROID_MIN_SDK_VERSION=9
 MOZ_ANDROID_APPLICATION_CLASS=org.mozilla.gecko.GeckoApplication
 MOZ_ANDROID_BROWSER_INTENT_CLASS=org.mozilla.gecko.BrowserApp
 MOZ_ANDROID_SEARCH_INTENT_CLASS=org.mozilla.search.SearchActivity
-
 
 MOZ_SAFE_BROWSING=1
 

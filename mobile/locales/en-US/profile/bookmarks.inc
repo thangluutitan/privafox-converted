@@ -16,18 +16,18 @@
 
 # LOCALIZATION NOTE (bookmarks_aboutBrowser):
 # link title for about:fennec
-#define bookmarks_aboutBrowser Firefox: About your browser
+#define bookmarks_aboutBrowser Privafox: About your browser
 
 # LOCALIZATION NOTE (bookmarks_addons):
-# link title for https://addons.mozilla.org/en-US/mobile
-#define bookmarks_addons Firefox: Customize with add-ons
+# link title for https://addons.privacore.org/en-US/mobile
+#define bookmarks_addons Privafox: Customize with add-ons
 
 # LOCALIZATION NOTE (bookmarks_support):
-# link title for https://support.mozilla.org/
-#define bookmarks_support Firefox: Support
+# link title for https://support.privacore.com/
+#define bookmarks_support Privafox: Support
 
 # LOCALIZATION NOTE (bookmarks_marketplace):
-# link title for https://marketplace.firefox.com
-#define bookmarks_marketplace Firefox Marketplace
+# link title for https://marketplace.privafox.com
+#define bookmarks_marketplace Privafox Marketplace
 
 #unfilter emptyLines

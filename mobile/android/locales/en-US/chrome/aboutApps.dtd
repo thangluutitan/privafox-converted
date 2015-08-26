@@ -5,6 +5,6 @@
 <!ENTITY aboutApps.title2                          "Apps">
 <!ENTITY aboutApps.header                          "Your Apps">
 
-<!ENTITY aboutApps.browseMarketplace "Browse the Firefox Marketplace">
+<!ENTITY aboutApps.browseMarketplace "Browse the Privafox Marketplace">
 <!ENTITY aboutApps.uninstall "Uninstall">
 <!ENTITY aboutApps.checkForUpdates "Check for Updates">

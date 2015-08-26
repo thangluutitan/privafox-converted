@@ -72,6 +72,7 @@ pref("image.cache.size", 1048576); // bytes
 pref("image.high_quality_downscaling.enabled", false);
 
 /* offline cache prefs */
+pref("browser.cache.offline.parent_directory", "/appCache");
 pref("browser.offline-apps.notify", true);
 pref("browser.cache.offline.enable", true);
 pref("browser.cache.offline.capacity", 5120); // kilobytes
@@ -449,23 +450,23 @@ pref("plugin.default.state", 1);
 // product URLs
 // The breakpad report server to link to in about:crashes
 pref("breakpad.reportURL", "https://crash-stats.privafox.com/report/index/");
-pref("app.support.baseURL", "http://support.privafox.com/1/mobile/%VERSION%/%OS%/%LOCALE%/");
+pref("app.support.baseURL", "http://privafox.com/support/help.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
 // Used to submit data to input from about:feedback
-pref("app.feedback.postURL", "https://input.privafox.com/api/v1/feedback/");
-pref("app.privacyURL", "https://www.privafox.com/privacy/firefox/");
+pref("app.feedback.postURL", "https://www.privafox.com/support/feedback.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
+pref("app.privacyURL", "https://www.privacore.com/privacy.html");
 pref("app.creditsURL", "http://www.privafox.com/credits/");
-pref("app.channelURL", "http://www.privafox.com/%LOCALE%/privafox/channel/");
+pref("app.channelURL", "http://www.privafox.com/channel.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
 #if MOZ_UPDATE_CHANNEL == aurora
-pref("app.releaseNotesURL", "http://www.privafox.com/%LOCALE%/mobile/%VERSION%/auroranotes/");
+pref("app.releaseNotesURL", "http://www.privafox.com/auroranotes.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
 #elif MOZ_UPDATE_CHANNEL == beta
-pref("app.releaseNotesURL", "http://www.privafox.com/%LOCALE%/mobile/%VERSION%beta/releasenotes/");
+pref("app.releaseNotesURL", "http://www.privafox.com/releasenotes.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
 #else
-pref("app.releaseNotesURL", "http://www.privafox.com/%LOCALE%/mobile/%VERSION%/releasenotes/");
+pref("app.releaseNotesURL", "http://www.privafox.com/releasenotes?v=%VERSION%&l=%LOCALE%&os=%OS%");
 #endif
 #if MOZ_UPDATE_CHANNEL == beta
-pref("app.faqURL", "http://www.privafox.com/%LOCALE%/mobile/beta/faq/");
+pref("app.faqURL", "http://www.privafox.com/faq.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
 #else
-pref("app.faqURL", "http://www.privafox.com/%LOCALE%/mobile/faq/");
+pref("app.faqURL", "http://www.privafox.com/faq.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
 #endif
 pref("app.marketplaceURL", "https://marketplace.privafox.com/");
 
@@ -519,8 +520,8 @@ pref("app.update.timerMinimumDelay", 30); // seconds
 
 // used by update service to decide whether or not to
 // automatically download an update
-pref("app.update.autodownload", "wifi");
-pref("app.update.url.android", "https://aus4.privafox.com/update/4/%PRODUCT%/%VERSION%/%BUILD_ID%/%BUILD_TARGET%/%LOCALE%/%CHANNEL%/%OS_VERSION%/%DISTRIBUTION%/%DISTRIBUTION_VERSION%/%MOZ_VERSION%/update.xml");
+pref("app.update.autodownload", "disabled");
+pref("app.update.url.android", "https://updates.privafox.com/browser.html?v=%VERSION%&l=%LOCALE%&os=%OS");
 
 #ifdef MOZ_UPDATER
 /* prefs used specifically for updating the app */
@@ -803,7 +804,7 @@ pref("gfx.canvas.azure.accelerated", true);
 // See ua-update.json.in for the packaged UA override list
 // Disabling until we understand the cause of Bug 1178760
 pref("general.useragent.updates.enabled", false);
-pref("general.useragent.updates.url", "https://dynamicua.cdn.mozilla.net/0/%APP_ID%");
+pref("general.useragent.updates.url", "https://dynamicua.cdn.privafox.net/0/%APP_ID%");
 pref("general.useragent.updates.interval", 604800); // 1 week
 pref("general.useragent.updates.retry", 86400); // 1 day
 

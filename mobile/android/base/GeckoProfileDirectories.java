@@ -53,7 +53,7 @@ public class GeckoProfileDirectories {
         public boolean matches(INISection section);
     }
 
-    private static final String MOZILLA_DIR_NAME = "mozilla";
+    private static final String MOZILLA_DIR_NAME = "privacore";
 
     /**
      * Returns true if the supplied profile entry represents the default profile.

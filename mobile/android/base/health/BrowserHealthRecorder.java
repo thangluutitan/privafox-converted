@@ -509,7 +509,7 @@ public class BrowserHealthRecorder implements HealthRecorder, GeckoEventListener
                                          final String appLocale)
         throws java.io.IOException {
 
-        Log.d(LOG_TAG, "Initializing profile cache.");
+        Log.d(LOG_TAG, "Initializing profile cache : " + profilePath);
         this.state = State.INITIALIZING;
 
         // If we can restore state from last time, great.

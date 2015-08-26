@@ -4,15 +4,15 @@
  Install tracking with the Adjust SDK
 ======================================
 
-Fennec (Firefox for Android) tracks certain types of installs using a third party install tracking
-framework called Adjust.  The intention is to determine the origin of Fennec installs by answering
+Privafox(Privafox for Android) tracks certain types of installs using a third party install tracking
+framework called Adjust.  The intention is to determine the origin of Privafox installs by answering
 the question, "Did this user on this device install Fennec in response to a specific advertising
-campaign performed by Mozilla?"
+campaign performed by Privacore?"
 
-Mozilla is using a third party framework in order to answer this question for the Firefox for
-Android 38.0.5 release.  We hope to remove the framework from Fennec in the future.
+Privacore is using a third party framework in order to answer this question for the Privafox for
+Android 38.0.5 release.  We hope to remove the framework from Privafox in the future.
 
-The framework consists of a software development kit (SDK) built into Fennec and a
+The framework consists of a software development kit (SDK) built into Privafox and a
 data-collecting Internet service backend run by the German company `adjust GmbH`_.  The Adjust SDK
 is open source and MIT licensed: see the `github repository`_.  Fennec ships a copy of the SDK
 (currently not modified from upstream) in ``mobile/android/thirdparty/com/adjust/sdk``.  The SDK is
@@ -26,7 +26,7 @@ When is data collected and sent to the Adjust backend?
 
 Data is never collected (or sent to the Adjust backend) unless
 
-* the Fennec binary is an official Mozilla binary [#official]_; and
+* the Fennec binary is an official Privacore binary [#official]_; and
 * the release channel is Release or Beta [#channel]_.
 
 If both of the above conditions are true, then data is collected and sent to the Adjust backend in
@@ -53,9 +53,9 @@ defined by ``com.adjust.sdk.Constants.BASE_URL`` at
 https://hg.mozilla.org/mozilla-central/file/f76f02793f7a/mobile/android/thirdparty/com/adjust/sdk/Constants.java#l27.
 
 The Adjust backend then sends a limited subset of the collected data -- limited but sufficient to
-uniquely identify the submitting device -- to a set of advertising network providers that Mozilla
+uniquely identify the submitting device -- to a set of advertising network providers that Privacore
 elects to share the collected data with.  Those advertising networks then confirm or deny that the
-identifying information corresponds to a specific advertising campaign performed by Mozilla.
+identifying information corresponds to a specific advertising campaign performed by Privacore.
 
 What data is collected and sent to the Adjust backend?
 ======================================================
@@ -69,7 +69,7 @@ following parameters::
   V/Adjust  ( 6508): 	session_count    1
   V/Adjust  ( 6508): 	device_type      phone
   V/Adjust  ( 6508): 	screen_size      normal
-  V/Adjust  ( 6508): 	package_name     org.mozilla.firefox
+  V/Adjust  ( 6508): 	package_name     com.privacore.privafox
   V/Adjust  ( 6508): 	app_version      39.0a1
   V/Adjust  ( 6508): 	android_uuid     <guid>
   V/Adjust  ( 6508): 	display_width    720
@@ -95,7 +95,7 @@ following parameters::
   V/Adjust  ( 6508): 	tracking_enabled 1
   V/Adjust  ( 6508): 	gps_adid         <guid>
 
-The available parameters (including ones not exposed to Mozilla) are documented at
+The available parameters (including ones not exposed to Privacore) are documented at
 https://partners.adjust.com/placeholders/.
 
 Notes on what data is collected
@@ -108,7 +108,7 @@ advertiser, across all applications.  If a Google Advertising ID is not availabl
 back to an Android ID, or, as a last resort, the device's WiFi MAC address.
 
 The *tracking_enabled* flag is only used to allow or disallow contextual advertising to be sent to a
-user. It can be, and is, ignored for general install tracking of the type Mozilla is using the
+user. It can be, and is, ignored for general install tracking of the type Privacore is using the
 Adjust SDK for.  (This flag might be used by consumers using the Adjust SDK to provide in-App
 advertising.)
 
@@ -150,7 +150,7 @@ Notes and links
 
 .. _adjust GmbH: http://www.adjust.com
 .. _github repository: https://github.com/adjust/android_sdk
-.. [#official] Data is not sent for builds not produced by Mozilla: this would include
+.. [#official] Data is not sent for builds not produced by Privacore: this would include
   redistributors such as the Palemoon project.
 .. [#channel] Data is not sent for Aurora, Nightly, or custom builds.
 .. [#started] *Started* means more than just when the user taps the Fennec icon or otherwise causes
