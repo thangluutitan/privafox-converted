@@ -366,6 +366,13 @@ interface nsIBrowserSearchService : nsISupports
   void restoreDefaultEngines();
 
   /**
+  * Privafox : Restore only Search Engine Findx
+  * Un-hide only one engine installed in the directory corresponding to
+  * the directory services NS_APP_SEARCH_DIRE key.
+  *(Return DefaultEngine)
+  */
+  nsISearchEngine restoreDefaultEngineByName(in AString aEngineName);
+  /**
    * Returns an engine with the specified alias.
    *
    * @param   alias

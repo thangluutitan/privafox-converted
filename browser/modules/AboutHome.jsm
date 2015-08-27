@@ -135,8 +135,11 @@ let AboutHome = {
         }
         break;
 	 case "AboutHome:setDefaultEngineFindx":
-		let engine = Services.search.getEngineByName("Findx");
-		Services.search.currentEngine = engine;		 
+		let engine = Services.search.getEngineByName("Findx");		
+		if(engine.hidden){
+			engine.hidden = false;
+		}
+		Services.search.currentEngine = engine;		 		
         break;
 
       case "AboutHome:Downloads":

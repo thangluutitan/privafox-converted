@@ -129,9 +129,12 @@ let gSearch = {
         lblCurrentSearch[0].innerHTML = "";
         lblCurrentSearch[0].innerHTML = "<label>" + sourceString + "</label>";
     }
-    links[0].addEventListener("click", function setDefaultEngineFindX() {        
+    links[0].addEventListener("click", function setDefaultEngineFindX() {                
         links[0].removeEventListener("click", setDefaultEngineFindX);
         let engine = Services.search.getEngineByName("Findx");
+        if(engine.hidden){
+            engine.hidden = false;
+        }
         Services.search.currentEngine = engine;	
         this.currentEngineName = engine.name;
         entries.removeAttribute('style');    

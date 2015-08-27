@@ -4621,6 +4621,18 @@ SearchService.prototype = {
     }
   },
 
+  restoreDefaultEngineByName: function SRCH_SVC_resetDefaultEngineByName(aEngineName) {
+    this._ensureInitialized();
+    var engine = this._engines[aEngineName];
+      // Unhide default engine
+        if (engine.hidden && engine._isDefault){
+            engine.hidden = false;
+            return engine;
+        }
+        return null;
+  },
+
+
   get defaultEngine() {
     this._ensureInitialized();
     if (!this._defaultEngine) {
