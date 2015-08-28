@@ -570,7 +570,7 @@
              toolbarname="&menubarCmd.label;"
              accesskey="&menubarCmd.accesskey;"
 #if defined(MOZ_WIDGET_GTK) || defined(MOZ_WIDGET_QT)
-             autohide="true"
+             autohide="false"
 #endif
 #endif
              context="toolbar-context-menu">
@@ -1010,7 +1010,7 @@
              context="toolbar-context-menu"
              defaultset="personal-bookmarks"
              toolbarname="&personalbarCmd.label;" accesskey="&personalbarCmd.accesskey;"
-             collapsed="true"
+             collapsed="false"
              customizable="true">
       <toolbaritem id="personal-bookmarks"
                    title="&bookmarksToolbarItem.label;"
