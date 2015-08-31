@@ -5,7 +5,7 @@ MOZ_APP_DEFINE_PRIVAFOX=1
 MOZ_APP_BASENAME=Privafox
 MOZ_APP_VENDOR=Privacore
 
-MOZ_APP_VERSION=42.0a1
+MOZ_APP_VERSION=42.0.1
 MOZ_APP_UA_NAME=FireFox
 
 MOZ_BRANDING_DIRECTORY=mobile/android/branding/privafox
@@ -62,7 +62,7 @@ fi
 MOZ_PAY=1
 
 # Enable UI for healthreporter
-MOZ_SERVICES_HEALTHREPORT=1
+# MOZ_SERVICES_HEALTHREPORT=1
 
 # Enable runtime locale switching.
 MOZ_LOCALE_SWITCHER=1

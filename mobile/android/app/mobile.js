@@ -454,14 +454,14 @@ pref("app.support.baseURL", "http://privafox.com/support/help.html?v=%VERSION%&l
 // Used to submit data to input from about:feedback
 pref("app.feedback.postURL", "https://www.privafox.com/support/feedback.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
 pref("app.privacyURL", "https://www.privacore.com/privacy.html");
-pref("app.creditsURL", "http://www.privafox.com/credits/");
+pref("app.creditsURL", "http://www.privafox.com/credits.html");
 pref("app.channelURL", "http://www.privafox.com/channel.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
 #if MOZ_UPDATE_CHANNEL == aurora
 pref("app.releaseNotesURL", "http://www.privafox.com/auroranotes.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
 #elif MOZ_UPDATE_CHANNEL == beta
 pref("app.releaseNotesURL", "http://www.privafox.com/releasenotes.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
 #else
-pref("app.releaseNotesURL", "http://www.privafox.com/releasenotes?v=%VERSION%&l=%LOCALE%&os=%OS%");
+pref("app.releaseNotesURL", "http://www.privafox.com/releasenotes.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
 #endif
 #if MOZ_UPDATE_CHANNEL == beta
 pref("app.faqURL", "http://www.privafox.com/faq.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
@@ -804,7 +804,10 @@ pref("gfx.canvas.azure.accelerated", true);
 // See ua-update.json.in for the packaged UA override list
 // Disabling until we understand the cause of Bug 1178760
 pref("general.useragent.updates.enabled", false);
-pref("general.useragent.updates.url", "https://dynamicua.cdn.privafox.net/0/%APP_ID%");
+/*
+* Privafox : link dynamic update custom useragent
+*/
+pref("general.useragent.updates.url", "https://dynamicua.cdn.mozilla.net/0/%APP_ID%");
 pref("general.useragent.updates.interval", 604800); // 1 week
 pref("general.useragent.updates.retry", 86400); // 1 day
 
