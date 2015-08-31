@@ -1058,6 +1058,8 @@ pref("privacy.popups.disable_from_plugins", 2);
 
 // send "do not track" HTTP header, disabled by default
 pref("privacy.donottrackheader.enabled",    true);
+pref("privacy.masterpassword.enabled",    true);
+pref("privacy.history.clear_on_exit.startup",1);
 // Enforce tracking protection in all modes
 pref("privacy.trackingprotection.enabled",  false);
 // Enforce tracking protection in Private Browsing mode
@@ -1759,7 +1761,7 @@ pref("network.proxy.failover_timeout",      1800); // 30 minutes
 pref("network.online",                      true); //online/offline
 pref("network.cookie.cookieBehavior",       0); // 0-Accept, 1-dontAcceptForeign, 2-dontUse, 3-limitForeign
 #ifdef ANDROID
-pref("network.cookie.cookieBehavior",       0); // Keep the old default of accepting all cookies
+pref("network.cookie.cookieBehavior",       1); // Keep the old default of accepting all cookies
 #endif
 pref("network.cookie.thirdparty.sessionOnly", false);
 pref("network.cookie.lifetimePolicy",       0); // accept normally, 1-askBeforeAccepting, 2-acceptForSession,3-acceptForNDays
