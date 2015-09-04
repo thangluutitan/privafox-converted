@@ -267,24 +267,17 @@ let AboutHome = {
 
       return deferred.promise;
     }).then(function(engineName) {
-		let current = Services.search.getEngineByName(engineName);
-
+        var current;
+        if(engineName == Services.search.currentEngine.name){
+            current = Services.search.getEngineByName(engineName);
+        }else{
+            current = Services.search.currentEngine;
+        }
 		let url = current.getSubmission("foo", "text/html").uri.spec;
 		let sourceString = url.replace('http://','').replace('https://','').replace('www.','').split(/[/?#]/)[0];      
-
-		/**
-		let enginesVisible = Services.search.getEngines();
-        for (let engineItem of enginesVisible) {
-          if (engineItem.name == "Findx") {
-            Services.search.defaultEngine = engineItem;
-			break;
-          }
-        }
-		let engineTest = Services.search.defaultEngine.name;
-		*/
       let data = {
         showRestoreLastSession: ss.canRestoreLastSession,
-        defaultEngineName: engineName,
+        defaultEngineName: current.name,
 		domainSearchEngineName:sourceString
       };
 
