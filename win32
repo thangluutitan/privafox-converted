@@ -10,6 +10,7 @@ ac_add_options --disable-mochitests
 ac_add_options --disable-tests
 #ac_add_options --disable-ipdl-tests
 ac_add_options --disable-crashreporter
+ac_add_options --enable-update-channel=release
 #mk_add_options AUTOCLOBBER=1
 #Fix auto create mozilla folder
 ac_add_options --disable-sandbox

@@ -9,6 +9,7 @@ ac_add_options --disable-tests
 ac_add_options --disable-ipdl-tests
 ac_add_options --disable-crashreporter
 mk_add_options AUTOCLOBBER=1
+ac_add_options --enable-update-channel=release
 #Fix auto create mozilla folder
 ac_add_options --disable-sandbox
 ac_add_options --disable-system-extension-dirs
