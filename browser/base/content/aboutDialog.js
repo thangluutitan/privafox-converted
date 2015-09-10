@@ -51,6 +51,7 @@ function init(aEvent)
 
 #ifdef MOZ_UPDATER
   gAppUpdater = new appUpdater();
+
   let defaults = Services.prefs.getDefaultBranch("");
   let channelLabel = document.getElementById("currentChannel");
   let currentChannelText = document.getElementById("currentChannelText");
@@ -58,6 +59,7 @@ function init(aEvent)
   if (/^release($|\-)/.test(channelLabel.value))
       currentChannelText.hidden = true;
 #endif
+
 #ifdef XP_MACOSX
   // it may not be sized at this point, and we need its width to calculate its position
   window.sizeToContent();
@@ -73,23 +75,7 @@ Components.utils.import("resource://gre/modules/AddonManager.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "UpdateChannel",
                                   "resource://gre/modules/UpdateChannel.jsm");
 
-var gAppUpdater ;
-
-/*
-* Privafox: MBH-12 : Disable automatic update checking
-*/
-function clickCheckUpdate()
-{
-#ifdef MOZ_UPDATER
-    gAppUpdater = new appUpdater();
-    let defaults = Services.prefs.getDefaultBranch("");
-    let channelLabel = document.getElementById("currentChannel");
-    let currentChannelText = document.getElementById("currentChannelText");
-    channelLabel.value = UpdateChannel.get();
-    if (/^release($|\-)/.test(channelLabel.value))
-        currentChannelText.hidden = true;
-#endif
-}
+var gAppUpdater;
 
 function onUnload(aEvent) {
   if (gAppUpdater.isChecking)
@@ -101,7 +87,7 @@ function onUnload(aEvent) {
 
 
 function appUpdater()
-{    
+{
   this.updateDeck = document.getElementById("updateDeck");
 
   // Hide the update deck when there is already an update window open to avoid
@@ -257,12 +243,11 @@ appUpdater.prototype =
       this.updateDeck.selectedPanel = panel;
     }
   },
+
   /**
    * Check for updates
    */
   checkForUpdates: function() {
-
-
     this.selectPanel("checkingForUpdates");
     this.isChecking = true;
     this.checker.checkForUpdates(this.updateCheckListener, true);

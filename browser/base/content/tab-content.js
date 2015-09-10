@@ -165,7 +165,7 @@ let AboutHomeListener = {
     if (doc.documentElement.hasAttribute("hasBrowserHandlers")) {
       return;
     }    
-    doc.documentElement.setAttribute("hasBrowserHandlers", "true");
+    doc.documentElement.setAttribute("hasBrowserHandlers", "true");    
     addMessageListener("AboutHome:Update", this);
     addMessageListener("AboutHome:FocusInput", this);
     addEventListener("click", this, true);
