@@ -62,6 +62,7 @@
                   label="&helpKeyboardShortcuts.label;"
                   accesskey="&helpKeyboardShortcuts.accesskey;"/>
 #ifdef MOZ_SERVICES_HEALTHREPORT
+		<!-- Privafox : Remove menu Help/FireFox help Report -->
        <!-- <menuitem id="healthReport"
                   label="&healthReport2.label;"
                   accesskey="&healthReport2.accesskey;"
@@ -78,7 +79,8 @@
                   label="&helpFeedbackPage.label;"
                   oncommand="openFeedbackPage()"
                   onclick="checkForMiddleClick(this, event);"/>
-        <!-- <menuitem id="helpSafeMode"
+		<!-- Privafox : Remove menu Help/Restart With Add-ons Enable -->
+       <!-- <menuitem id="helpSafeMode"
                   accesskey="&helpSafeMode.accesskey;"
                   label="&helpSafeMode.label;"
                   stopaccesskey="&helpSafeMode.stop.accesskey;"

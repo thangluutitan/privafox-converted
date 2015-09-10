@@ -252,9 +252,11 @@ let AboutHome = {
   // Send all the chrome-privileged data needed by about:home. This
   // gets re-sent when the search engine changes.
   sendAboutHomeData: function(target) {
-    let wrapper = {};
-    Components.utils.import("resource:///modules/sessionstore/SessionStore.jsm",wrapper);
+	let wrapper = {};
+    Components.utils.import("resource:///modules/sessionstore/SessionStore.jsm",
+      wrapper);
     let ss = wrapper.SessionStore;
+
     ss.promiseInitialized.then(function() {
       let deferred = Promise.defer();
       Services.search.init(function (status){

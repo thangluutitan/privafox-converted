@@ -460,7 +460,6 @@ const gSessionHistoryObserver = {
     backCommand.setAttribute("disabled", "true");
     var fwdCommand = document.getElementById("Browser:Forward");
     fwdCommand.setAttribute("disabled", "true");
-
     // Hide session restore button on about:home
     window.messageManager.broadcastAsyncMessage("Browser:HideSessionRestoreButton");
 
@@ -949,12 +948,13 @@ var gBrowserInit = {
   delayedStartupFinished: false,
 
   onLoad: function() {
+
     gBrowser.addEventListener("DOMUpdatePageReport", gPopupBlockerObserver, false);
 
     Services.obs.addObserver(gPluginHandler.NPAPIPluginCrashed, "plugin-crashed", false);
 
     window.addEventListener("AppCommand", HandleAppCommandEvent, true);
-
+    
     // These routines add message listeners. They must run before
     // loading the frame script to ensure that we don't miss any
     // message sent between when the frame script is loaded and when
@@ -974,7 +974,6 @@ var gBrowserInit = {
     mm.loadFrameScript("chrome://global/content/manifestMessages.js", true);
 
     window.messageManager.addMessageListener("Browser:LoadURI", RedirectLoad);
-
     // initialize observers and listeners
     // and give C++ access to gBrowser
     XULBrowserWindow.init();
@@ -1298,11 +1297,14 @@ var gBrowserInit = {
     gHomeButton.updateTooltip(homeButton);
     gHomeButton.updatePersonalToolbarStyle(homeButton);
 
-    let safeMode = document.getElementById("helpSafeMode");
-    if (Services.appinfo.inSafeMode) {
-      safeMode.label = safeMode.getAttribute("stoplabel");
-      safeMode.accesskey = safeMode.getAttribute("stopaccesskey");
-    }
+    /*
+    * Privafox : Remove menu Help/Restart With Add-ons Enable
+    */
+    //let safeMode = document.getElementById("helpSafeMode");
+    //if (Services.appinfo.inSafeMode) {
+    //  safeMode.label = safeMode.getAttribute("stoplabel");
+    //  safeMode.accesskey = safeMode.getAttribute("stopaccesskey");
+    //}
 
     // BiDi UI
     gBidiUI = isBidiEnabled();
@@ -5014,36 +5016,6 @@ var TabsInTitlebar = {
             }
         }
     }
-    
-
-      
-    //if(Services.prefs.getIntPref(menuBarStartupEnable) == 1){
-    //    Services.prefs.setIntPref(menuBarStartupEnable,100);
-    //    // menu.setAttribute('autohide','false');
-    //    for (let toolbar of toolbarNodes) {
-    //      let menuItem = document.createElement("menuitem");
-    //      if(toolbar.getAttribute("type") == "menubar")
-    //    {
-    //        menuItem.setAttribute('checked','true');
-    //        CustomizableUI.setToolbarVisibility(toolbar.id, true);
-    //    }
-    //    }
-
-    //}
-    //if(Services.prefs.getIntPref(menuBarBookmarkEnable) == 1)
-    //{
-    //    Services.prefs.setIntPref(menuBarBookmarkEnable,100);
-    //    //let toolbarNodes = getTogglableToolbars();
-    //    for (let toolbar of toolbarNodes) {
-    //      let menuItem = document.createElement("menuitem");
-    //      if(toolbar.getAttribute("type") != "menubar")
-    //        {
-    //            menuItem.setAttribute('checked','true');
-    //            CustomizableUI.setToolbarVisibility(toolbar.id, true);
-    //        }
-    //    }
-    //}
-    
 #endif
     
   },
@@ -7506,8 +7478,7 @@ XPCOMUtils.defineLazyModuleGetter(this, "gDevTools",
 
 XPCOMUtils.defineLazyModuleGetter(this, "gDevToolsBrowser",
                                   "resource:///modules/devtools/gDevTools.jsm");
-#ifdef PRIVAFOX_WEB_DEVELOPER
-#endif
+
 Object.defineProperty(this, "HUDService", {
   get: function HUDService_getter() {
     let devtools = Cu.import("resource://gre/modules/devtools/Loader.jsm", {}).devtools;
@@ -7546,7 +7517,6 @@ function safeModeRestart() {
  */
 function duplicateTabIn(aTab, where, delta) {
   let newTab = SessionStore.duplicateTab(window, aTab, delta);
-
   switch (where) {
     case "window":
       gBrowser.hideTab(newTab);
