@@ -150,14 +150,16 @@ let AboutHomeListener = {
     // Inject search engine and snippets URL.
     let docElt = doc.documentElement;
     // set the following attributes BEFORE searchEngineName, which triggers to
-    // show the snippets when it's set.
+      // show the snippets when it's set.
+      /*
+      * Privafox : remove snipetsURL default firefox
+      */
     //docElt.setAttribute("snippetsURL", aData.snippetsURL);
     //if (aData.showKnowYourRights)
     //  docElt.setAttribute("showKnowYourRights", "true");
     //docElt.setAttribute("snippetsVersion", aData.snippetsVersion);
     docElt.setAttribute("searchEngineName", aData.defaultEngineName);
     docElt.setAttribute("domainSearchEngine", aData.domainSearchEngineName);
-    //docElt.setAttribute("domainSearchEngineTest", aData.defaultEngineNameTest);    
   },
 
   onPageLoad: function() {    
