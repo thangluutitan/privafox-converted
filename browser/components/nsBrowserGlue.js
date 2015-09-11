@@ -1768,9 +1768,18 @@ BrowserGlue.prototype = {
         };
 
         if (toolbarIsCustomized || getToolbarFolderCount() > 3) {
-          xulStore.setValue(BROWSER_DOCURL, "PersonalToolbar", "collapsed", "false");
+          xulStore.setValue(BROWSER_DOCURL, "PersonalToolbar", "collapsed", "true");
         }
       }
+#ifndef XP_MACOSX
+      if (!xulStore.hasValue(BROWSER_DOCURL, "toolbar-menubar", "autohide")) {
+          let toolbarMenu = xulStore.hasValue(BROWSER_DOCURL,
+                                                              "toolbar-menubar", "currentset");
+          if (toolbarMenu) {
+              xulStore.setValue(BROWSER_DOCURL, "toolbar-menubar", "autohide", "true");
+          }
+      }
+#endif
     }
 
     if (currentUIVersion < 9) {

@@ -76,7 +76,7 @@ pref("xpinstall.signatures.required", false);
 pref("xpinstall.signatures.devInfoURL", "https://wiki.mozilla.org/Addons/Extension_Signing");
 
 // Dictionary download preference
-pref("browser.dictionaries.download.url", "https://addons.mozilla.org/%LOCALE%/firefox/dictionaries/");
+pref("browser.dictionaries.download.url", "https://www.privafox.com/add-ons/dictionaries.html?l=%LOCALE%");
 
 // At startup, should we check to see if the installation
 // date is older than some threshold
@@ -1964,7 +1964,10 @@ pref("browser.reader.detectedFirstArticle", false);
 // Don't limit how many nodes we care about on desktop:
 pref("reader.parse-node-limit", 0);
 
-pref("browser.pocket.enabled", true);
+/*
+*Privafox : Remove feature Pocket set enable = false
+*/
+pref("browser.pocket.enabled", false);
 pref("browser.pocket.api", "api.getpocket.com");
 pref("browser.pocket.site", "getpocket.com");
 pref("browser.pocket.oAuthConsumerKey", "40249-e88c401e1b1f2242d9e441c4");

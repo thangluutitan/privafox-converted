@@ -43,16 +43,22 @@ XPCOMUtils.defineLazyGetter(this, "DEFAULT_AREA_PLACEMENTS", function() {
       "find-button",
       "preferences-button",
       "add-ons-button",
+#ifdef PRIVAFOX_DEV
       "developer-button",
+#endif
     ],
     "nav-bar": [
       "urlbar-container",
       "search-container",
       "bookmarks-menu-button",
+#ifdef PRIVAFOX_DEV
       "pocket-button",
+#endif
       "downloads-button",
       "home-button",
+#ifdef PRIVAFOX_DEV
       "social-share-button",
+#endif
     ],
     // It's true that toolbar-menubar is not visible
     // on OS X, but the XUL node is definitely present
@@ -88,7 +94,9 @@ XPCOMUtils.defineLazyGetter(this, "DEFAULT_AREAS", function() {
 XPCOMUtils.defineLazyGetter(this, "PALETTE_ITEMS", function() {
   let result = [
     "open-file-button",
+#ifdef PRIVAFOX_DEV
     "developer-button",
+#endif
     "feed-button",
     "email-link-button",
     "sync-button",
