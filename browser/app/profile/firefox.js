@@ -573,7 +573,7 @@ pref("privacy.cpd.openWindows",             false);
 // 4 - Today
 // 5 - Last 5 minutes
 // 6 - Last 24 hours
-// ThangLuu add Config to change default setting
+// Notes: add Config to change default setting
 pref("privacy.sanitize.timeSpan", 1);
 pref("privacy.sanitize.sanitizeOnShutdown", false);
 pref("privacy.sanitize.migrateFx3Prefs",    false);
