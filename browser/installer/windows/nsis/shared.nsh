@@ -772,10 +772,10 @@ ${EndIf}
 
     ; These values associate the allowed certificates for the current
     ; installation.
-	;ThangLuu Note : Fix registry
+	;Note : Fix registry
     ;WriteRegStr HKLM "$R0\0" "name" "${CERTIFICATE_NAME}"
     ;WriteRegStr HKLM "$R0\0" "issuer" "${CERTIFICATE_ISSUER}"
-	;End ThangLuu Note : Fix registry
+	;End Note : Fix registry
     ${If} ${RunningX64}
       SetRegView lastused
     ${EndIf}
