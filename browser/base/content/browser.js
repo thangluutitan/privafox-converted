@@ -4855,13 +4855,6 @@ function onViewToolbarsPopupShowing(aEvent, aInsertPoint) {
 
     popup.insertBefore(menuItem, firstMenuItem);    
     menuItem.addEventListener("command", onViewToolbarCommand, false);
-    //if(toolbar.getAttribute("type") != "menubar")
-    //{
-    //    menuItem.setAttribute('checked','true');
-    //    //menuItem.setAttribute("label", menuItem.getAttribute("id"));        
-    //    //CustomizableUI.setToolbarVisibility(toolbar.id, true);
-    //}
-    //menuItem.setAttribute("label", menuItem.getAttribute("id"));        
   }
 
 
@@ -4993,6 +4986,23 @@ var TabsInTitlebar = {
     };
     CustomizableUI.addListener(this);
     this._initialized = true;    
+      /*
+      * Privafox : Enable default menuBar
+      */
+    const menuBarStartupEnable = "browser.startup.menubar.enable";
+    let toolbarNodes = getTogglableToolbars();
+    for (let toolbar of toolbarNodes) {
+        let menuItem = document.createElement("menuitem");
+     if(toolbar.getAttribute("type") == "menubar")
+       {
+        if(Services.prefs.getIntPref(menuBarStartupEnable) == 1){
+            Services.prefs.setIntPref(menuBarStartupEnable,100);
+            menuItem.setAttribute('checked','true');
+            CustomizableUI.setToolbarVisibility(toolbar.id, true);
+            break;
+        }
+      }
+    }
 #endif
     
   },

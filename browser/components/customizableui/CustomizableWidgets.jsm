@@ -788,35 +788,6 @@ const CustomizableWidgets = [
       let win = aEvent.view;
       win.MailIntegration.sendLinkForBrowser(win.gBrowser.selectedBrowser)
     }
-  }, {
-    id: "loop-button",
-    type: "custom",
-    label: "loop-call-button3.label",
-    tooltiptext: "loop-call-button3.tooltiptext",
-    defaultArea: CustomizableUI.AREA_NAVBAR,
-    // Not in private browsing, see bug 1108187.
-    showInPrivateBrowsing: false,
-    introducedInVersion: 4,
-    onBuild: function(aDocument) {
-      // If we're not supposed to see the button, return zip.
-      if (!Services.prefs.getBoolPref("loop.enabled")) {
-        return null;
-      }
-
-      let node = aDocument.createElementNS(kNSXUL, "toolbarbutton");
-      node.setAttribute("id", this.id);
-      node.classList.add("toolbarbutton-1");
-      node.classList.add("chromeclass-toolbar-additional");
-      node.classList.add("badged-button");
-      node.setAttribute("label", CustomizableUI.getLocalizedProperty(this, "label"));
-      node.setAttribute("tooltiptext", CustomizableUI.getLocalizedProperty(this, "tooltiptext"));
-      node.setAttribute("removable", "true");
-      node.addEventListener("command", function(event) {
-        aDocument.defaultView.LoopUI.togglePanel(event);
-      });
-
-      return node;
-    }
   }];
 
 if (Services.prefs.getBoolPref("privacy.panicButton.enabled")) {
