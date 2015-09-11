@@ -128,7 +128,7 @@ function needHomepageOverride(prefb) {
     prefb.setCharPref("browser.startup.homepage_override.mstone", mstone);
     prefb.setCharPref("browser.startup.homepage_override.buildID", buildID);
 	
-	//ThangLuu Override UserPref
+	//Note: Override UserPref
 	prefb.setIntPref("network.cookie.cookieBehavior", 3);
 	prefb.setBoolPref("places.history.enabled", false);
 	prefb.setBoolPref("browser.formfill.enable", false);
@@ -140,7 +140,7 @@ function needHomepageOverride(prefb) {
 	prefb.setBoolPref("browser.urlbar.suggest.history", false);
 	prefb.setBoolPref("browser.urlbar.suggest.bookmark", false);
 	//prefb.setBoolPref("datareporting.healthreport.uploadEnabled", false);
-	//End ThangLuu Override UserPref
+	//End Note: Override UserPref
 	//prefb.setBoolPref("app.update.auto", false);
 	//prefb.setIntPref("app.update.mode", 2);
 	prefb.setBoolPref("app.update.enabled", false);
