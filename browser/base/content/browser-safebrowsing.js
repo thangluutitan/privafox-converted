@@ -5,29 +5,30 @@
 #ifdef MOZ_SAFE_BROWSING
 var gSafeBrowsing = {
 
-  setReportPhishingMenu: function() {
+    setReportPhishingMenu: function() {
+        // Privafox-MBH-9 Remove Menu Help/ broadcaster
     // A phishing page will have a specific about:blocked content documentURI
-    var uri = gBrowser.currentURI;
-    var isPhishingPage = uri && uri.spec.startsWith("about:blocked?e=phishingBlocked");
+    //var uri = gBrowser.currentURI;
+    //var isPhishingPage = uri && uri.spec.startsWith("about:blocked?e=phishingBlocked");
 
-    // Show/hide the appropriate menu item.
-    document.getElementById("menu_HelpPopup_reportPhishingtoolmenu")
-            .hidden = isPhishingPage;
-    document.getElementById("menu_HelpPopup_reportPhishingErrortoolmenu")
-            .hidden = !isPhishingPage;
+    //// Show/hide the appropriate menu item.
+    //document.getElementById("menu_HelpPopup_reportPhishingtoolmenu")
+    //        .hidden = isPhishingPage;
+    //document.getElementById("menu_HelpPopup_reportPhishingErrortoolmenu")
+    //        .hidden = !isPhishingPage;
 
-    var broadcasterId = isPhishingPage
-                        ? "reportPhishingErrorBroadcaster"
-                        : "reportPhishingBroadcaster";
+    //var broadcasterId = isPhishingPage
+    //                    ? "reportPhishingErrorBroadcaster"
+    //                    : "reportPhishingBroadcaster";
 
-    var broadcaster = document.getElementById(broadcasterId);
-    if (!broadcaster)
-      return;
+    //var broadcaster = document.getElementById(broadcasterId);
+    //if (!broadcaster)
+    //  return;
 
-    if (uri && (uri.schemeIs("http") || uri.schemeIs("https")))
-      broadcaster.removeAttribute("disabled");
-    else
-      broadcaster.setAttribute("disabled", true);
+    //if (uri && (uri.schemeIs("http") || uri.schemeIs("https")))
+    //  broadcaster.removeAttribute("disabled");
+    //else
+    //  broadcaster.setAttribute("disabled", true);
   },
 
   /**
