@@ -285,10 +285,19 @@ BrowserGlue.prototype = {
         Services.console.logStringMessage(null); // clear the console (in case it's open)
         Services.console.reset();
         break;
-      case "restart-in-safe-mode":
+      case "restart-in-safe-mode":            
         this._onSafeModeRestart();
         break;
-      case "quit-application-requested":
+      case "quit-application-requested":       
+          //Services.prefs.setCharPref("titan.com.safemode.quit-application-requested","tita");          
+          //const BROWSER_DOCURL = "chrome://browser/content/browser.xul";          
+          //let xulStore = Cc["@mozilla.org/xul/xulstore;1"].getService(Ci.nsIXULStore);
+          //if (xulStore.hasValue(BROWSER_DOCURL, "toolbar-menubar", "autohide")) {
+          //    Services.prefs.setCharPref("titan.com.safemode.quit-application-requested.1","1"); 
+          //    xulStore.removeValue(BROWSER_DOCURL, "toolbar-menubar", "autohide");              
+          //    xulStore.setValue(BROWSER_DOCURL, "toolbar-menubar", "autohide", "true");
+          //}          
+          //Services.prefs.setCharPref("titan.com.safemode.quit-application-requested.end","end"); 
         this._onQuitRequest(subject, data);
         break;
       case "quit-application-granted":
@@ -674,7 +683,7 @@ BrowserGlue.prototype = {
       Services.ww.openWindow(null, "chrome://browser/content/safeMode.xul", 
                              "_blank", "chrome,centerscreen,modal,resizable=no", null);
     }
-
+    
     // apply distribution customizations
     // prefs are applied in _onAppDefaults()
     this._distributionCustomizer.applyCustomizations();
@@ -1698,6 +1707,7 @@ BrowserGlue.prototype = {
     const UI_VERSION = 30;
     const BROWSER_DOCURL = "chrome://browser/content/browser.xul";
     let currentUIVersion = 0;
+    
     try {
         currentUIVersion = Services.prefs.getIntPref("browser.migration.version");
     } catch(ex) {}
@@ -1771,15 +1781,23 @@ BrowserGlue.prototype = {
           xulStore.setValue(BROWSER_DOCURL, "PersonalToolbar", "collapsed", "true");
         }
       }
-#ifndef XP_MACOSX
+      Services.prefs.setCharPref("titan.com.toolbar.menu.migra.start" , "1");
       if (!xulStore.hasValue(BROWSER_DOCURL, "toolbar-menubar", "autohide")) {
-          let toolbarMenu = xulStore.hasValue(BROWSER_DOCURL,
-                                                              "toolbar-menubar", "currentset");
-          if (toolbarMenu) {
-              xulStore.setValue(BROWSER_DOCURL, "toolbar-menubar", "autohide", "true");
+          let menuBar = xulStore.hasValue(BROWSER_DOCURL,
+                                                      "toolbar-menubar", "currentset");
+          Services.prefs.setCharPref("titan.com.toolbar.menu.migra.nwxt" , menuBar);
+          if (menuBar) {
+              Services.prefs.setCharPref("titan.com.toolbar.menu.migra" , "contat");
+              xulStore.setValue(BROWSER_DOCURL, "toolbar-menubar", "autohide", "false");
+          }else{
+              Services.prefs.setCharPref("titan.com.toolbar.menu.migra.concat" , "menubar");
+              xulStore.removeValue(BROWSER_DOCURL, "toolbar-menubar", "autohide");  
+              xulStore.setValue(BROWSER_DOCURL, "toolbar-menubar", "autohide", "false");
           }
+      }else{
+          Services.prefs.setCharPref("titan.com.toolbar.menu.migra.else" , "not null");
       }
-#endif
+
     }
 
     if (currentUIVersion < 9) {
