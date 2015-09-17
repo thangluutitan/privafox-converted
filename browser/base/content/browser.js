@@ -4998,21 +4998,12 @@ var TabsInTitlebar = {
         let menuItem = document.createElement("menuitem");
      if(toolbar.getAttribute("type") == "menubar")
        {
-  //      if(Services.prefs.getIntPref(menuBarStartupEnable) == 1){
-  //          Services.prefs.setIntPref(menuBarStartupEnable,100);
-  //          menuItem.setAttribute('checked','true');
-  //          CustomizableUI.setToolbarVisibility(toolbar.id, true);
-  //          break;
-  //      }else if (Services.appinfo.inSafeMode) {            
-  //          if (!xulStore.hasValue(BROWSER_DOCURL, "toolbar-menubar", "autohide")) {
-  //              xulStore.setValue(BROWSER_DOCURL, "toolbar-menubar", "autohide", "false");
-  //          }
-  //          let isMenuEnable = xulStore.getValue(BROWSER_DOCURL, "toolbar-menubar", "autohide");
-  //          //menuItem.setAttribute('checked',!isMenuEnable);
-  //          //CustomizableUI.setToolbarVisibility(toolbar.id, isMenuEnable);                
-  //          break;
-        //      }
-        if (Services.appinfo.inSafeMode) {            
+        if(Services.prefs.getIntPref(menuBarStartupEnable) == 1){
+            Services.prefs.setIntPref(menuBarStartupEnable,100);
+            menuItem.setAttribute('checked','true');
+            CustomizableUI.setToolbarVisibility(toolbar.id, true);
+            break;
+        }else if (Services.appinfo.inSafeMode) {            
             if (!xulStore.hasValue(BROWSER_DOCURL, "toolbar-menubar", "autohide")) {
                 xulStore.setValue(BROWSER_DOCURL, "toolbar-menubar", "autohide", "false");
             }
@@ -5021,7 +5012,7 @@ var TabsInTitlebar = {
             menuItem.setAttribute('checked',isMenuEnable);
             CustomizableUI.setToolbarVisibility(toolbar.id, isMenuEnable);                
             break;
-        }
+         }
       }
    }
    
