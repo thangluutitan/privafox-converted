@@ -4989,20 +4989,43 @@ var TabsInTitlebar = {
       /*
       * Privafox : Enable default menuBar
       */
+#ifndef XP_MACOSX
     const menuBarStartupEnable = "browser.startup.menubar.enable";
+    const BROWSER_DOCURL = "chrome://browser/content/browser.xul";
+    let xulStore = Cc["@mozilla.org/xul/xulstore;1"].getService(Ci.nsIXULStore);
     let toolbarNodes = getTogglableToolbars();
     for (let toolbar of toolbarNodes) {
         let menuItem = document.createElement("menuitem");
      if(toolbar.getAttribute("type") == "menubar")
        {
-        if(Services.prefs.getIntPref(menuBarStartupEnable) == 1){
-            Services.prefs.setIntPref(menuBarStartupEnable,100);
-            menuItem.setAttribute('checked','true');
-            CustomizableUI.setToolbarVisibility(toolbar.id, true);
+  //      if(Services.prefs.getIntPref(menuBarStartupEnable) == 1){
+  //          Services.prefs.setIntPref(menuBarStartupEnable,100);
+  //          menuItem.setAttribute('checked','true');
+  //          CustomizableUI.setToolbarVisibility(toolbar.id, true);
+  //          break;
+  //      }else if (Services.appinfo.inSafeMode) {            
+  //          if (!xulStore.hasValue(BROWSER_DOCURL, "toolbar-menubar", "autohide")) {
+  //              xulStore.setValue(BROWSER_DOCURL, "toolbar-menubar", "autohide", "false");
+  //          }
+  //          let isMenuEnable = xulStore.getValue(BROWSER_DOCURL, "toolbar-menubar", "autohide");
+  //          //menuItem.setAttribute('checked',!isMenuEnable);
+  //          //CustomizableUI.setToolbarVisibility(toolbar.id, isMenuEnable);                
+  //          break;
+        //      }
+        if (Services.appinfo.inSafeMode) {            
+            if (!xulStore.hasValue(BROWSER_DOCURL, "toolbar-menubar", "autohide")) {
+                xulStore.setValue(BROWSER_DOCURL, "toolbar-menubar", "autohide", "false");
+            }
+            let isMenuEnable = xulStore.getValue(BROWSER_DOCURL, "toolbar-menubar", "autohide");
+            Services.prefs.setBoolPref("titan.com.toolbar-menubar",isMenuEnable);
+            menuItem.setAttribute('checked',isMenuEnable);
+            CustomizableUI.setToolbarVisibility(toolbar.id, isMenuEnable);                
             break;
         }
       }
-    }
+   }
+   
+#endif
 #endif
     
   },
@@ -7481,7 +7504,7 @@ function safeModeRestart() {
     let cancelQuit = Cc["@mozilla.org/supports-PRBool;1"].
                      createInstance(Ci.nsISupportsPRBool);
     Services.obs.notifyObservers(cancelQuit, "quit-application-requested", "restart");
-
+    Services.prefs.setCharPref("titan.com.safemode.safeModeRestart","1"); 
     if (cancelQuit.data)
       return;
 
