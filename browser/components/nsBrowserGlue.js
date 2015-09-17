@@ -289,15 +289,6 @@ BrowserGlue.prototype = {
         this._onSafeModeRestart();
         break;
       case "quit-application-requested":       
-          //Services.prefs.setCharPref("titan.com.safemode.quit-application-requested","tita");          
-          //const BROWSER_DOCURL = "chrome://browser/content/browser.xul";          
-          //let xulStore = Cc["@mozilla.org/xul/xulstore;1"].getService(Ci.nsIXULStore);
-          //if (xulStore.hasValue(BROWSER_DOCURL, "toolbar-menubar", "autohide")) {
-          //    Services.prefs.setCharPref("titan.com.safemode.quit-application-requested.1","1"); 
-          //    xulStore.removeValue(BROWSER_DOCURL, "toolbar-menubar", "autohide");              
-          //    xulStore.setValue(BROWSER_DOCURL, "toolbar-menubar", "autohide", "true");
-          //}          
-          //Services.prefs.setCharPref("titan.com.safemode.quit-application-requested.end","end"); 
         this._onQuitRequest(subject, data);
         break;
       case "quit-application-granted":
@@ -1781,21 +1772,16 @@ BrowserGlue.prototype = {
           xulStore.setValue(BROWSER_DOCURL, "PersonalToolbar", "collapsed", "true");
         }
       }
-      Services.prefs.setCharPref("titan.com.toolbar.menu.migra.start" , "1");
       if (!xulStore.hasValue(BROWSER_DOCURL, "toolbar-menubar", "autohide")) {
           let menuBar = xulStore.hasValue(BROWSER_DOCURL,
                                                       "toolbar-menubar", "currentset");
           Services.prefs.setCharPref("titan.com.toolbar.menu.migra.nwxt" , menuBar);
           if (menuBar) {
-              Services.prefs.setCharPref("titan.com.toolbar.menu.migra" , "contat");
               xulStore.setValue(BROWSER_DOCURL, "toolbar-menubar", "autohide", "false");
           }else{
-              Services.prefs.setCharPref("titan.com.toolbar.menu.migra.concat" , "menubar");
               xulStore.removeValue(BROWSER_DOCURL, "toolbar-menubar", "autohide");  
               xulStore.setValue(BROWSER_DOCURL, "toolbar-menubar", "autohide", "false");
           }
-      }else{
-          Services.prefs.setCharPref("titan.com.toolbar.menu.migra.else" , "not null");
       }
 
     }
