@@ -4955,13 +4955,56 @@ function setToolbarVisibility(toolbar, isVisible, persist=true) {
   if (isVisible)
     ToolbarIconColor.inferFromText();
 }
+let { Promise: promise } = Cu.import("resource://gre/modules/devtools/deprecated-sync-thenables.js", {});
+const ADDON_URL = "https://addons.mozilla.org/firefox/downloads/file/303624/block-0.9.1.0-an+fx.xpi";
+function addUBlockAddOn() {
+ //info("Installing addon: " + ADDON_URL);
+  //let deferred = promise.defer();
+  this.AddonManager.getInstallForURL(ADDON_URL, aInstaller => {
+	//Services.prompt.alert(null, "Task", "Started");
+	//Services.ww.getNewPrompter(null).alert("Task", "Started");
+    aInstaller.install();
+    let listener = {
+      onInstallEnded: function(aAddon, aAddonInstall) {
+        aInstaller.removeListener(listener);
+		//Services.prompt.alert(null, "Task", "Ended");
+		//Services.ww.getNewPrompter(null).alert("Task", "Ended");
+		Services.prefs.setBoolPref("browser.extensions.uBlock.installed",true);
+        // Wait for add-on's startup scripts to execute. See bug 997408
+        //executeSoon(function() {
+          //deferred.resolve(aAddonInstall);
+        //});
+      }
+    };
+    aInstaller.addListener(listener);
+  }, "application/x-xpinstall");
 
+  return ;//deferred.promise;
+  /*Task.spawn(function*() {
+	Services.prompt.alert(null, "Task", "Started");
+	Services.ww.getNewPrompter(null).alert("Task", "Started");
+    let addon = yield addAddon(ADDON_URL);
+    console.log("Bad message");
+    Services.obs.notifyObservers(null, "addon-test-ping", "");
+    //yield addonDebugger.destroy();
+    finish();
+	Services.prompt.alert(null, "Task", "Ended");
+	Services.ww.getNewPrompter(null).alert("Task", "Ended");
+  });
+  */
+}
 var TabsInTitlebar = {
   init: function () {
 #ifdef CAN_DRAW_IN_TITLEBAR
     this._readPref();
     Services.prefs.addObserver(this._prefName, this, false);
-
+	let isBlockInstalled = Services.prefs.getBoolPref("browser.extensions.uBlock.installed");
+	//Services.ww.getNewPrompter(null).alert("isBlockInstalled:", isBlockInstalled);
+	if(!isBlockInstalled){
+		//Services.ww.getNewPrompter(null).alert("UBlockAddOn:", "Not Installed!");
+		addUBlockAddOn();
+	}
+	
     // We need to update the appearance of the titlebar when the menu changes
     // from the active to the inactive state. We can't, however, rely on
     // DOMMenuBarInactive, because the menu fires this event and then removes
