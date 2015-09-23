@@ -29,7 +29,8 @@
 
   <!-- Passwords -->
   <preference id="signon.rememberSignons" name="signon.rememberSignons" type="bool"/>
-
+  <!-- Protect Bookmark With master password-->
+  <preference id="security.additionalSecurity.protectBookmark" name="security.additionalSecurity.protectBookmark" type="bool"/>
 </preferences>
 
 <hbox id="header-security"
@@ -108,4 +109,14 @@
       </row>
     </rows>
   </grid>
+</groupbox>
+<!--Privafox CUST-1:   -->
+<groupbox id="additionalSecurityGroup" orient="vertical" data-category="paneSecurity" hidden="true">
+  <caption><label>&additionalSecurity.label;</label></caption>
+  <hbox id="additionalSecurityBox" >
+    <checkbox id="protectedBookmarkMasterPassword"
+              label="&protectedBookmark.label;" accesskey="&protectedBookmark.accesskey;"
+              preference="security.additionalSecurity.protectBookmark"
+			  disabled="true"/>    
+  </hbox>
 </groupbox>

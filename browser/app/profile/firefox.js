@@ -1362,6 +1362,10 @@ pref("services.sync.prefs.sync.security.tls.version.max", true);
 pref("services.sync.prefs.sync.signon.rememberSignons", true);
 pref("services.sync.prefs.sync.spellchecker.dictionary", true);
 pref("services.sync.prefs.sync.xpinstall.whitelist.required", true);
+/*
+*Privafox :CUS-T1 Additional Security
+*/
+pref("services.sync.prefs.sync.security.additionalSecurity.protectBookmark", false);
 #endif
 
 // Developer edition preferences
