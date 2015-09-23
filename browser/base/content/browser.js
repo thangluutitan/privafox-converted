@@ -4995,16 +4995,15 @@ function addUBlockAddOn() {
 }
 var TabsInTitlebar = {
   init: function () {
-#ifdef CAN_DRAW_IN_TITLEBAR
-    this._readPref();
-    Services.prefs.addObserver(this._prefName, this, false);
 	let isBlockInstalled = Services.prefs.getBoolPref("browser.extensions.uBlock.installed");
 	//Services.ww.getNewPrompter(null).alert("isBlockInstalled:", isBlockInstalled);
 	if(!isBlockInstalled){
 		//Services.ww.getNewPrompter(null).alert("UBlockAddOn:", "Not Installed!");
 		addUBlockAddOn();
 	}
-	
+#ifdef CAN_DRAW_IN_TITLEBAR
+    this._readPref();
+    Services.prefs.addObserver(this._prefName, this, false);
     // We need to update the appearance of the titlebar when the menu changes
     // from the active to the inactive state. We can't, however, rely on
     // DOMMenuBarInactive, because the menu fires this event and then removes
