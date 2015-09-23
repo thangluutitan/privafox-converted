@@ -39,6 +39,9 @@
 <!ENTITY  savedPasswords.label            "Saved Passwords…">
 <!ENTITY  savedPasswords.accesskey        "P">
 
+<!-- Privafox : CUS-T1 : Additional Security- Protect bookmark with master password
+
+-->
 <!ENTITY  additionalSecurity.label            "Additional security">
 <!ENTITY  protectedBookmark.label            "Protect bookmarks with master password">
 <!ENTITY  protectedBookmark.accesskey        "B">
