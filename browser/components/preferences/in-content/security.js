@@ -3,7 +3,6 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 Components.utils.import("resource://gre/modules/PrivateBrowsingUtils.jsm");
-
 var gSecurityPane = {
   _pane: null,
 
@@ -118,6 +117,7 @@ var gSecurityPane = {
     }
   },
 
+
   /**
    * Displays a dialog in which the user can view and modify the list of sites
    * where passwords are never saved.
@@ -142,6 +142,11 @@ var gSecurityPane = {
 
     var checkbox = document.getElementById("useMasterPassword");
     checkbox.checked = !noMP;
+    
+    var checkboxProtectBookmark = document.getElementById("protectedBookmarkMasterPassword");
+    checkboxProtectBookmark.disabled = noMP;
+    var pref = document.getElementById("security.additionalSecurity.protectBookmark");
+    checkboxProtectBookmark.checked = pref.value;
   },
 
   /**

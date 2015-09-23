@@ -1004,7 +1004,7 @@
     </toolbar>
 
     <toolbarset id="customToolbars" context="toolbar-context-menu"/>
-
+    
     <toolbar id="PersonalToolbar"
              mode="icons" iconsize="small"
              class="chromeclass-directories"

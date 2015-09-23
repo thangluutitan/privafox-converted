@@ -1064,6 +1064,10 @@ pref("privacy.history.clear_on_exit.startup",1);
 pref("privacy.trackingprotection.enabled",  false);
 // Enforce tracking protection in Private Browsing mode
 pref("privacy.trackingprotection.pbmode.enabled",  false);
+/*
+*Privafox -CUS-T1 : additional Security With Protected bookmarks master password
+*/
+pref("security.additionalSecurity.protectBookmark",    false);
 
 pref("dom.event.contextmenu.enabled",       true);
 pref("dom.event.clipboardevents.enabled",   true);
