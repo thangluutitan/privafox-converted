@@ -30,6 +30,7 @@ var gSecurityPane = {
       gSecurityPane.changeMasterPassword);
     setEventListener("showPasswords", "command",
       gSecurityPane.showPasswords);
+
   },
 
   // ADD-ONS

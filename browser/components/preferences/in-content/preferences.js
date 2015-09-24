@@ -43,7 +43,6 @@ addEventListener("DOMContentLoaded", function onLoad() {
 
 function init_all() {
   document.documentElement.instantApply = true;
-
   gSubDialog.init();
   register_module("paneGeneral", gMainPane);
   register_module("paneSearch", gSearchPane);
@@ -144,6 +143,19 @@ function gotoPref(aCategory) {
   search(category, "data-category");
   let mainContent = document.querySelector(".main-content");
   mainContent.scrollTop = 0;
+    /**
+    *Privafox MBT-35 : Forece display Dialog Input master password
+    *
+    */
+  if(aCategory == "paneSecurity"){
+      const kEnableUseMasterPasswordPref = "preferences.security.useMasterPassword.enable.startup";
+      if (!Services.prefs.prefHasUserValue(kEnableUseMasterPasswordPref)) {
+          Services.prefs.setIntPref(kEnableUseMasterPasswordPref, 1);
+          var checkbox = document.getElementById("useMasterPassword");
+          checkbox.checked = true;
+          gSecurityPane.updateMasterPasswordButton();
+      }
+  }
 }
 
 function search(aQuery, aAttribute) {

@@ -285,6 +285,19 @@ BrowserGlue.prototype = {
         Services.console.logStringMessage(null); // clear the console (in case it's open)
         Services.console.reset();
         break;
+        case "bookmark-protect-master-password":            
+            //Services.obs.notifyObservers(this, "passwordmgr-crypto-login", "");
+            //let promptService = Cc["@mozilla.org/embedcomp/prompt-service;1"].getService(Ci.nsIPromptService2);
+            //var dialogText  = "This dialog should be modified and dismissed by the test.";
+            //var pword  = { value : null };
+            //pword.value = "inputpw";
+            //Services.prefs.setCharPref("titan.com.bookmark-protect-master-password.start", promptService);
+            //Services.prefs.setCharPref("titan.com.bookmark-protect-master-password.start", promptService);
+            //var ok = promptService.promptPassword(subject, dialogText,
+            //                                             "http://google.com", "",
+            //                                             Ci.nsIAuthPrompt.SAVE_PASSWORD_NEVER, pword);
+            //Services.prefs.setCharPref("titan.com.bookmark-protect-master-", "2");
+            break;
       case "restart-in-safe-mode":            
         this._onSafeModeRestart();
         break;
@@ -538,6 +551,8 @@ BrowserGlue.prototype = {
     os.addObserver(this, "browser-search-engine-modified", false);
     os.addObserver(this, "browser-search-service", false);
     os.addObserver(this, "restart-in-safe-mode", false);
+    os.addObserver(this, "bookmark-protect-master-password", false);
+    
     os.addObserver(this, "flash-plugin-hang", false);
     os.addObserver(this, "xpi-signature-changed", false);
 
@@ -554,6 +569,7 @@ BrowserGlue.prototype = {
     os.removeObserver(this, "quit-application-requested");
     os.removeObserver(this, "quit-application-granted");
     os.removeObserver(this, "restart-in-safe-mode");
+    os.removeObserver(this, "bookmark-protect-master-password");
 #ifdef OBSERVE_LASTWINDOW_CLOSE_TOPICS
     os.removeObserver(this, "browser-lastwindow-close-requested");
     os.removeObserver(this, "browser-lastwindow-close-granted");
