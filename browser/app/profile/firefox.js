@@ -547,7 +547,7 @@ pref("privacy.clearOnShutdown.history",     true);
 pref("privacy.clearOnShutdown.formdata",    true);
 pref("privacy.clearOnShutdown.passwords",   false);
 pref("privacy.clearOnShutdown.downloads",   true);
-pref("privacy.clearOnShutdown.cookies",     false);
+pref("privacy.clearOnShutdown.cookies",     true);
 pref("privacy.clearOnShutdown.cache",       true);
 pref("privacy.clearOnShutdown.sessions",    true);
 pref("privacy.clearOnShutdown.offlineApps", false);
