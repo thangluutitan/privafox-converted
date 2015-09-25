@@ -1672,7 +1672,7 @@ pref("devtools.fontinspector.enabled", true);
 // Pref to store the browser version at the time of a telemetry ping for an
 // opened developer tool. This allows us to ping telemetry just once per browser
 // version for each user.
-pref("devtools.telemetry.tools.opened.version", "{}");
+//pref("devtools.telemetry.tools.opened.version", "{}");
 
 // Whether the character encoding menu is under the main Firefox button. This
 // preference is a string so that localizers can alter it.
@@ -1774,7 +1774,7 @@ pref("loop.debug.loglevel", "Error");
 pref("loop.debug.dispatcher", false);
 pref("loop.debug.websocket", false);
 pref("loop.debug.sdk", false);
-pref("loop.debug.twoWayMediaTelemetry", false);
+//pref("loop.debug.twoWayMediaTelemetry", false);
 #ifdef DEBUG
 pref("loop.CSP", "default-src 'self' about: file: chrome: http://localhost:*; img-src * data:; font-src 'none'; connect-src wss://*.tokbox.com https://*.opentok.com https://*.tokbox.com wss://*.mozilla.com https://*.mozilla.org wss://*.mozaws.net http://localhost:* ws://localhost:*; media-src blob:");
 #else
@@ -1908,12 +1908,12 @@ pref("browser.translation.engine", "bing");
 
 // Telemetry settings.
 // Determines if Telemetry pings can be archived locally.
-pref("toolkit.telemetry.archive.enabled", true);
+//pref("toolkit.telemetry.archive.enabled", true);
 
 // Telemetry experiments settings.
-pref("experiments.enabled", true);
-pref("experiments.manifest.fetchIntervalSeconds", 86400);
-pref("experiments.manifest.uri", "https://telemetry-experiment.cdn.mozilla.net/manifest/v1/firefox/%VERSION%/%CHANNEL%");
+//pref("experiments.enabled", true);
+//pref("experiments.manifest.fetchIntervalSeconds", 86400);
+//pref("experiments.manifest.uri", "https://telemetry-experiment.cdn.mozilla.net/manifest/v1/firefox/%VERSION%/%CHANNEL%");
 // Whether experiments are supported by the current application profile.
 pref("experiments.supported", true);
 
