@@ -25,9 +25,12 @@
 
     <div>
 
-#ifdef APP_LICENSE_BLOCK
-#includesubst @APP_LICENSE_BLOCK@
-#endif
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/.  -->
+    <p><b>Binaries</b> of this product have been made available to you by 
+    <a href="http://www.privacore.com/">Privacore</a> under the Mozilla
+    Public License 2.0 (MPL). <a href="about:rights">Know your rights</a>.</p>
 
     <p>All of the <b>source code</b> to this product is
        available under licenses which are both
@@ -40,7 +43,7 @@
     </p>
 
     <p>More specifically, most of the source code is available under the
-       <a href="about:license#mpl">Privacore Public License 2.0</a> (MPL).
+       <a href="about:license#mpl">Mozilla Public License 2.0</a> (MPL).
        The MPL has a
        <a href="http://www.mozilla.org/MPL/2.0/FAQ.html">FAQ</a> to help
        you understand it. The remainder of the software which is not
@@ -53,7 +56,7 @@
     </p>
 
     <ul>
-      <li><a href="about:license#mpl">Privacore Public License 2.0</a>
+      <li><a href="about:license#mpl">Mozilla Public License 2.0</a>
       <br><br>
       </li>
       <li><a href="about:license#lgpl">GNU Lesser General Public License 2.1</a>
@@ -64,15 +67,12 @@
       </li>
       <li><a href="about:license#ACE">ACE License</a></li>
       <li><a href="about:license#acorn">acorn License</a></li>
-#ifdef MOZ_INSTALL_TRACKING
-      <li><a href="about:license#adjust">Adjust SDK License</a></li>
-#endif
       <li><a href="about:license#adobecmap">Adobe CMap License</a></li>
       <li><a href="about:license#android">Android Open Source License</a></li>
       <li><a href="about:license#angle">ANGLE License</a></li>
       <li><a href="about:license#apache">Apache License 2.0</a></li>
       <li><a href="about:license#apple">Apple License</a></li>
-      <li><a href="about:license#apple-mozilla">Apple/Privacore NPRuntime License</a></li>
+      <li><a href="about:license#apple-mozilla">Apple/Mozilla NPRuntime License</a></li>
       <li><a href="about:license#arm">ARM License</a></li>
       <li><a href="about:license#backbone">Backbone License</a></li>
       <li><a href="about:license#bspatch">bspatch License</a></li>
@@ -117,9 +117,6 @@
       <li><a href="about:license#opentok">OpenTok License</a></li>
       <li><a href="about:license#openvision">OpenVision License</a></li>
       <li><a href="about:license#pbkdf2-sha256">pbkdf2_sha256 License</a></li>
-#ifdef MOZ_WEBSPEECH_POCKETSPHINX
-      <li><a href="about:license#pocketsphinx">Pocketsphinx License</a></li>
-#endif
       <li><a href="about:license#praton">praton License</a></li>
       <li><a href="about:license#qcms">qcms License</a></li>
       <li><a href="about:license#qrcode-generator">QR Code Generator License</a></li>
@@ -128,9 +125,6 @@
       <li><a href="about:license#sctp">SCTP Licenses</a></li>
       <li><a href="about:license#skia">Skia License</a></li>
       <li><a href="about:license#snappy">Snappy License</a></li>
-#ifdef USE_STLPORT
-      <li><a href="about:license#stlport">STLport License</a></li>
-#endif
       <li><a href="about:license#sunsoft">SunSoft License</a></li>
       <li><a href="about:license#superfasthash">SuperFastHash License</a></li>
       <li><a href="about:license#unicode">Unicode License</a></li>
@@ -148,16 +142,14 @@
     <ul>
       <li><a href="about:license#other-notices">Other Required Notices</a>
       <li><a href="about:license#optional-notices">Optional Notices</a>
-#ifdef XP_WIN
       <li><a href="about:license#proprietary-notices">Proprietary Operating System Components</a>
-#endif
     </ul>
 
     </div>
 
     <hr>
 
-  <h1 id="mpl">Privacore Public License 2.0</h1>
+  <h1 id="mpl">Mozilla Public License 2.0</h1>
 
   <h2 id="definitions">1. Definitions</h2>
 
@@ -545,7 +537,7 @@
 
   <h3 id="new-versions">10.1. New Versions</h3>
 
-  <p>Privacore Foundation is the license steward. Except as provided in Section
+  <p>Mozilla Foundation is the license steward. Except as provided in Section
   10.3, no one other than the license steward has the right to modify or
   publish new versions of this License. Each version will be given a
   distinguishing version number.</p>
@@ -578,7 +570,7 @@
   Code Form License Notice</h2>
 
   <blockquote>
-    <p>This Source Code Form is subject to the terms of the Privacore Public
+    <p>This Source Code Form is subject to the terms of the Mozilla Public
     License, v. 2.0. If a copy of the MPL was not distributed with this file,
     You can obtain one at http://mozilla.org/MPL/2.0/.</p>
   </blockquote>
@@ -595,7 +587,7 @@
 
   <blockquote>
     <p>This Source Code Form is "Incompatible With Secondary Licenses", as
-    defined by the Privacore Public License, v. 2.0.</p>
+    defined by the Mozilla Public License, v. 2.0.</p>
   </blockquote>
 
 
@@ -1415,7 +1407,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     <h1><a id="android"></a>Android Open Source License</h1>
 
-    <p>This license applies to various files in the Privacore codebase,
+    <p>This license applies to various files in the Mozilla codebase,
     including those in the directory <span class="path">gfx/skia/</span>.</p>
 <!-- This is the wrong directory, what was intended? -->
 
@@ -1523,42 +1515,9 @@ licences.
 
     <hr>
 
-#ifdef MOZ_INSTALL_TRACKING
-    <h1><a id="adjust"></a>Adjust SDK License</h1>
-
-    <p>This license applies to all files in the directory
-    <span class="path">mobile/android/thirdparty/com/adjust/sdk</span>.</p>
-
-<pre>
-Copyright (c) 2012-2014 adjust GmbH,
-http://www.adjust.com
-
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
-
-The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-</pre>
-
-    <hr>
-
-#endif
     <h1><a id="apache"></a>Apache License 2.0</h1>
 
-    <p>This license applies to various files in the Privacore codebase.</p>
+    <p>This license applies to various files in the Mozilla codebase.</p>
 
 <pre>
                                  Apache License
@@ -1775,13 +1734,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     <hr>
 
-    <h1><a id="apple-mozilla"></a>Apple/Privacore NPRuntime License</h1>
+    <h1><a id="apple-mozilla"></a>Apple/Mozilla NPRuntime License</h1>
 
     <p>This license applies to the file
     <span class="path">dom/plugins/base/npruntime.h</span>.</p>
 
 <pre>
-Copyright &copy; 2004, Apple Computer, Inc. and The Privacore Foundation.
+Copyright &copy; 2004, Apple Computer, Inc. and The Mozilla Foundation.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -1793,15 +1752,15 @@ notice, this list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright
 notice, this list of conditions and the following disclaimer in the
 documentation and/or other materials provided with the distribution.
-3. Neither the names of Apple Computer, Inc. ("Apple") or The Privacore
-Foundation ("Privacore") nor the names of their contributors may be used
+3. Neither the names of Apple Computer, Inc. ("Apple") or The Mozilla
+Foundation ("Mozilla") nor the names of their contributors may be used
 to endorse or promote products derived from this software without
 specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY APPLE, PRIVACORE AND THEIR CONTRIBUTORS "AS
+THIS SOFTWARE IS PROVIDED BY APPLE, MOZILLA AND THEIR CONTRIBUTORS "AS
 IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
 TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
-PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL APPLE, PRIVACORE OR
+PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL APPLE, MOZILLA OR
 THEIR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
 SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
 TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
@@ -2638,7 +2597,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         <li>2006  Behdad Esfahbod</li>
         <li>2007  Chris Wilson</li>
         <li>2009  Keith Stribley &lt;devel@thanlwinsoft.org&gt;</li>
-        <li>2010  Privacore Foundation</li>
+        <li>2010  Mozilla Foundation</li>
     </ul>
 
 <pre>
@@ -2777,7 +2736,7 @@ Chiyoda-ku, Tokyo 101-0047, Japan.
 <pre>
 Copyright (C) 2002-2012 Jason Evans &lt;jasone@canonware.com&gt;.
 All rights reserved.
-Copyright (C) 2007-2012 Privacore Foundation.  All rights reserved.
+Copyright (C) 2007-2012 Mozilla Foundation.  All rights reserved.
 Copyright (C) 2009-2012 Facebook, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -2918,7 +2877,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     </p>
 
 <pre>
-Copyright &copy; 2011 Privacore Foundation
+Copyright &copy; 2011 Mozilla Foundation
 
 Permission to use, copy, modify, and distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
@@ -3050,7 +3009,7 @@ SUCH DAMAGE.
     </p>
 
 <pre>
-Copyright &copy; 2010 Privacore Foundation
+Copyright &copy; 2010 Mozilla Foundation
 
 Permission to use, copy, modify, and distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
@@ -3637,50 +3596,6 @@ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
 OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 SUCH DAMAGE.
 </pre>
-#ifdef MOZ_WEBSPEECH_POCKETSPHINX
-
-    <hr>
-
-    <h1><a id="pocketsphinx"></a>Pocketsphinx License</h1>
-
-    <p>This license applies to files in the directories
-      <span class="path">media/pocketsphinx/</span> and
-      <span class="path">media/sphinxbase/</span>.
-    </p>
-
-<pre>
-Copyright (c) 1999-2014 Carnegie Mellon University.  All rights
-reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
-
-1. Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright
-   notice, this list of conditions and the following disclaimer in
-   the documentation and/or other materials provided with the
-   distribution.
-
-This work was supported in part by funding from the Defense Advanced
-Research Projects Agency and the National Science Foundation of the
-United States of America, and the CMU Sphinx Speech Consortium.
-
-THIS SOFTWARE IS PROVIDED BY CARNEGIE MELLON UNIVERSITY ``AS IS'' AND
-ANY EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL CARNEGIE MELLON UNIVERSITY
-NOR ITS EMPLOYEES BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-</pre>
-#endif
 
     <hr>
 
@@ -3689,7 +3604,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     <p>This license applies to certain files in the directory
       <span class="path">gfx/qcms/</span>.</p>
 <pre>
-Copyright (C) 2009 Privacore
+Copyright (C) 2009 Mozilla
 Copyright (C) 1998-2007 Marti Maria
 
 Permission is hereby granted, free of charge, to any person
@@ -3960,75 +3875,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     <hr>
 
-#ifdef USE_STLPORT
-    <h1><a id="stlport"></a>STLport License</h1>
-
-    <p>This license applies to most files in the directory
-    <span class="path">build/stlport/</span>.</p>
-
-<pre>
-Boris Fomitchev grants Licensee a non-exclusive, non-transferable, royalty-free
-license to use STLport and its documentation without fee.
-
-By downloading, using, or copying STLport or any portion thereof,  Licensee
-agrees to abide by the intellectual property laws and all other applicable laws
-of the United States of America, and to all of the terms and conditions of this
-Agreement.
-
-Licensee shall maintain the following copyright and permission notices on
-STLport sources and its documentation unchanged :
-
-Copyright 1999,2000 Boris Fomitchev
-
-This material is provided "as is", with absolutely no warranty expressed or
-implied. Any use is at your own risk.
-Permission to use or copy this software for any purpose is hereby granted
-without fee, provided the above notices are retained on all copies. Permission
-to modify the code and to distribute modified code is granted, provided the
-above notices are retained, and a notice that the code was modified is included
-with the above copyright notice.
-The Licensee may distribute binaries compiled with STLport (whether original or
-modified) without any royalties or restrictions.
-
-The Licensee may distribute original or modified STLport sources, provided that:
-
-The conditions indicated in the above permission notice are met;
-The following copyright notices are retained when present, and conditions
-provided in accompanying permission notices are met :
-Copyright 1994 Hewlett-Packard Company
-
-Copyright 1996,97 Silicon Graphics Computer Systems, Inc.
-
-Copyright 1997 Moscow Center for SPARC Technology.
-
-Permission to use, copy, modify, distribute and sell this software and its
-documentation for any purpose is hereby granted without fee, provided that the
-above copyright notice appear in all copies and that both that copyright
-notice and this permission notice appear in supporting documentation.
-Hewlett-Packard Company makes no representations about the suitability of this
-software for any purpose. It is provided "as is" without express or implied
-warranty.
-
-Permission to use, copy, modify, distribute and sell this software and its
-documentation for any purpose is hereby granted without fee, provided that the
-above copyright notice appear in all copies and that both that copyright
-notice and this permission notice appear in supporting documentation.
-Silicon Graphics makes no representations about the suitability of this
-software for any purpose. It is provided "as is" without express or implied
-warranty.
-
-Permission to use, copy, modify, distribute and sell this software and its
-documentation for any purpose is hereby granted without fee, provided that the
-above copyright notice appear in all copies and that both that copyright
-notice and this permission notice appear in supporting documentation. Moscow
-Center for SPARC Technology  makes no representations about the suitability
-of this software for any purpose. It is provided "as is" without express or
-implied warranty.
-</pre>
-
-    <hr>
-
-#endif
 
     <h1><a id="sunsoft"></a>SunSoft License</h1>
 
@@ -4523,7 +4369,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 
-#ifdef XP_WIN
 
     <hr>
 
@@ -4531,7 +4376,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     <p>Under some circumstances, under our
     <a href="http://www.mozilla.org/foundation/licensing/binary-components/">binary components policy</a>,
-    Privacore may decide to include additional
+    Mozilla may decide to include additional
     operating system vendor code with the installer of our products designed
     for that vendor's proprietary platform, to make our products work well on
     that specific operating system. The following license statements
@@ -4567,7 +4412,6 @@ following terms:
       regulations that apply to the Distributable Code.
 </pre>
 
-#endif
 
 
     <hr>

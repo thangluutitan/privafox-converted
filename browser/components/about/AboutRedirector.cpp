@@ -71,10 +71,10 @@ static RedirEntry kRedirMap[] = {
 #endif
     nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
     nsIAboutModule::ALLOW_SCRIPT },
-  { "robots", "chrome://browser/content/aboutRobots.xhtml",
+  { "robots", "chrome://browser/content/NullPage.xhtml",
     nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
     nsIAboutModule::ALLOW_SCRIPT },
-  { "sessionrestore", "chrome://browser/content/aboutSessionRestore.xhtml",
+  { "sessionrestore", "chrome://browser/content/NullPage.xhtml",
     nsIAboutModule::ALLOW_SCRIPT },
   { "welcomeback", "chrome://browser/content/aboutWelcomeBack.xhtml",
     nsIAboutModule::ALLOW_SCRIPT },
@@ -97,7 +97,7 @@ static RedirEntry kRedirMap[] = {
     nsIAboutModule::ALLOW_SCRIPT },
   { "accounts", "chrome://browser/content/aboutaccounts/aboutaccounts.xhtml",
     nsIAboutModule::ALLOW_SCRIPT },
-  { "app-manager", "chrome://browser/content/devtools/app-manager/index.xul",
+  { "app-manager", "chrome://browser/content/devtools/app-manager.xul",
     nsIAboutModule::ALLOW_SCRIPT },
   { "customizing", "chrome://browser/content/customizableui/aboutCustomizing.xul",
     nsIAboutModule::ALLOW_SCRIPT },

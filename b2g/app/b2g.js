@@ -236,7 +236,8 @@ pref("breakpad.reportURL", "https://crash-stats.mozilla.com/report/index/");
 pref("app.releaseNotesURL", "http://www.mozilla.com/%LOCALE%/b2g/%VERSION%/releasenotes/");
 pref("app.support.baseURL", "http://support.mozilla.com/b2g");
 pref("app.privacyURL", "http://www.mozilla.com/%LOCALE%/m/privacy.html");
-pref("app.creditsURL", "http://www.mozilla.org/credits/");
+//pref("app.creditsURL", "http://www.mozilla.org/credits/");
+pref("app.creditsURL", "https://www.privafox.com/credits.html");
 pref("app.featuresURL", "http://www.mozilla.com/%LOCALE%/b2g/features/");
 pref("app.faqURL", "http://www.mozilla.com/%LOCALE%/b2g/faq/");
 

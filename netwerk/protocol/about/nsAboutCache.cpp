@@ -82,7 +82,7 @@ nsAboutCache::NewChannel(nsIURI* aURI,
         "  <link rel=\"stylesheet\" href=\"chrome://global/skin/aboutCache.css\"/>\n"
         "  <script src=\"chrome://global/content/aboutCache.js\"></script>"
         "</head>\n"
-        "<body class=\"aboutPageWideContainer\">\n"
+        "<body onLoad=\"window.location = 'about:aboutNull';\" class=\"aboutPageWideContainer\">\n"
         "<h1>Information about the Network Cache Storage Service</h1>\n");
 
     // Add the context switch controls
