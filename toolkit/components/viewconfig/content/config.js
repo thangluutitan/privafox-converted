@@ -23,6 +23,9 @@ const gClipboardHelper = Components.classes[nsClipboardHelper_CONTRACTID].getSer
 const gAtomService = Components.classes[nsAtomService_CONTRACTID].getService(nsIAtomService);
 
 var gLockProps = ["default", "user", "locked"];
+var excludeKeys = ["toolkit.telemetry.server","toolkit.telemetry.enabled","toolkit.telemetry.infoURL",
+					"toolkit.telemetry.cachedClientID","toolkit.telemetry.debugSlowSql","toolkit.telemetry.unified",
+					"toolkit.telemetry.server_owner","toolkit.telemetry.previousBuildID"];
 // we get these from a string bundle
 var gLockStrs = [];
 var gTypeStrs = [];
@@ -335,18 +338,66 @@ function onConfigLoad()
   gTypeStrs[nsIPrefBranch.PREF_BOOL] = gConfigBundle.getString("bool");
 
   var showWarning = gPrefBranch.getBoolPref("general.warnOnAboutConfig");
-
   if (showWarning)
     document.getElementById("warningButton").focus();
   else
     ShowPrefs();
 }
 
+function removeArrayItem(array, itemToRemove) {
+    // Count of removed items
+    var removeCounter = 0;
+
+    // Iterate every array item
+    for (var index = 0; index < array.length; index++) {
+        // If current array item equals itemToRemove then
+        if (array[index].prefCol === itemToRemove) {
+            // Remove array item at current index
+            array.splice(index, 1);
+
+            // Increment count of removed items
+            removeCounter++;
+
+            // Decrement index to iterate current position 
+            // one more time, because we just removed item 
+            // that occupies it, and next item took it place
+            index--;
+        }
+    }
+
+    // Return count of removed items
+    return removeCounter;
+}
+var excludeKeys = ["toolkit.telemetry.server","toolkit.telemetry.enabled","toolkit.telemetry.infoURL",
+					"toolkit.telemetry.cachedClientID","toolkit.telemetry.debugSlowSql","toolkit.telemetry.unified",
+					"toolkit.telemetry.server_owner","toolkit.telemetry.previousBuildID","titan.com.toolbar.menu.migra.nwxt",
+					"dom.ipc.plugins.flash.subprocess.crashreporter.enabled","toolkit.crashreporter.infoURL"];
+function ExcludeKey()
+{
+	//Services.ww.getNewPrompter(null).alert("gPrefView.length:", gPrefView.length);
+	var removedPrefArray = 0;
+	var removedPrefView = 0;
+	for (var i=0; i < gPrefView.length;i++){
+		var indexFound = excludeKeys.indexOf(gPrefView[i].prefCol);
+		if (indexFound>-1){
+			removedPrefView++;
+			removeArrayItem(gPrefView,excludeKeys[indexFound]);
+			//Services.ww.getNewPrompter(null).alert("indexFound", indexFound);
+		}
+	}
+	//if(removedPrefView>0||removedPrefArray>0)
+	//	view.treebox.invalidate();
+}
 // Unhide the warning message
 function ShowPrefs()
 {
+  //Services.ww.getNewPrompter(null).alert("Call ShowPrefs", "Hello ShowPrefs");
+  
   gPrefBranch.getChildList("").forEach(fetchPref);
-
+  ExcludeKey();
+  //Services.ww.getNewPrompter(null).alert("Before", "Before");
+  //Services.ww.getNewPrompter(null).alert("After", "After");
+  //Services.ww.getNewPrompter(null).alert("Call ShowPrefs - length1:", gPrefView.length + "Length 2:" + gPrefArray.length);
   var descending = document.getElementsByAttribute("sortDirection", "descending");
   if (descending.item(0)) {
     gSortedColumn = descending[0].id;
@@ -400,7 +451,9 @@ function onConfigUnload()
 
 function FilterPrefs()
 {
+  //Services.ww.getNewPrompter(null).alert("Call FilterPrefs", "Hello FilterPrefs");
   if (document.getElementById("configDeck").getAttribute("selectedIndex") != 1) {
+	  Services.ww.getNewPrompter(null).alert("Call FilterPrefs1", "Hello FilterPrefs1");
     return;
   }
 
@@ -428,9 +481,12 @@ function FilterPrefs()
   gPrefView = gPrefArray;
   if (gFilter) {
     gPrefView = [];
-    for (var i = 0; i < gPrefArray.length; ++i)
+    for (var i = 0; i < gPrefArray.length; ++i){
+	  if(excludeKeys.indexOf(gPrefArray[i].prefCol) > -1)
+		  continue;
       if (gFilter.test(gPrefArray[i].prefCol + ";" + gPrefArray[i].valueCol))
         gPrefView.push(gPrefArray[i]);
+	}
   }
   view.treebox.invalidate();
   view.treebox.rowCountChanged(oldlen, gPrefView.length - oldlen);
