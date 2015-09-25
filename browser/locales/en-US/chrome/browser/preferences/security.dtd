@@ -20,6 +20,9 @@
 <!ENTITY  blockWebForgeries.label     "Block reported web forgeries">
 <!ENTITY  blockWebForgeries.accesskey "B">
 
+<!ENTITY doNotTrackInfo.label3      "The original Firefox web browser offers options to block certain sites based on blacklists maintained by Google. By using this feature, you would be sending your IP-address to Google, which we are against. We strongly suggest that you use a dedicated anti-malware/internet protection suite from a company who has such products as their core business.">
+<!ENTITY doNotTrackInfo.label4      "See our list of recommended products here.">
+
 <!ENTITY  addonExceptions.label         "Exceptions…">
 <!ENTITY  addonExceptions.accesskey     "E">
 

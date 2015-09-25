@@ -248,13 +248,13 @@ pref("lightweightThemes.recommendedThemes", "[{\"id\":\"recommended-1\",\"homepa
 pref("browser.eme.ui.enabled", false);
 
 // UI tour experience.
-pref("browser.uitour.enabled", true);
-pref("browser.uitour.loglevel", "Error");
-pref("browser.uitour.requireSecure", true);
-pref("browser.uitour.themeOrigin", "https://addons.mozilla.org/%LOCALE%/firefox/themes/");
-pref("browser.uitour.url", "https://www.mozilla.org/%LOCALE%/firefox/%VERSION%/tour/");
+//pref("browser.uitour.enabled", true);
+//pref("browser.uitour.loglevel", "Error");
+//pref("browser.uitour.requireSecure", true);
+//pref("browser.uitour.themeOrigin", "https://addons.mozilla.org/%LOCALE%/firefox/themes/");
+//pref("browser.uitour.url", "https://www.mozilla.org/%LOCALE%/firefox/%VERSION%/tour/");
 // This is used as a regexp match against the page's URL.
-pref("browser.uitour.readerViewTrigger", "^https:\\/\\/www\\.mozilla\\.org\\/[^\\/]+\\/firefox\\/reading\\/start");
+//pref("browser.uitour.readerViewTrigger", "^https:\\/\\/www\\.mozilla\\.org\\/[^\\/]+\\/firefox\\/reading\\/start");
 
 pref("browser.customizemode.tip0.shown", false);
 pref("browser.customizemode.tip0.learnMoreUrl", "https://www.privafox.com/support/customize.html?v=%VERSION%&l=%LOCALE%&os=%OS%/customize11");
@@ -1751,44 +1751,44 @@ pref("shumway.swf.whitelist", "http://www.areweflashyet.com/*.swf");
 // (This is intentionally on the high side; see bug 746055.)
 pref("image.mem.max_decoded_image_kb", 256000);
 
-pref("loop.enabled", true);
-pref("loop.textChat.enabled", true);
-pref("loop.server", "https://loop.services.mozilla.com/v0");
-pref("loop.seenToS", "unseen");
-pref("loop.showPartnerLogo", true);
-pref("loop.gettingStarted.seen", false);
-pref("loop.gettingStarted.url", "https://www.mozilla.org/%LOCALE%/firefox/%VERSION%/hello/start/");
-pref("loop.gettingStarted.resumeOnFirstJoin", false);
-pref("loop.learnMoreUrl", "https://www.firefox.com/hello/");
-pref("loop.legal.ToS_url", "https://www.mozilla.org/about/legal/terms/firefox-hello/");
-pref("loop.legal.privacy_url", "https://www.mozilla.org/privacy/firefox-hello/");
-pref("loop.do_not_disturb", false);
-pref("loop.ringtone", "chrome://browser/content/loop/shared/sounds/ringtone.ogg");
-pref("loop.retry_delay.start", 60000);
-pref("loop.retry_delay.limit", 300000);
-pref("loop.ping.interval", 1800000);
-pref("loop.ping.timeout", 10000);
-pref("loop.feedback.baseUrl", "https://input.mozilla.org/api/v1/feedback");
-pref("loop.feedback.product", "Loop");
-pref("loop.debug.loglevel", "Error");
-pref("loop.debug.dispatcher", false);
-pref("loop.debug.websocket", false);
-pref("loop.debug.sdk", false);
+//pref("loop.enabled", true);
+//pref("loop.textChat.enabled", true);
+//pref("loop.server", "https://loop.services.mozilla.com/v0");
+//pref("loop.seenToS", "unseen");
+//pref("loop.showPartnerLogo", true);
+//pref("loop.gettingStarted.seen", false);
+//pref("loop.gettingStarted.url", "https://www.mozilla.org/%LOCALE%/firefox/%VERSION%/hello/start/");
+//pref("loop.gettingStarted.resumeOnFirstJoin", false);
+//pref("loop.learnMoreUrl", "https://www.firefox.com/hello/");
+//pref("loop.legal.ToS_url", "https://www.mozilla.org/about/legal/terms/firefox-hello/");
+//pref("loop.legal.privacy_url", "https://www.mozilla.org/privacy/firefox-hello/");
+//pref("loop.do_not_disturb", false);
+//pref("loop.ringtone", "chrome://browser/content/loop/shared/sounds/ringtone.ogg");
+//pref("loop.retry_delay.start", 60000);
+//pref("loop.retry_delay.limit", 300000);
+//pref("loop.ping.interval", 1800000);
+//pref("loop.ping.timeout", 10000);
+//pref("loop.feedback.baseUrl", "https://input.mozilla.org/api/v1/feedback");
+//pref("loop.feedback.product", "Loop");
+//pref("loop.debug.loglevel", "Error");
+//pref("loop.debug.dispatcher", false);
+//pref("loop.debug.websocket", false);
+//pref("loop.debug.sdk", false);
 //pref("loop.debug.twoWayMediaTelemetry", false);
 #ifdef DEBUG
-pref("loop.CSP", "default-src 'self' about: file: chrome: http://localhost:*; img-src * data:; font-src 'none'; connect-src wss://*.tokbox.com https://*.opentok.com https://*.tokbox.com wss://*.mozilla.com https://*.mozilla.org wss://*.mozaws.net http://localhost:* ws://localhost:*; media-src blob:");
+//pref("loop.CSP", "default-src 'self' about: file: chrome: http://localhost:*; img-src * data:; font-src 'none'; connect-src wss://*.tokbox.com https://*.opentok.com https://*.tokbox.com wss://*.mozilla.com https://*.mozilla.org wss://*.mozaws.net http://localhost:* ws://localhost:*; media-src blob:");
 #else
-pref("loop.CSP", "default-src 'self' about: file: chrome:; img-src * data:; font-src 'none'; connect-src wss://*.tokbox.com https://*.opentok.com https://*.tokbox.com wss://*.mozilla.com https://*.mozilla.org wss://*.mozaws.net; media-src blob:");
+//pref("loop.CSP", "default-src 'self' about: file: chrome:; img-src * data:; font-src 'none'; connect-src wss://*.tokbox.com https://*.opentok.com https://*.tokbox.com wss://*.mozilla.com https://*.mozilla.org wss://*.mozaws.net; media-src blob:");
 #endif
-pref("loop.oauth.google.redirect_uri", "urn:ietf:wg:oauth:2.0:oob:auto");
-pref("loop.oauth.google.scope", "https://www.google.com/m8/feeds");
-pref("loop.fxa_oauth.tokendata", "");
-pref("loop.fxa_oauth.profile", "");
-pref("loop.support_url", "https://support.mozilla.org/kb/group-conversations-firefox-hello-webrtc");
-pref("loop.contacts.gravatars.show", false);
-pref("loop.contacts.gravatars.promo", true);
-pref("loop.browserSharing.showInfoBar", true);
-pref("loop.contextInConversations.enabled", true);
+//pref("loop.oauth.google.redirect_uri", "urn:ietf:wg:oauth:2.0:oob:auto");
+//pref("loop.oauth.google.scope", "https://www.google.com/m8/feeds");
+//pref("loop.fxa_oauth.tokendata", "");
+//pref("loop.fxa_oauth.profile", "");
+//pref("loop.support_url", "https://support.mozilla.org/kb/group-conversations-firefox-hello-webrtc");
+//pref("loop.contacts.gravatars.show", false);
+//pref("loop.contacts.gravatars.promo", true);
+//pref("loop.browserSharing.showInfoBar", true);
+//pref("loop.contextInConversations.enabled", true);
 
 pref("social.sidebar.unload_timeout_ms", 10000);
 

@@ -57,8 +57,7 @@
   </hbox>
 
   <separator class="thin"/>
-  <vbox align="start">
-    <checkbox id="blockAttackSites"
+  <!-- <checkbox id="blockAttackSites"
               label="&blockAttackSites.label;"
               accesskey="&blockAttackSites.accesskey;"
               preference="browser.safebrowsing.malware.enabled" />
@@ -66,6 +65,15 @@
               label="&blockWebForgeries.label;"
               accesskey="&blockWebForgeries.accesskey;"
               preference="browser.safebrowsing.enabled" />
+			  -->
+  <vbox align="start">
+	<label>
+        &doNotTrackInfo.label3;
+      </label>
+	  <label  class="text-link"
+             href="https://www.privafox.com/support/do-not-track.html">
+        &doNotTrackInfo.label4;
+      </label>
   </vbox>
 </groupbox>
 
