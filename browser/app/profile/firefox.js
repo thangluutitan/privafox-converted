@@ -541,7 +541,7 @@ pref("privacy.popups.policy",               1);
 pref("privacy.popups.usecustom",            true);
 pref("privacy.popups.showBrowserMessage",   true);
 
-pref("privacy.item.cookies",                false);
+pref("privacy.item.cookies",                true);
 
 pref("privacy.clearOnShutdown.history",     true);
 pref("privacy.clearOnShutdown.formdata",    true);
