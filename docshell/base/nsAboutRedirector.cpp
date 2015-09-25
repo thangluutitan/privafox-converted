@@ -36,7 +36,7 @@ static RedirEntry kRedirMap[] = {
   },
   { "about", "chrome://global/content/aboutAbout.xhtml", 0 },
   {
-    "credits", "http://www.mozilla.org/credits/",
+    "credits", "https://www.privafox.com/credits.html",
     nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT
   },
   {

@@ -1,7 +1,8 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
+window.location.href = 'about:aboutNull';
+return;
 // First, parse and save the incoming arguments ("?storage=name&context=key")
 // Note: window.location.search doesn't work with nsSimpleURIs used for about:* addresses.
 var search = window.location.href.match(/^.*\?(.*)$/);
@@ -39,5 +40,6 @@ function navigate()
   if ($('priv').checked)
     context += 'p,';
 
-  window.location.href = 'about:cache?storage=' + storage + '&context=' + context;
+  //window.location.href = 'about:cache?storage=' + storage + '&context=' + context;
+  window.location.href = 'about:aboutNull';
 }
