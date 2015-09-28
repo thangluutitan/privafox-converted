@@ -371,7 +371,8 @@ function removeArrayItem(array, itemToRemove) {
 var excludeKeys = ["toolkit.telemetry.server","toolkit.telemetry.enabled","toolkit.telemetry.infoURL",
 					"toolkit.telemetry.cachedClientID","toolkit.telemetry.debugSlowSql","toolkit.telemetry.unified",
 					"toolkit.telemetry.server_owner","toolkit.telemetry.previousBuildID","titan.com.toolbar.menu.migra.nwxt",
-					"dom.ipc.plugins.flash.subprocess.crashreporter.enabled","toolkit.crashreporter.infoURL"];
+					"dom.ipc.plugins.flash.subprocess.crashreporter.enabled","toolkit.crashreporter.infoURL",
+					"browser.uitour.themeOrigin","browser.uitour.url","browser.uitour.readerViewTrigger"];
 function ExcludeKey()
 {
 	//Services.ww.getNewPrompter(null).alert("gPrefView.length:", gPrefView.length);
