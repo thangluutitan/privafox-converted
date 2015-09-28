@@ -148,6 +148,7 @@ function gotoPref(aCategory) {
     *
     */
   if(aCategory == "paneSecurity"){
+      const kEnableUseMasterPasswordPref = "preferences.security.useMasterPassword.enable.startup";
       let kMasterPref = Services.prefs.getBoolPref(kEnableUseMasterPasswordPref);
       if (!kMasterPref) {
           Services.prefs.setBoolPref(kEnableUseMasterPasswordPref, true);
