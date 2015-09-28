@@ -372,7 +372,8 @@ var excludeKeys = ["toolkit.telemetry.server","toolkit.telemetry.enabled","toolk
 					"toolkit.telemetry.cachedClientID","toolkit.telemetry.debugSlowSql","toolkit.telemetry.unified",
 					"toolkit.telemetry.server_owner","toolkit.telemetry.previousBuildID","titan.com.toolbar.menu.migra.nwxt",
 					"dom.ipc.plugins.flash.subprocess.crashreporter.enabled","toolkit.crashreporter.infoURL",
-					"browser.uitour.themeOrigin","browser.uitour.url","browser.uitour.readerViewTrigger"];
+					"browser.uitour.themeOrigin","browser.uitour.url","browser.uitour.readerViewTrigger",
+					"browser.trackingprotection.gethashURL","browser.trackingprotection.updateURL"];
 function ExcludeKey()
 {
 	//Services.ww.getNewPrompter(null).alert("gPrefView.length:", gPrefView.length);
