@@ -148,9 +148,9 @@ function gotoPref(aCategory) {
     *
     */
   if(aCategory == "paneSecurity"){
-      const kEnableUseMasterPasswordPref = "preferences.security.useMasterPassword.enable.startup";
-      if (!Services.prefs.prefHasUserValue(kEnableUseMasterPasswordPref)) {
-          Services.prefs.setIntPref(kEnableUseMasterPasswordPref, 1);
+      let kMasterPref = Services.prefs.getBoolPref(kEnableUseMasterPasswordPref);
+      if (!kMasterPref) {
+          Services.prefs.setBoolPref(kEnableUseMasterPasswordPref, true);
           var checkbox = document.getElementById("useMasterPassword");
           checkbox.checked = true;
           gSecurityPane.updateMasterPasswordButton();

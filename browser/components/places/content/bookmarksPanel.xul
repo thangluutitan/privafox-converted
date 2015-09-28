@@ -29,11 +29,11 @@
   <!-- Bookmarks and history tooltip -->
   <tooltip id="bhTooltip"/>
 	<hbox id="sidebar-enter-masterpassword-container" align="center">
-		<hbox id="checkForUpdates" align="center">
+		<hbox id="checkProtecBookmarkContainer" align="center">
 			<button id="checkForProtectBookmark" align="start"
 					label="Enter Master Password"
+					flex="1"
 					oncommand="checkProtecBookmark();"/>
-			<spacer flex="1"/>
 		</hbox>
 	</hbox>
   <hbox id="sidebar-search-container" align="center">

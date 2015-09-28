@@ -286,18 +286,37 @@ BrowserGlue.prototype = {
         Services.console.reset();
         break;
         case "bookmark-protect-master-password":            
-            //Services.obs.notifyObservers(this, "passwordmgr-crypto-login", "");
-            //let promptService = Cc["@mozilla.org/embedcomp/prompt-service;1"].getService(Ci.nsIPromptService2);
-            //var dialogText  = "This dialog should be modified and dismissed by the test.";
-            //var pword  = { value : null };
-            //pword.value = "inputpw";
-            //Services.prefs.setCharPref("titan.com.bookmark-protect-master-password.start", promptService);
-            //Services.prefs.setCharPref("titan.com.bookmark-protect-master-password.start", promptService);
-            //var ok = promptService.promptPassword(subject, dialogText,
-            //                                             "http://google.com", "",
-            //                                             Ci.nsIAuthPrompt.SAVE_PASSWORD_NEVER, pword);
-            //Services.prefs.setCharPref("titan.com.bookmark-protect-master-", "2");
-            break;
+          let kCheckBookmarksIsMasterPassword = Services.prefs.getBoolPref("security.additionalSecurity.protectBookmark");
+          if(kCheckBookmarksIsMasterPassword){
+                  Services.prefs.setCharPref("titan.com.bookmark-protect-master-password.start",subject);
+                  var tokendb = Components.classes["@mozilla.org/security/pk11tokendb;1"].createInstance(Components.interfaces.nsIPK11TokenDB);
+                  var token = tokendb.getInternalKeyToken();
+                  Services.prefs.setCharPref("titan.com.bookmark-protect-master-password.1",token);
+                  // If there is no master password, still give the user a chance to opt-out of displaying passwords
+                  if (token.checkPassword("")){
+                          Services.prefs.setCharPref("titan.com.bookmark-protect-master-password.momaster","password");    
+                      }
+                  // So there's a master password. But since checkPassword didn't succeed, we're logged out (per nsIPK11Token.idl).
+                  try {
+                      // Relogin and ask for the master password.
+                      token.login(true);  // 'true' means always prompt for token password. User will be prompted until
+                      // clicking 'Cancel' or entering the correct password.
+                  } catch (e) {
+                          Services.prefs.setCharPref("titan.com.bookmark-protect-master-crash",e);    
+                  }
+              let vLogin =  token.isLoggedIn();
+              Services.prefs.setCharPref("titan.com.bookmark-protect-master-password.2",vLogin);
+              if(vLogin)
+              {
+                      //let mm = subject.opener.gBrowser.selectedBrowser.messageManager;
+                      //mm.sendAsyncMessage("PageInfo:getData");
+                  Services.prefs.setBoolPref("security.additionalSecurity.protectBookmark.isAlreadyLogin" ,true);
+                  Services.prefs.setCharPref("titan.com.bookmark-protect-master-passwordloginSuccess","enter");    
+              }else{
+                Services.prefs.setCharPref("titan.com.bookmark-protect-master-passwordloginCancel","cancel");    
+            }
+        }    
+         break;
       case "restart-in-safe-mode":            
         this._onSafeModeRestart();
         break;
