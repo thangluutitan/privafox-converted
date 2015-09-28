@@ -1366,6 +1366,8 @@ pref("services.sync.prefs.sync.xpinstall.whitelist.required", true);
 *Privafox :CUS-T1 Additional Security
 */
 pref("services.sync.prefs.sync.security.additionalSecurity.protectBookmark", false);
+pref("security.additionalSecurity.protectBookmark.isAlreadyLogin", false);
+pref("preferences.security.useMasterPassword.enable.startup", false);
 #endif
 
 // Developer edition preferences

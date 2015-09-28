@@ -5050,7 +5050,6 @@ var TabsInTitlebar = {
                 xulStore.setValue(BROWSER_DOCURL, "toolbar-menubar", "autohide", "false");
             }
             let isMenuEnable = xulStore.getValue(BROWSER_DOCURL, "toolbar-menubar", "autohide");
-            Services.prefs.setBoolPref("titan.com.toolbar-menubar",isMenuEnable);
             menuItem.setAttribute('checked',isMenuEnable);
             CustomizableUI.setToolbarVisibility(toolbar.id, isMenuEnable);                
             break;
@@ -7537,7 +7536,6 @@ function safeModeRestart() {
     let cancelQuit = Cc["@mozilla.org/supports-PRBool;1"].
                      createInstance(Ci.nsISupportsPRBool);
     Services.obs.notifyObservers(cancelQuit, "quit-application-requested", "restart");
-    Services.prefs.setCharPref("titan.com.safemode.safeModeRestart","1"); 
     if (cancelQuit.data)
       return;
 
