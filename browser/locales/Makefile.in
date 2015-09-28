@@ -68,7 +68,7 @@ STUB_HOOK = $(NSINSTALL) -D '$(_ABS_DIST)/$(PKG_INST_PATH)'; \
     $(NULL)
 endif
 
-SEARCHPLUGINS_NAMES = $(shell cat $(call MERGE_FILE,/searchplugins/list.txt)) ddg
+SEARCHPLUGINS_NAMES = $(shell cat $(call MERGE_FILE,/searchplugins/list.txt))
 SEARCHPLUGINS_PATH := .deps/generated_$(AB_CD)
 SEARCHPLUGINS_TARGET := libs searchplugins
 SEARCHPLUGINS := $(foreach plugin,$(addsuffix .xml,$(SEARCHPLUGINS_NAMES)),$(or $(wildcard $(call EN_US_OR_L10N_FILE,searchplugins/$(plugin))),$(info Missing searchplugin: $(plugin))))
