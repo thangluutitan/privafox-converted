@@ -848,7 +848,7 @@ pref("devtools.remote.wifi.visible", true);
 pref("devtools.remote.tls-handshake-timeout", 10000);
 
 // URL of the remote JSON catalog used for device simulation
-pref("devtools.devices.url", "https://code.cdn.mozilla.net/devices/devices.json");
+pref("devtools.devices.url", "http://removed.in.privafox");
 
 // Display the introductory text
 pref("devtools.gcli.hideIntro", false);
@@ -4844,7 +4844,7 @@ pref("browser.search.update.log", false);
 pref("browser.search.update.interval", 21600);
 pref("browser.search.suggest.enabled", false);
 pref("browser.search.geoSpecificDefaults", false);
-pref("browser.search.geoip.url", "https://location.services.mozilla.com/v1/country?key=%MOZILLA_API_KEY%");
+pref("browser.search.geoip.url", "http://removed.in.privafox");
 // NOTE: this timeout figure is also the "high" value for the telemetry probe
 // SEARCH_SERVICE_COUNTRY_FETCH_MS - if you change this also change that probe.
 pref("browser.search.geoip.timeout", 2000);
