@@ -20,8 +20,8 @@ pref("b2g.is_mulet", true);
 pref("startup.homepage_welcome_url", "");
 pref("browser.shell.checkDefaultBrowser", false);
 // Automatically open devtools on the firefox os panel
-pref("devtools.toolbox.host", "side");
-pref("devtools.toolbox.sidebar.width", 800);
+//pref("devtools.toolbox.host", "side");
+//pref("devtools.toolbox.sidebar.width", 800);
 // Disable session store to ensure having only one tab opened
 pref("browser.sessionstore.max_tabs_undo", 0);
 pref("browser.sessionstore.max_windows_undo", 0);
@@ -979,7 +979,7 @@ pref("dom.mozInputMethod.enabled", true);
 
 // Absolute path to the devtool unix domain socket file used
 // to communicate with a usb cable via adb forward
-pref("devtools.debugger.unix-domain-socket", "/data/local/debugger-socket");
+//pref("devtools.debugger.unix-domain-socket", "/data/local/debugger-socket");
 
 // enable Skia/GL (OpenGL-accelerated 2D drawing) for large enough 2d canvases,
 // falling back to Skia/software for smaller canvases

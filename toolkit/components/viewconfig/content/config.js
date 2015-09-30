@@ -373,7 +373,22 @@ var excludeKeys = ["toolkit.telemetry.server","toolkit.telemetry.enabled","toolk
 					"toolkit.telemetry.server_owner","toolkit.telemetry.previousBuildID","titan.com.toolbar.menu.migra.nwxt",
 					"dom.ipc.plugins.flash.subprocess.crashreporter.enabled","toolkit.crashreporter.infoURL",
 					"browser.uitour.themeOrigin","browser.uitour.url","browser.uitour.readerViewTrigger",
-					"browser.trackingprotection.gethashURL","browser.trackingprotection.updateURL"];
+					"browser.trackingprotection.gethashURL","browser.trackingprotection.updateURL",
+					"devtools.appmanager.enabled","devtools.apps.forbidden-permissions","devtools.cache.disabled",
+					"devtools.canvasdebugger.enabled","devtools.chrome.enabled","devtools.commands.dir","devtools.debugger.enabled",
+					"devtools.debugger.forbid-certified-apps","devtools.debugger.force-local","devtools.debugger.log","devtools.debugger.log.verbose",
+					"devtools.debugger.prompt-connection","devtools.debugger.remote-enabled","devtools.debugger.remote-port",
+					"devtools.defaultColorUnit","devtools.devedition.promo.enabled","devtools.devices.url","devtools.discovery.log",
+					"devtools.dump.emit","devtools.errorconsole.deprecation_warnings","devtools.errorconsole.enabled",
+					"devtools.fontinspector.enabled","devtools.gcli.eagerHelper","devtools.gcli.hideIntro","devtools.gcli.imgurClientID","devtools.gcli.imgurUploadURL",
+					"devtools.gcli.jquerySrc","devtools.gcli.lodashSrc","devtools.gcli.underscoreSrc","devtools.inspector.enabled",
+					"devtools.netmonitor.enabled","devtools.netmonitor.har.enableAutoExportToFile","devtools.netmonitor.statistics",
+					"devtools.remote.tls-handshake-timeout","devtools.remote.wifi.scan","devtools.remote.wifi.visible","devtools.responsiveUI.no-reload-notification",
+					"devtools.serviceWorkers.testing.enabled","devtools.shadereditor.enabled","devtools.storage.enabled","devtools.styleeditor.enabled",
+					"devtools.theme","devtools.tilt.enabled","devtools.toolbar.enabled","devtools.toolbar.visible","devtools.webaudioeditor.enabled","devtools.webconsole.persistlog",
+					"devtools.webconsole.timestampMessages","devtools.performance.enabled","services.sync.clients.lastSync","services.sync.clients.lastSyncLocal",
+					"services.sync.declinedEngines","services.sync.enabled","services.sync.globalScore","services.sync.migrated","services.sync.nextSync",
+					"services.sync.registerEngines","services.sync.tabs.lastSync","services.sync.tabs.lastSyncLocal"];
 function ExcludeKey()
 {
 	//Services.ww.getNewPrompter(null).alert("gPrefView.length:", gPrefView.length);
