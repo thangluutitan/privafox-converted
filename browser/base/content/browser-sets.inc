@@ -297,13 +297,7 @@
     <key id="key_browserToolbox" key="&browserToolboxCmd.commandkey;" command="Tools:BrowserToolbox" modifiers="accel,alt,shift"/>
     <key id="key_devToolbar" keycode="&devToolbar.keycode;" modifiers="shift"
          keytext="&devToolbar.keytext;" command="Tools:DevToolbarFocus"/>
-    <key id="key_responsiveUI" key="&responsiveDesignTool.commandkey;" command="Tools:ResponsiveUI"
-#ifdef XP_MACOSX
-        modifiers="accel,alt"
-#else
-        modifiers="accel,shift"
-#endif
-    />
+    
     <key id="key_webide" keycode="&webide.keycode;" command="Tools:WebIDE"
          modifiers="shift" keytext="&webide.keytext;"/>
     <key id="key_devToolboxMenuItem" keytext="&devToolboxMenuItem.keytext;"
@@ -315,8 +309,7 @@
 #endif
     />
 
-    <key id="key_scratchpad" keycode="&scratchpad.keycode;" modifiers="shift"
-         keytext="&scratchpad.keytext;" command="Tools:Scratchpad"/>
+    
     <key id="openFileKb" key="&openFileCmd.commandkey;" command="Browser:OpenFile"  modifiers="accel"/>
     <key id="key_savePage" key="&savePageCmd.commandkey;" command="Browser:SavePage" modifiers="accel"/>
     <key id="printKb" key="&printCmd.commandkey;" command="cmd_print"  modifiers="accel"/>
