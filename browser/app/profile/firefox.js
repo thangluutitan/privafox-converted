@@ -257,7 +257,7 @@ pref("browser.uitour.url", "https://www.mozilla.org/%LOCALE%/firefox/%VERSION%/t
 pref("browser.uitour.readerViewTrigger", "^https:\\/\\/www\\.mozilla\\.org\\/[^\\/]+\\/firefox\\/reading\\/start");
 
 pref("browser.customizemode.tip0.shown", false);
-pref("browser.customizemode.tip0.learnMoreUrl", "https://www.privafox.com/support/customize.html?v=%VERSION%&l=%LOCALE%&os=%OS%/customize11");
+pref("browser.customizemode.tip0.learnMoreUrl", "https://support.mozilla.org/1/firefox/%VERSION%/%OS%/%LOCALE%/customize");
 //pref("browser.customizemode.tip0.learnMoreUrl", "https://support.mozilla.org/1/firefox/%VERSION%/%OS%/%LOCALE%/customize");
 
 pref("keyword.enabled", true);
@@ -1294,83 +1294,84 @@ pref("browser.taskbar.lists.refreshInSeconds", 120);
 #endif
 
 #ifdef MOZ_SERVICES_SYNC
-// The sync engines to use.
-pref("services.sync.registerEngines", "Bookmarks,Form,History,Password,Prefs,Tab,Addons");
+
 // Preferences to be synced by default
-pref("services.sync.prefs.sync.accessibility.blockautorefresh", true);
-pref("services.sync.prefs.sync.accessibility.browsewithcaret", true);
-pref("services.sync.prefs.sync.accessibility.typeaheadfind", true);
-pref("services.sync.prefs.sync.accessibility.typeaheadfind.linksonly", true);
-pref("services.sync.prefs.sync.addons.ignoreUserEnabledChanges", true);
+//pref("services.sync.prefs.sync.accessibility.blockautorefresh", true);
+//pref("services.sync.prefs.sync.accessibility.browsewithcaret", true);
+//pref("services.sync.prefs.sync.accessibility.typeaheadfind", true);
+//pref("services.sync.prefs.sync.accessibility.typeaheadfind.linksonly", true);
+//pref("services.sync.prefs.sync.addons.ignoreUserEnabledChanges", true);
 // The addons prefs related to repository verification are intentionally
 // not synced for security reasons. If a system is compromised, a user
 // could weaken the pref locally, install an add-on from an untrusted
 // source, and this would propagate automatically to other,
 // uncompromised Sync-connected devices.
-pref("services.sync.prefs.sync.app.update.mode", true);
-pref("services.sync.prefs.sync.browser.formfill.enable", true);
-pref("services.sync.prefs.sync.browser.link.open_newwindow", true);
-pref("services.sync.prefs.sync.browser.newtabpage.enabled", true);
-pref("services.sync.prefs.sync.browser.newtabpage.enhanced", true);
-pref("services.sync.prefs.sync.browser.newtabpage.pinned", true);
-pref("services.sync.prefs.sync.browser.offline-apps.notify", true);
+//pref("services.sync.prefs.sync.app.update.mode", true);
+//pref("services.sync.prefs.sync.browser.formfill.enable", true);
+//pref("services.sync.prefs.sync.browser.link.open_newwindow", true);
+//pref("services.sync.prefs.sync.browser.newtabpage.enabled", true);
+//pref("services.sync.prefs.sync.browser.newtabpage.enhanced", true);
+//pref("services.sync.prefs.sync.browser.newtabpage.pinned", true);
+//pref("services.sync.prefs.sync.browser.offline-apps.notify", true);
 //pref("services.sync.prefs.sync.browser.safebrowsing.enabled", true);
 //pref("services.sync.prefs.sync.browser.safebrowsing.malware.enabled", true);
-pref("services.sync.prefs.sync.browser.search.update", true);
-pref("services.sync.prefs.sync.browser.sessionstore.restore_on_demand", true);
-pref("services.sync.prefs.sync.browser.startup.homepage", true);
-pref("services.sync.prefs.sync.browser.startup.page", true);
-pref("services.sync.prefs.sync.browser.tabs.loadInBackground", true);
-pref("services.sync.prefs.sync.browser.tabs.warnOnClose", true);
-pref("services.sync.prefs.sync.browser.tabs.warnOnOpen", true);
-pref("services.sync.prefs.sync.browser.urlbar.autocomplete.enabled", true);
-pref("services.sync.prefs.sync.browser.urlbar.maxRichResults", true);
-pref("services.sync.prefs.sync.dom.disable_open_during_load", true);
-pref("services.sync.prefs.sync.dom.disable_window_flip", true);
-pref("services.sync.prefs.sync.dom.disable_window_move_resize", true);
-pref("services.sync.prefs.sync.dom.event.contextmenu.enabled", true);
-pref("services.sync.prefs.sync.extensions.personas.current", true);
-pref("services.sync.prefs.sync.extensions.update.enabled", true);
-pref("services.sync.prefs.sync.intl.accept_languages", true);
-pref("services.sync.prefs.sync.javascript.enabled", true);
-pref("services.sync.prefs.sync.layout.spellcheckDefault", true);
-pref("services.sync.prefs.sync.lightweightThemes.selectedThemeID", true);
-pref("services.sync.prefs.sync.lightweightThemes.usedThemes", true);
-pref("services.sync.prefs.sync.network.cookie.cookieBehavior", true);
-pref("services.sync.prefs.sync.network.cookie.lifetimePolicy", true);
-pref("services.sync.prefs.sync.permissions.default.image", true);
-pref("services.sync.prefs.sync.pref.advanced.images.disable_button.view_image", true);
-pref("services.sync.prefs.sync.pref.advanced.javascript.disable_button.advanced", true);
-pref("services.sync.prefs.sync.pref.downloads.disable_button.edit_actions", true);
-pref("services.sync.prefs.sync.pref.privacy.disable_button.cookie_exceptions", true);
-pref("services.sync.prefs.sync.privacy.clearOnShutdown.cache", true);
-pref("services.sync.prefs.sync.privacy.clearOnShutdown.cookies", true);
-pref("services.sync.prefs.sync.privacy.clearOnShutdown.downloads", true);
-pref("services.sync.prefs.sync.privacy.clearOnShutdown.formdata", true);
-pref("services.sync.prefs.sync.privacy.clearOnShutdown.history", true);
-pref("services.sync.prefs.sync.privacy.clearOnShutdown.offlineApps", true);
-pref("services.sync.prefs.sync.privacy.clearOnShutdown.passwords", true);
-pref("services.sync.prefs.sync.privacy.clearOnShutdown.sessions", true);
-pref("services.sync.prefs.sync.privacy.clearOnShutdown.siteSettings", true);
-pref("services.sync.prefs.sync.privacy.donottrackheader.enabled", true);
-pref("services.sync.prefs.sync.privacy.sanitize.sanitizeOnShutdown", true);
-pref("services.sync.prefs.sync.privacy.trackingprotection.enabled", true);
-pref("services.sync.prefs.sync.security.OCSP.enabled", true);
-pref("services.sync.prefs.sync.security.OCSP.require", true);
-pref("services.sync.prefs.sync.security.default_personal_cert", true);
-pref("services.sync.prefs.sync.security.tls.version.min", true);
-pref("services.sync.prefs.sync.security.tls.version.max", true);
-pref("services.sync.prefs.sync.signon.rememberSignons", true);
-pref("services.sync.prefs.sync.spellchecker.dictionary", true);
-pref("services.sync.prefs.sync.xpinstall.whitelist.required", true);
+//pref("services.sync.prefs.sync.browser.search.update", true);
+//pref("services.sync.prefs.sync.browser.sessionstore.restore_on_demand", true);
+//pref("services.sync.prefs.sync.browser.startup.homepage", true);
+//pref("services.sync.prefs.sync.browser.startup.page", true);
+//pref("services.sync.prefs.sync.browser.tabs.loadInBackground", true);
+//pref("services.sync.prefs.sync.browser.tabs.warnOnClose", true);
+//pref("services.sync.prefs.sync.browser.tabs.warnOnOpen", true);
+//pref("services.sync.prefs.sync.browser.urlbar.autocomplete.enabled", true);
+//pref("services.sync.prefs.sync.browser.urlbar.maxRichResults", true);
+//pref("services.sync.prefs.sync.dom.disable_open_during_load", true);
+//pref("services.sync.prefs.sync.dom.disable_window_flip", true);
+//pref("services.sync.prefs.sync.dom.disable_window_move_resize", true);
+//pref("services.sync.prefs.sync.dom.event.contextmenu.enabled", true);
+//pref("services.sync.prefs.sync.extensions.personas.current", true);
+//pref("services.sync.prefs.sync.extensions.update.enabled", true);
+//pref("services.sync.prefs.sync.intl.accept_languages", true);
+//pref("services.sync.prefs.sync.javascript.enabled", true);
+//pref("services.sync.prefs.sync.layout.spellcheckDefault", true);
+//pref("services.sync.prefs.sync.lightweightThemes.selectedThemeID", true);
+//pref("services.sync.prefs.sync.lightweightThemes.usedThemes", true);
+//pref("services.sync.prefs.sync.network.cookie.cookieBehavior", true);
+//pref("services.sync.prefs.sync.network.cookie.lifetimePolicy", true);
+//pref("services.sync.prefs.sync.permissions.default.image", true);
+//pref("services.sync.prefs.sync.pref.advanced.images.disable_button.view_image", true);
+//pref("services.sync.prefs.sync.pref.advanced.javascript.disable_button.advanced", true);
+//pref("services.sync.prefs.sync.pref.downloads.disable_button.edit_actions", true);
+//pref("services.sync.prefs.sync.pref.privacy.disable_button.cookie_exceptions", true);
+//pref("services.sync.prefs.sync.privacy.clearOnShutdown.cache", true);
+//pref("services.sync.prefs.sync.privacy.clearOnShutdown.cookies", true);
+//pref("services.sync.prefs.sync.privacy.clearOnShutdown.downloads", true);
+//pref("services.sync.prefs.sync.privacy.clearOnShutdown.formdata", true);
+//pref("services.sync.prefs.sync.privacy.clearOnShutdown.history", true);
+//pref("services.sync.prefs.sync.privacy.clearOnShutdown.offlineApps", true);
+//pref("services.sync.prefs.sync.privacy.clearOnShutdown.passwords", true);
+//pref("services.sync.prefs.sync.privacy.clearOnShutdown.sessions", true);
+//pref("services.sync.prefs.sync.privacy.clearOnShutdown.siteSettings", true);
+//pref("services.sync.prefs.sync.privacy.donottrackheader.enabled", true);
+//pref("services.sync.prefs.sync.privacy.sanitize.sanitizeOnShutdown", true);
+//pref("services.sync.prefs.sync.privacy.trackingprotection.enabled", true);
+//pref("services.sync.prefs.sync.security.OCSP.enabled", true);
+//pref("services.sync.prefs.sync.security.OCSP.require", true);
+//pref("services.sync.prefs.sync.security.default_personal_cert", true);
+//pref("services.sync.prefs.sync.security.tls.version.min", true);
+//pref("services.sync.prefs.sync.security.tls.version.max", true);
+//pref("services.sync.prefs.sync.signon.rememberSignons", true);
+//pref("services.sync.prefs.sync.spellchecker.dictionary", true);
+//pref("services.sync.prefs.sync.xpinstall.whitelist.required", true);
 /*
 *Privafox :CUS-T1 Additional Security
 */
-pref("services.sync.prefs.sync.security.additionalSecurity.protectBookmark", false);
+
+//#endif
+//pref("services.sync.prefs.sync.security.additionalSecurity.protectBookmark", false);
+// The sync engines to use.
+pref("services.sync.registerEngines", "Bookmarks,Form,History,Password,Prefs,Tab,Addons");
 pref("security.additionalSecurity.protectBookmark.isAlreadyLogin", false);
 pref("preferences.security.useMasterPassword.enable.startup", false);
-#endif
-
 // Developer edition preferences
 #ifdef MOZ_DEV_EDITION
 sticky_pref("lightweightThemes.selectedThemeID", "http://removed.in.privafox");
@@ -1380,12 +1381,12 @@ sticky_pref("lightweightThemes.selectedThemeID", "http://removed.in.privafox");
 #endif
 
 // Developer edition promo preferences
-pref("devtools.devedition.promo.shown", false);
-pref("devtools.devedition.promo.url", "http://removed.in.privafox");
+//pref("devtools.devedition.promo.shown", false);
+//pref("devtools.devedition.promo.url", "http://removed.in.privafox");
 
 // Only potentially show in beta release
 #if MOZ_UPDATE_CHANNEL == beta
-  pref("devtools.devedition.promo.enabled", true);
+  pref("devtools.devedition.promo.enabled", false);
 #else
   pref("devtools.devedition.promo.enabled", false);
 #endif
@@ -1394,118 +1395,118 @@ pref("devtools.devedition.promo.url", "http://removed.in.privafox");
 pref("devtools.errorconsole.enabled", false);
 
 // Developer toolbar preferences
-pref("devtools.toolbar.enabled", true);
+pref("devtools.toolbar.enabled", false);
 pref("devtools.toolbar.visible", false);
 
 // Enable the app manager
-pref("devtools.appmanager.enabled", true);
-pref("devtools.appmanager.lastTab", "help");
-pref("devtools.appmanager.manifestEditor.enabled", true);
+pref("devtools.appmanager.enabled", false);
+//pref("devtools.appmanager.lastTab", "help");
+//pref("devtools.appmanager.manifestEditor.enabled", true);
 
 // Enable DevTools WebIDE by default
-pref("devtools.webide.enabled", true);
+//pref("devtools.webide.enabled", false);
 
 // Toolbox preferences
-pref("devtools.toolbox.footer.height", 250);
-pref("devtools.toolbox.sidebar.width", 500);
-pref("devtools.toolbox.host", "bottom");
-pref("devtools.toolbox.previousHost", "side");
-pref("devtools.toolbox.selectedTool", "webconsole");
-pref("devtools.toolbox.toolbarSpec", '["splitconsole", "paintflashing toggle","tilt toggle","scratchpad","resize toggle","eyedropper","screenshot --fullpage", "rulers"]');
-pref("devtools.toolbox.sideEnabled", true);
-pref("devtools.toolbox.zoomValue", "1");
-pref("devtools.toolbox.splitconsoleEnabled", false);
-pref("devtools.toolbox.splitconsoleHeight", 100);
+//pref("devtools.toolbox.footer.height", 250);
+//pref("devtools.toolbox.sidebar.width", 500);
+//pref("devtools.toolbox.host", "bottom");
+//pref("devtools.toolbox.previousHost", "side");
+//pref("devtools.toolbox.selectedTool", "webconsole");
+//pref("devtools.toolbox.toolbarSpec", '["splitconsole", "paintflashing toggle","tilt toggle","scratchpad","resize toggle","eyedropper","screenshot --fullpage", "rulers"]');
+//pref("devtools.toolbox.sideEnabled", false);
+//pref("devtools.toolbox.zoomValue", "1");
+//pref("devtools.toolbox.splitconsoleEnabled", false);
+//pref("devtools.toolbox.splitconsoleHeight", 100);
 
 // Toolbox Button preferences
-pref("devtools.command-button-pick.enabled", true);
-pref("devtools.command-button-frames.enabled", true);
-pref("devtools.command-button-splitconsole.enabled", true);
-pref("devtools.command-button-paintflashing.enabled", false);
-pref("devtools.command-button-tilt.enabled", false);
-pref("devtools.command-button-scratchpad.enabled", false);
-pref("devtools.command-button-responsive.enabled", true);
-pref("devtools.command-button-eyedropper.enabled", false);
-pref("devtools.command-button-screenshot.enabled", false);
-pref("devtools.command-button-rulers.enabled", false);
+//pref("devtools.command-button-pick.enabled", false);
+//pref("devtools.command-button-frames.enabled", false);
+//pref("devtools.command-button-splitconsole.enabled", false);
+//pref("devtools.command-button-paintflashing.enabled", false);
+//pref("devtools.command-button-tilt.enabled", false);
+//pref("devtools.command-button-scratchpad.enabled", false);
+//pref("devtools.command-button-responsive.enabled", false);
+//pref("devtools.command-button-eyedropper.enabled", false);
+//pref("devtools.command-button-screenshot.enabled", false);
+//pref("devtools.command-button-rulers.enabled", false);
 
 // Inspector preferences
 // Enable the Inspector
-pref("devtools.inspector.enabled", true);
+pref("devtools.inspector.enabled", false);
 // What was the last active sidebar in the inspector
-pref("devtools.inspector.activeSidebar", "ruleview");
+//pref("devtools.inspector.activeSidebar", "ruleview");
 // Enable the markup preview
-pref("devtools.inspector.markupPreview", false);
-pref("devtools.inspector.remote", false);
+//pref("devtools.inspector.markupPreview", false);
+//pref("devtools.inspector.remote", false);
 // Collapse pseudo-elements by default in the rule-view
-pref("devtools.inspector.show_pseudo_elements", false);
+//pref("devtools.inspector.show_pseudo_elements", false);
 // The default size for image preview tooltips in the rule-view/computed-view/markup-view
-pref("devtools.inspector.imagePreviewTooltipSize", 300);
+//pref("devtools.inspector.imagePreviewTooltipSize", 300);
 // Enable user agent style inspection in rule-view
-pref("devtools.inspector.showUserAgentStyles", false);
+//pref("devtools.inspector.showUserAgentStyles", false);
 // Show all native anonymous content (like controls in <video> tags)
-pref("devtools.inspector.showAllAnonymousContent", false);
+//pref("devtools.inspector.showAllAnonymousContent", false);
 // Enable the MDN docs tooltip
-pref("devtools.inspector.mdnDocsTooltip.enabled", true);
+//pref("devtools.inspector.mdnDocsTooltip.enabled", false);
 // Show the new animation inspector UI
-pref("devtools.inspector.animationInspectorV3", false);
+//pref("devtools.inspector.animationInspectorV3", false);
 
 // DevTools default color unit
-pref("devtools.defaultColorUnit", "hex");
+//pref("devtools.defaultColorUnit", "hex");
 
 // Enable the Responsive UI tool
 pref("devtools.responsiveUI.no-reload-notification", false);
 
 // Enable the Debugger
-pref("devtools.debugger.enabled", true);
-pref("devtools.debugger.chrome-debugging-host", "localhost");
-pref("devtools.debugger.chrome-debugging-port", 6080);
-pref("devtools.debugger.remote-host", "localhost");
-pref("devtools.debugger.remote-timeout", 20000);
-pref("devtools.debugger.pause-on-exceptions", false);
-pref("devtools.debugger.ignore-caught-exceptions", true);
-pref("devtools.debugger.source-maps-enabled", true);
-pref("devtools.debugger.pretty-print-enabled", true);
-pref("devtools.debugger.auto-pretty-print", false);
-pref("devtools.debugger.auto-black-box", true);
-pref("devtools.debugger.tracer", false);
-pref("devtools.debugger.workers", false);
+pref("devtools.debugger.enabled", false);
+//pref("devtools.debugger.chrome-debugging-host", "localhost");
+//pref("devtools.debugger.chrome-debugging-port", 6080);
+//pref("devtools.debugger.remote-host", "localhost");
+//pref("devtools.debugger.remote-timeout", 20000);
+//pref("devtools.debugger.pause-on-exceptions", false);
+//pref("devtools.debugger.ignore-caught-exceptions", true);
+//pref("devtools.debugger.source-maps-enabled", true);
+//pref("devtools.debugger.pretty-print-enabled", true);
+//pref("devtools.debugger.auto-pretty-print", false);
+//pref("devtools.debugger.auto-black-box", true);
+//pref("devtools.debugger.tracer", false);
+//pref("devtools.debugger.workers", false);
 
 // The default Debugger UI settings
-pref("devtools.debugger.ui.panes-workers-and-sources-width", 200);
-pref("devtools.debugger.ui.panes-instruments-width", 300);
-pref("devtools.debugger.ui.panes-visible-on-startup", false);
-pref("devtools.debugger.ui.variables-sorting-enabled", true);
-pref("devtools.debugger.ui.variables-only-enum-visible", false);
-pref("devtools.debugger.ui.variables-searchbox-visible", false);
+//pref("devtools.debugger.ui.panes-workers-and-sources-width", 200);
+//pref("devtools.debugger.ui.panes-instruments-width", 300);
+//pref("devtools.debugger.ui.panes-visible-on-startup", false);
+//pref("devtools.debugger.ui.variables-sorting-enabled", false);
+//pref("devtools.debugger.ui.variables-only-enum-visible", false);
+//pref("devtools.debugger.ui.variables-searchbox-visible", false);
 
 // Enable the Performance tools
-pref("devtools.performance.enabled", true);
+pref("devtools.performance.enabled", false);
 
 // The default Performance UI settings
-pref("devtools.performance.memory.sample-probability", "0.05");
+//pref("devtools.performance.memory.sample-probability", "0.05");
 // Can't go higher than this without causing internal allocation overflows while
 // serializing the allocations data over the RDP.
-pref("devtools.performance.memory.max-log-length", 125000);
-pref("devtools.performance.timeline.hidden-markers", "[]");
-pref("devtools.performance.profiler.buffer-size", 10000000);
-pref("devtools.performance.profiler.sample-frequency-khz", 1);
-pref("devtools.performance.ui.invert-call-tree", true);
-pref("devtools.performance.ui.invert-flame-graph", false);
-pref("devtools.performance.ui.flatten-tree-recursion", true);
-pref("devtools.performance.ui.show-platform-data", false);
-pref("devtools.performance.ui.show-idle-blocks", true);
-pref("devtools.performance.ui.enable-memory", false);
-pref("devtools.performance.ui.enable-allocations", false);
-pref("devtools.performance.ui.enable-framerate", true);
-pref("devtools.performance.ui.enable-jit-optimizations", false);
+//pref("devtools.performance.memory.max-log-length", 125000);
+//pref("devtools.performance.timeline.hidden-markers", "[]");
+//pref("devtools.performance.profiler.buffer-size", 10000000);
+//pref("devtools.performance.profiler.sample-frequency-khz", 1);
+//pref("devtools.performance.ui.invert-call-tree", true);
+//pref("devtools.performance.ui.invert-flame-graph", false);
+//pref("devtools.performance.ui.flatten-tree-recursion", true);
+//pref("devtools.performance.ui.show-platform-data", false);
+//pref("devtools.performance.ui.show-idle-blocks", true);
+//pref("devtools.performance.ui.enable-memory", false);
+//pref("devtools.performance.ui.enable-allocations", false);
+//pref("devtools.performance.ui.enable-framerate", true);
+//pref("devtools.performance.ui.enable-jit-optimizations", false);
 
 // Enable experimental options in the UI only in Nightly
-#if defined(NIGHTLY_BUILD)
-pref("devtools.performance.ui.experimental", true);
-#else
-pref("devtools.performance.ui.experimental", false);
-#endif
+//#if defined(NIGHTLY_BUILD)
+//pref("devtools.performance.ui.experimental", false);
+//#else
+//pref("devtools.performance.ui.experimental", false);
+//#endif
 
 // The default cache UI setting
 pref("devtools.cache.disabled", false);
@@ -1514,29 +1515,29 @@ pref("devtools.cache.disabled", false);
 pref("devtools.serviceWorkers.testing.enabled", false);
 
 // Enable the Network Monitor
-pref("devtools.netmonitor.enabled", true);
+pref("devtools.netmonitor.enabled", false);
 
 // The default Network Monitor UI settings
-pref("devtools.netmonitor.panes-network-details-width", 550);
-pref("devtools.netmonitor.panes-network-details-height", 450);
-pref("devtools.netmonitor.statistics", true);
-pref("devtools.netmonitor.filters", "[\"all\"]");
+//pref("devtools.netmonitor.panes-network-details-width", 550);
+//pref("devtools.netmonitor.panes-network-details-height", 450);
+pref("devtools.netmonitor.statistics", false);
+//pref("devtools.netmonitor.filters", "[\"all\"]");
 
 // The default Network monitor HAR export setting
-pref("devtools.netmonitor.har.defaultLogDir", "");
-pref("devtools.netmonitor.har.defaultFileName", "Archive %y-%m-%d %H-%M-%S");
-pref("devtools.netmonitor.har.jsonp", false);
-pref("devtools.netmonitor.har.jsonpCallback", "");
-pref("devtools.netmonitor.har.includeResponseBodies", true);
-pref("devtools.netmonitor.har.compress", false);
-pref("devtools.netmonitor.har.forceExport", false);
-pref("devtools.netmonitor.har.pageLoadedTimeout", 1500);
+//pref("devtools.netmonitor.har.defaultLogDir", "");
+//pref("devtools.netmonitor.har.defaultFileName", "Archive %y-%m-%d %H-%M-%S");
+//pref("devtools.netmonitor.har.jsonp", false);
+//pref("devtools.netmonitor.har.jsonpCallback", "");
+//pref("devtools.netmonitor.har.includeResponseBodies", true);
+//pref("devtools.netmonitor.har.compress", false);
+//pref("devtools.netmonitor.har.forceExport", false);
+//pref("devtools.netmonitor.har.pageLoadedTimeout", 1500);
 pref("devtools.netmonitor.har.enableAutoExportToFile", false);
 
 // Enable the Tilt inspector
-pref("devtools.tilt.enabled", true);
-pref("devtools.tilt.intro_transition", true);
-pref("devtools.tilt.outro_transition", true);
+pref("devtools.tilt.enabled", false);
+//pref("devtools.tilt.intro_transition", false);
+//pref("devtools.tilt.outro_transition", false);
 
 // Scratchpad settings
 // - recentFileMax: The maximum number of recently-opened files
@@ -1548,24 +1549,24 @@ pref("devtools.tilt.outro_transition", true);
 // - showTrailingSpace: Whether to highlight trailing space or not.
 // - editorFontSize: Editor font size configuration.
 // - enableAutocompletion: Whether to enable JavaScript autocompletion.
-pref("devtools.scratchpad.recentFilesMax", 10);
-pref("devtools.scratchpad.lineNumbers", true);
-pref("devtools.scratchpad.wrapText", false);
-pref("devtools.scratchpad.showTrailingSpace", false);
-pref("devtools.scratchpad.editorFontSize", 12);
-pref("devtools.scratchpad.enableAutocompletion", true);
+//pref("devtools.scratchpad.recentFilesMax", 10);
+//pref("devtools.scratchpad.lineNumbers", true);
+//pref("devtools.scratchpad.wrapText", false);
+//pref("devtools.scratchpad.showTrailingSpace", false);
+//pref("devtools.scratchpad.editorFontSize", 12);
+//pref("devtools.scratchpad.enableAutocompletion", true);
 
 // Enable the Storage Inspector
 pref("devtools.storage.enabled", false);
 
 // Enable the Style Editor.
-pref("devtools.styleeditor.enabled", true);
-pref("devtools.styleeditor.source-maps-enabled", true);
-pref("devtools.styleeditor.autocompletion-enabled", true);
-pref("devtools.styleeditor.showMediaSidebar", true);
-pref("devtools.styleeditor.mediaSidebarWidth", 238);
-pref("devtools.styleeditor.navSidebarWidth", 245);
-pref("devtools.styleeditor.transitions", true);
+pref("devtools.styleeditor.enabled", false);
+//pref("devtools.styleeditor.source-maps-enabled", true);
+//pref("devtools.styleeditor.autocompletion-enabled", true);
+//pref("devtools.styleeditor.showMediaSidebar", true);
+//pref("devtools.styleeditor.mediaSidebarWidth", 238);
+//pref("devtools.styleeditor.navSidebarWidth", 245);
+//pref("devtools.styleeditor.transitions", true);
 
 // Enable the Shader Editor.
 pref("devtools.shadereditor.enabled", false);
@@ -1577,7 +1578,7 @@ pref("devtools.canvasdebugger.enabled", false);
 pref("devtools.webaudioeditor.enabled", false);
 
 // Web Audio Editor Inspector Width should be a preference
-pref("devtools.webaudioeditor.inspectorWidth", 300);
+//pref("devtools.webaudioeditor.inspectorWidth", 300);
 
 // Default theme ("dark" or "light")
 #ifdef MOZ_DEV_EDITION
@@ -1587,52 +1588,52 @@ sticky_pref("devtools.theme", "light");
 #endif
 
 // Remember the Web Console filters
-pref("devtools.webconsole.filter.network", true);
-pref("devtools.webconsole.filter.networkinfo", false);
-pref("devtools.webconsole.filter.netwarn", true);
-pref("devtools.webconsole.filter.netxhr", false);
-pref("devtools.webconsole.filter.csserror", true);
-pref("devtools.webconsole.filter.cssparser", false);
-pref("devtools.webconsole.filter.csslog", false);
-pref("devtools.webconsole.filter.exception", true);
-pref("devtools.webconsole.filter.jswarn", true);
-pref("devtools.webconsole.filter.jslog", false);
-pref("devtools.webconsole.filter.error", true);
-pref("devtools.webconsole.filter.warn", true);
-pref("devtools.webconsole.filter.info", true);
-pref("devtools.webconsole.filter.log", true);
-pref("devtools.webconsole.filter.secerror", true);
-pref("devtools.webconsole.filter.secwarn", true);
-pref("devtools.webconsole.filter.serviceworkers", false);
-pref("devtools.webconsole.filter.sharedworkers", false);
-pref("devtools.webconsole.filter.windowlessworkers", false);
+//pref("devtools.webconsole.filter.network", false);
+//pref("devtools.webconsole.filter.networkinfo", false);
+//pref("devtools.webconsole.filter.netwarn", true);
+//pref("devtools.webconsole.filter.netxhr", false);
+//pref("devtools.webconsole.filter.csserror", true);
+//pref("devtools.webconsole.filter.cssparser", false);
+//pref("devtools.webconsole.filter.csslog", false);
+//pref("devtools.webconsole.filter.exception", true);
+//pref("devtools.webconsole.filter.jswarn", true);
+//pref("devtools.webconsole.filter.jslog", false);
+//pref("devtools.webconsole.filter.error", true);
+//pref("devtools.webconsole.filter.warn", true);
+//pref("devtools.webconsole.filter.info", true);
+//pref("devtools.webconsole.filter.log", true);
+//pref("devtools.webconsole.filter.secerror", true);
+//pref("devtools.webconsole.filter.secwarn", true);
+//pref("devtools.webconsole.filter.serviceworkers", false);
+//pref("devtools.webconsole.filter.sharedworkers", false);
+//pref("devtools.webconsole.filter.windowlessworkers", false);
 
 // Remember the Browser Console filters
-pref("devtools.browserconsole.filter.network", true);
-pref("devtools.browserconsole.filter.networkinfo", false);
-pref("devtools.browserconsole.filter.netwarn", true);
-pref("devtools.browserconsole.filter.netxhr", false);
-pref("devtools.browserconsole.filter.csserror", true);
-pref("devtools.browserconsole.filter.cssparser", false);
-pref("devtools.browserconsole.filter.csslog", false);
-pref("devtools.browserconsole.filter.exception", true);
-pref("devtools.browserconsole.filter.jswarn", true);
-pref("devtools.browserconsole.filter.jslog", true);
-pref("devtools.browserconsole.filter.error", true);
-pref("devtools.browserconsole.filter.warn", true);
-pref("devtools.browserconsole.filter.info", true);
-pref("devtools.browserconsole.filter.log", true);
-pref("devtools.browserconsole.filter.secerror", true);
-pref("devtools.browserconsole.filter.secwarn", true);
-pref("devtools.browserconsole.filter.serviceworkers", true);
-pref("devtools.browserconsole.filter.sharedworkers", true);
-pref("devtools.browserconsole.filter.windowlessworkers", true);
+//pref("devtools.browserconsole.filter.network", true);
+//pref("devtools.browserconsole.filter.networkinfo", false);
+//pref("devtools.browserconsole.filter.netwarn", true);
+//pref("devtools.browserconsole.filter.netxhr", false);
+//pref("devtools.browserconsole.filter.csserror", true);
+//pref("devtools.browserconsole.filter.cssparser", false);
+//pref("devtools.browserconsole.filter.csslog", false);
+//pref("devtools.browserconsole.filter.exception", true);
+//pref("devtools.browserconsole.filter.jswarn", true);
+//pref("devtools.browserconsole.filter.jslog", true);
+//pref("devtools.browserconsole.filter.error", true);
+//pref("devtools.browserconsole.filter.warn", true);
+//pref("devtools.browserconsole.filter.info", true);
+//pref("devtools.browserconsole.filter.log", true);
+//pref("devtools.browserconsole.filter.secerror", true);
+//pref("devtools.browserconsole.filter.secwarn", true);
+//pref("devtools.browserconsole.filter.serviceworkers", true);
+//pref("devtools.browserconsole.filter.sharedworkers", true);
+//pref("devtools.browserconsole.filter.windowlessworkers", true);
 
 // Text size in the Web Console. Use 0 for the system default size.
-pref("devtools.webconsole.fontSize", 0);
+//pref("devtools.webconsole.fontSize", 0);
 
 // Max number of inputs to store in web console history.
-pref("devtools.webconsole.inputHistoryCount", 50);
+//pref("devtools.webconsole.inputHistoryCount", 50);
 
 // Persistent logging: |true| if you want the Web Console to keep all of the
 // logged messages after reloading the page, |false| if you want the output to
@@ -1646,13 +1647,13 @@ pref("devtools.webconsole.timestampMessages", false);
 
 // The number of lines that are displayed in the web console for the Net,
 // CSS, JS and Web Developer categories.
-pref("devtools.hud.loglimit.network", 200);
-pref("devtools.hud.loglimit.cssparser", 200);
-pref("devtools.hud.loglimit.exception", 200);
-pref("devtools.hud.loglimit.console", 200);
+//pref("devtools.hud.loglimit.network", 200);
+//pref("devtools.hud.loglimit.cssparser", 200);
+//pref("devtools.hud.loglimit.exception", 200);
+//pref("devtools.hud.loglimit.console", 200);
 
 // By how many times eyedropper will magnify pixels
-pref("devtools.eyedropper.zoom", 6);
+//pref("devtools.eyedropper.zoom", 6);
 
 // The developer tools editor configuration:
 // - tabsize: how many spaces to use when a Tab character is displayed.
@@ -1661,21 +1662,21 @@ pref("devtools.eyedropper.zoom", 6);
 // - autoclosebrackets: whether to permit automatic bracket/quote closing.
 // - detectindentation: whether to detect the indentation from the file
 // - enableCodeFolding: Whether to enable code folding or not.
-pref("devtools.editor.tabsize", 2);
-pref("devtools.editor.expandtab", true);
-pref("devtools.editor.keymap", "default");
-pref("devtools.editor.autoclosebrackets", true);
-pref("devtools.editor.detectindentation", true);
-pref("devtools.editor.enableCodeFolding", true);
-pref("devtools.editor.autocomplete", true);
+//pref("devtools.editor.tabsize", 2);
+//pref("devtools.editor.expandtab", true);
+//pref("devtools.editor.keymap", "default");
+//pref("devtools.editor.autoclosebrackets", true);
+//pref("devtools.editor.detectindentation", true);
+//pref("devtools.editor.enableCodeFolding", true);
+//pref("devtools.editor.autocomplete", true);
 
 // Enable the Font Inspector
-pref("devtools.fontinspector.enabled", true);
+pref("devtools.fontinspector.enabled", false);
 
 // Pref to store the browser version at the time of a telemetry ping for an
 // opened developer tool. This allows us to ping telemetry just once per browser
 // version for each user.
-pref("devtools.telemetry.tools.opened.version", "{}");
+//pref("devtools.telemetry.tools.opened.version", "{}");
 
 // Whether the character encoding menu is under the main Firefox button. This
 // preference is a string so that localizers can alter it.

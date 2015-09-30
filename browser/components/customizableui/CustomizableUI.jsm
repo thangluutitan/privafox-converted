@@ -217,9 +217,9 @@ let CustomizableUIInternal = {
       }
     }
 
-    if (Services.prefs.getBoolPref(kPrefWebIDEInNavbar)) {
-      navbarPlacements.push("webide-button");
-    }
+    //if (Services.prefs.getBoolPref(kPrefWebIDEInNavbar)) {
+    //  navbarPlacements.push("webide-button");
+    //}
 
     this.registerArea(CustomizableUI.AREA_NAVBAR, {
       legacy: true,

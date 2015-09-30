@@ -10,8 +10,8 @@ pref("browser.sessionstore.restore_on_demand", false);
 pref("browser.sessionstore.resume_from_crash", false);
 
 // Display the devtools on the right of the phone
-pref("devtools.toolbox.host", "side");
-pref("devtools.toolbox.sidebar.width", 800);
+//pref("devtools.toolbox.host", "side");
+//pref("devtools.toolbox.sidebar.width", 800);
 
 // Disable e10s as we don't want to run shell.html,
 // nor the system app OOP, but only inner apps
