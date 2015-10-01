@@ -1850,31 +1850,31 @@ pref("browser.uiCustomization.debug", false);
 pref("browser.uiCustomization.state", "");
 
 // The remote content URL shown for FxA signup. Must use HTTPS.
-pref("identity.fxaccounts.remote.signup.uri", "http://removed.in.privafox");
+//pref("identity.fxaccounts.remote.signup.uri", "http://removed.in.privafox");
 
 // The URL where remote content that forces re-authentication for Firefox Accounts
 // should be fetched.  Must use HTTPS.
-pref("identity.fxaccounts.remote.force_auth.uri", "http://removed.in.privafox");
+//pref("identity.fxaccounts.remote.force_auth.uri", "http://removed.in.privafox");
 
 // The remote content URL shown for signin in. Must use HTTPS.
-pref("identity.fxaccounts.remote.signin.uri", "http://removed.in.privafox");
+//pref("identity.fxaccounts.remote.signin.uri", "http://removed.in.privafox");
 
 // The remote content URL where FxAccountsWebChannel messages originate.
-pref("identity.fxaccounts.remote.webchannel.uri", "http://removed.in.privafox");
+//pref("identity.fxaccounts.remote.webchannel.uri", "http://removed.in.privafox");
 
 // The URL we take the user to when they opt to "manage" their Firefox Account.
 // Note that this will always need to be in the same TLD as the
 // "identity.fxaccounts.remote.signup.uri" pref.
-pref("identity.fxaccounts.settings.uri", "http://removed.in.privafox");
+//pref("identity.fxaccounts.settings.uri", "http://removed.in.privafox");
 
 // The remote URL of the FxA Profile Server
-pref("identity.fxaccounts.remote.profile.uri", "http://removed.in.privafox");
+//pref("identity.fxaccounts.remote.profile.uri", "http://removed.in.privafox");
 
 // The remote URL of the FxA OAuth Server
-pref("identity.fxaccounts.remote.oauth.uri", "http://removed.in.privafox");
+//pref("identity.fxaccounts.remote.oauth.uri", "http://removed.in.privafox");
 
 // Whether we display profile images in the UI or not.
-pref("identity.fxaccounts.profile_image.enabled", true);
+//pref("identity.fxaccounts.profile_image.enabled", true);
 
 // Migrate any existing Firefox Account data from the default profile to the
 // Developer Edition profile.
