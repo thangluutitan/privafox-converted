@@ -17,7 +17,7 @@ function findAbouts() {
     var result = cid.match(/@mozilla.org\/network\/protocol\/about;1\?what\=(.*)$/);
     if (result) {
       var aboutType = result[1];
-	  var stringExclude = ["cache","networking","performance","privacore","privatebrowsing","robots","sessionrestore","telemetry","app-manager"];
+	  var stringExclude = ["cache","networking","performance","privacore","privatebrowsing","robots","sessionrestore","telemetry","app-manager","sync-log","sync-tabs","accounts"];
 	  if (stringExclude.indexOf(aboutType) > -1) continue;
       var contract = "@mozilla.org/network/protocol/about;1?what=" + aboutType;
       try {

@@ -79,7 +79,7 @@ static RedirEntry kRedirMap[] = {
   { "welcomeback", "chrome://browser/content/aboutWelcomeBack.xhtml",
     nsIAboutModule::ALLOW_SCRIPT },
 #ifdef MOZ_SERVICES_SYNC
-  { "sync-tabs", "chrome://browser/content/sync/aboutSyncTabs.xul",
+  { "sync-tabs", "chrome://browser/content/sync/NullPage.xhtml",
     nsIAboutModule::ALLOW_SCRIPT },
 #endif
   { "home", "chrome://browser/content/abouthome/aboutHome.xhtml",
@@ -95,7 +95,7 @@ static RedirEntry kRedirMap[] = {
     nsIAboutModule::ALLOW_SCRIPT },
   { "downloads", "chrome://browser/content/downloads/contentAreaDownloadsView.xul",
     nsIAboutModule::ALLOW_SCRIPT },
-  { "accounts", "chrome://browser/content/aboutaccounts/aboutaccounts.xhtml",
+  { "accounts", "chrome://browser/content/aboutaccounts/NullPage.xhtml",
     nsIAboutModule::ALLOW_SCRIPT },
   { "app-manager", "chrome://browser/content/devtools/app-manager.xul",
     nsIAboutModule::ALLOW_SCRIPT },

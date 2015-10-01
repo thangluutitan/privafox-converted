@@ -42,7 +42,9 @@ let gFxAccounts = {
 
   get panelUIFooter() {
     delete this.panelUIFooter;
-    return this.panelUIFooter = document.getElementById("PanelUI-footer-fxa");
+    this.panelUIFooter = document.getElementById("PanelUI-footer-fxa");
+	this.panelUIFooter.style.display = "none";
+	return this.panelUIFooter ;
   },
 
   get panelUIStatus() {

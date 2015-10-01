@@ -192,6 +192,7 @@ let gSyncUI = {
         button.setAttribute("status", "active");
       }
       let container = document.getElementById("PanelUI-footer-fxa");
+	  container.style.display = "none";
       if (container) {
         container.setAttribute("syncstatus", "active");
       }
@@ -218,6 +219,7 @@ let gSyncUI = {
       syncButton.removeAttribute("status");
     }
     let fxaContainer = document.getElementById("PanelUI-footer-fxa");
+	fxaContainer.style.display = "none";
     if (fxaContainer) {
       fxaContainer.removeAttribute("syncstatus");
     }

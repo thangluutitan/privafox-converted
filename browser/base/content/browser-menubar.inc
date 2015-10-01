@@ -508,12 +508,12 @@
                         oncommand="BrowserOpenApps();"/>
 #endif
 #ifdef MOZ_SERVICES_SYNC
-              <!-- only one of sync-setup or sync-menu will be showing at once -->
+              <!-- only one of sync-setup or sync-menu will be showing at once 
               <menuitem id="sync-setup"
                         label="&syncSetup.label;"
                         accesskey="&syncSetup.accesskey;"
                         observes="sync-setup-state"
-                        oncommand="gSyncUI.openSetup(null, 'menubar')"/>
+                        oncommand="gSyncUI.openSetup(null, 'menubar')"/> -->
               <menuitem id="sync-syncnowitem"
                         label="&syncSyncNowItem.label;"
                         accesskey="&syncSyncNowItem.accesskey;"
