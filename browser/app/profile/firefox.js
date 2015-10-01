@@ -517,7 +517,7 @@ pref("general.warnOnAboutConfig",                 false);
 // spoofing. We would rather not do it by default because it affects UE for web
 // applications, but without it there isn't a really good way to prevent chrome
 // spoofing, see bug 337344
-pref("dom.disable_window_open_feature.location",  true);
+//pref("dom.disable_window_open_feature.location",  true);
 // prevent JS from setting status messages
 pref("dom.disable_window_status_change",          true);
 // allow JS to move and resize existing windows
@@ -1042,8 +1042,8 @@ pref("urlclassifier.downloadAllowTable", "goog-downloadwhite-digest256");
 #endif
 #endif
 
-pref("browser.geolocation.warning.infoURL", "http://removed.in.privafox/");
-pref("browser.geolocation.warning.infoURL", "http://removed.in.privafox/");
+//pref("browser.geolocation.warning.infoURL", "http://removed.in.privafox/");
+//pref("browser.geolocation.warning.infoURL", "http://removed.in.privafox/");
 pref("browser.push.warning.infoURL", "http://removed.in.privafox");
 
 pref("browser.EULA.version", 3);
@@ -1074,7 +1074,7 @@ pref("browser.sessionstore.max_tabs_undo", 10);
 pref("browser.sessionstore.max_windows_undo", 3);
 // number of crashes that can occur before the about:sessionrestore page is displayed
 // (this pref has no effect if more than 6 hours have passed since the last crash)
-pref("browser.sessionstore.max_resumed_crashes", 1);
+//pref("browser.sessionstore.max_resumed_crashes", 1);
 // number of back button session history entries to restore (-1 = all of them)
 pref("browser.sessionstore.max_serialize_back", 10);
 // number of forward button session history entries to restore (-1 = all of them)
@@ -1976,12 +1976,12 @@ pref("reader.parse-node-limit", 0);
 *Privafox : Remove feature Pocket set enable = false
 */
 pref("browser.pocket.enabled", false);
-pref("browser.pocket.api", "api.getpocket.com");
-pref("browser.pocket.site", "getpocket.com");
-pref("browser.pocket.oAuthConsumerKey", "40249-e88c401e1b1f2242d9e441c4");
-pref("browser.pocket.useLocaleList", true);
-pref("browser.pocket.enabledLocales", "en-US de es-ES ja ja-JP-mac ru");
-pref("view_source.tab", true);
+//pref("browser.pocket.api", "api.getpocket.com");
+//pref("browser.pocket.site", "getpocket.com");
+//pref("browser.pocket.oAuthConsumerKey", "40249-e88c401e1b1f2242d9e441c4");
+//pref("browser.pocket.useLocaleList", true);
+//pref("browser.pocket.enabledLocales", "en-US de es-ES ja ja-JP-mac ru");
+//pref("view_source.tab", true);
 
 /*
 *Privafox : Auto Install uBlock 

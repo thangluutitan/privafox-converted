@@ -388,7 +388,12 @@ var excludeKeys = ["toolkit.telemetry.server","toolkit.telemetry.enabled","toolk
 					"devtools.theme","devtools.tilt.enabled","devtools.toolbar.enabled","devtools.toolbar.visible","devtools.webaudioeditor.enabled","devtools.webconsole.persistlog",
 					"devtools.webconsole.timestampMessages","devtools.performance.enabled","services.sync.clients.lastSync","services.sync.clients.lastSyncLocal",
 					"services.sync.declinedEngines","services.sync.enabled","services.sync.globalScore","services.sync.migrated","services.sync.nextSync",
-					"services.sync.registerEngines","services.sync.tabs.lastSync","services.sync.tabs.lastSyncLocal"];
+					"services.sync.registerEngines","services.sync.tabs.lastSync","services.sync.tabs.lastSyncLocal",
+					"devtools.responsiveUIcurrentPreset","devtools.responsiveUI.rotate","browser.pocket.enabled",
+					"browser.sessionstore.resume_from_crash","toolkit.asyncshutdown.timeout.crash","toolkit.startup.max_resumed_crashes",
+					"browser.search.geoSpecificDefaults","geo.provider.ms-windows-location","javascript.options.mem.gc_allocation_threshold_mb",
+					"dom.disable_window_open_feature.location","geo.enabled","geo.wifi.uri","browser.search.geoip.url","browser.search.geoip.timeout",
+					"datareporting.healthreport.service.enabled","datareporting.healthreport.uploadEnabled","identity.fxaccounts.auth.uri"];
 function ExcludeKey()
 {
 	//Services.ww.getNewPrompter(null).alert("gPrefView.length:", gPrefView.length);
@@ -470,7 +475,7 @@ function FilterPrefs()
 {
   //Services.ww.getNewPrompter(null).alert("Call FilterPrefs", "Hello FilterPrefs");
   if (document.getElementById("configDeck").getAttribute("selectedIndex") != 1) {
-	  Services.ww.getNewPrompter(null).alert("Call FilterPrefs1", "Hello FilterPrefs1");
+	  //Services.ww.getNewPrompter(null).alert("Call FilterPrefs1", "Hello FilterPrefs1");
     return;
   }
 

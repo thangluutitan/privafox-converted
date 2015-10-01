@@ -256,6 +256,7 @@ add_task(function* testRLLoginErrorRemains() {
 function checkButtonsStatus(shouldBeActive) {
   let button = document.getElementById("sync-button");
   let fxaContainer = document.getElementById("PanelUI-footer-fxa");
+  fxaContainer.style.display = "none";
   if (shouldBeActive) {
     Assert.equal(button.getAttribute("status"), "active");
     Assert.equal(fxaContainer.getAttribute("syncstatus"), "active");

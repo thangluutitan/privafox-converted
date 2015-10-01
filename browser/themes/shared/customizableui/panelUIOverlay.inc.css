@@ -529,6 +529,7 @@ toolbarpaletteitem[place="palette"] > toolbaritem > toolbarbutton {
 #PanelUI-multiView[viewtype="subview"] #PanelUI-footer-inner,
 #PanelUI-multiView[viewtype="subview"] #PanelUI-footer-fxa {
   position: relative;
+  display: none !important;
 }
 
 #PanelUI-footer-inner > toolbarseparator,
