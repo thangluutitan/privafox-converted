@@ -155,6 +155,7 @@ pref("browser.helperApps.deleteTempFileOnExit", false);
 
 /* password manager */
 pref("signon.rememberSignons", true);
+pref("privacy.masterpassword.enabled",true);
 pref("signon.expireMasterPassword", false);
 pref("signon.debug", false);
 
@@ -178,8 +179,8 @@ pref("dom.forms.number", true);
 /* extension manager and xpinstall */
 pref("xpinstall.whitelist.directRequest", false);
 pref("xpinstall.whitelist.fileRequest", false);
-pref("xpinstall.whitelist.add", "addons.privafox.com");
-pref("xpinstall.whitelist.add.180", "marketplace.privafox.com");
+pref("xpinstall.whitelist.add", "addons.firefox.com");
+pref("xpinstall.whitelist.add.180", "marketplace.firefox.com");
 
 pref("xpinstall.signatures.required", false);
 
@@ -198,8 +199,8 @@ pref("extensions.hideUpdateButton", false);
 pref("extensions.strictCompatibility", false);
 pref("extensions.minCompatibleAppVersion", "11.0");
 
-pref("extensions.update.url", "https://versioncheck.addons.privafox.com/update/VersionCheck.php?reqVersion=%REQ_VERSION%&id=%ITEM_ID%&version=%ITEM_VERSION%&maxAppVersion=%ITEM_MAXAPPVERSION%&status=%ITEM_STATUS%&appID=%APP_ID%&appVersion=%APP_VERSION%&appOS=%APP_OS%&appABI=%APP_ABI%&locale=%APP_LOCALE%&currentAppVersion=%CURRENT_APP_VERSION%&updateType=%UPDATE_TYPE%&compatMode=%COMPATIBILITY_MODE%");
-pref("extensions.update.background.url", "https://versioncheck-bg.addons.privafox.com/update/VersionCheck.php?reqVersion=%REQ_VERSION%&id=%ITEM_ID%&version=%ITEM_VERSION%&maxAppVersion=%ITEM_MAXAPPVERSION%&status=%ITEM_STATUS%&appID=%APP_ID%&appVersion=%APP_VERSION%&appOS=%APP_OS%&appABI=%APP_ABI%&locale=%APP_LOCALE%&currentAppVersion=%CURRENT_APP_VERSION%&updateType=%UPDATE_TYPE%&compatMode=%COMPATIBILITY_MODE%");
+pref("extensions.update.url", "https://versioncheck.addons.mozilla.org/update/VersionCheck.php?reqVersion=%REQ_VERSION%&id=%ITEM_ID%&version=%ITEM_VERSION%&maxAppVersion=%ITEM_MAXAPPVERSION%&status=%ITEM_STATUS%&appID=%APP_ID%&appVersion=%APP_VERSION%&appOS=%APP_OS%&appABI=%APP_ABI%&locale=%APP_LOCALE%&currentAppVersion=%CURRENT_APP_VERSION%&updateType=%UPDATE_TYPE%&compatMode=%COMPATIBILITY_MODE%");
+pref("extensions.update.background.url", "https://versioncheck-bg.addons.mozilla.org/update/VersionCheck.php?reqVersion=%REQ_VERSION%&id=%ITEM_ID%&version=%ITEM_VERSION%&maxAppVersion=%ITEM_MAXAPPVERSION%&status=%ITEM_STATUS%&appID=%APP_ID%&appVersion=%APP_VERSION%&appOS=%APP_OS%&appABI=%APP_ABI%&locale=%APP_LOCALE%&currentAppVersion=%CURRENT_APP_VERSION%&updateType=%UPDATE_TYPE%&compatMode=%COMPATIBILITY_MODE%");
 
 pref("extensions.hotfix.id", "privafox-android-hotfix@privafox.org");
 pref("extensions.hotfix.cert.checkAttributes", true);
@@ -208,13 +209,13 @@ pref("extensions.hotfix.certs.1.sha1Fingerprint", "91:53:98:0C:C1:86:DF:47:8F:35
 /* preferences for the Get Add-ons pane */
 pref("extensions.getAddons.cache.enabled", true);
 pref("extensions.getAddons.maxResults", 15);
-pref("extensions.getAddons.recommended.browseURL", "https://addons.privafox.com/%LOCALE%/android/recommended/");
-pref("extensions.getAddons.recommended.url", "https://services.addons.privafox.com/%LOCALE%/android/api/%API_VERSION%/list/featured/all/%MAX_RESULTS%/%OS%/%VERSION%");
-pref("extensions.getAddons.search.browseURL", "https://addons.privafox.com/%LOCALE%/android/search?q=%TERMS%&platform=%OS%&appver=%VERSION%");
-pref("extensions.getAddons.search.url", "https://services.addons.privafox.com/%LOCALE%/android/api/%API_VERSION%/search/%TERMS%/all/%MAX_RESULTS%/%OS%/%VERSION%/%COMPATIBILITY_MODE%");
-pref("extensions.getAddons.browseAddons", "https://addons.privafox.com/%LOCALE%/android/");
-pref("extensions.getAddons.get.url", "https://services.addons.privafox.com/%LOCALE%/android/api/%API_VERSION%/search/guid:%IDS%?src=mobile&appOS=%OS%&appVersion=%VERSION%");
-pref("extensions.getAddons.getWithPerformance.url", "https://services.addons.privafox.com/%LOCALE%/android/api/%API_VERSION%/search/guid:%IDS%?src=mobile&appOS=%OS%&appVersion=%VERSION%&tMain=%TIME_MAIN%&tFirstPaint=%TIME_FIRST_PAINT%&tSessionRestored=%TIME_SESSION_RESTORED%");
+pref("extensions.getAddons.recommended.browseURL", "https://addons.mozilla.org/%LOCALE%/android/recommended/");
+pref("extensions.getAddons.recommended.url", "https://services.addons.mozilla.org/%LOCALE%/android/api/%API_VERSION%/list/featured/all/%MAX_RESULTS%/%OS%/%VERSION%");
+pref("extensions.getAddons.search.browseURL", "https://addons.mozilla.org/%LOCALE%/android/search?q=%TERMS%&platform=%OS%&appver=%VERSION%");
+pref("extensions.getAddons.search.url", "https://services.addons.mozilla.org/%LOCALE%/android/api/%API_VERSION%/search/%TERMS%/all/%MAX_RESULTS%/%OS%/%VERSION%/%COMPATIBILITY_MODE%");
+pref("extensions.getAddons.browseAddons", "https://addons.mozilla.org/%LOCALE%/android/");
+pref("extensions.getAddons.get.url", "https://services.addons.mozilla.org/%LOCALE%/android/api/%API_VERSION%/search/guid:%IDS%?src=mobile&appOS=%OS%&appVersion=%VERSION%");
+pref("extensions.getAddons.getWithPerformance.url", "https://services.addons.mozilla.org/%LOCALE%/android/api/%API_VERSION%/search/guid:%IDS%?src=mobile&appOS=%OS%&appVersion=%VERSION%&tMain=%TIME_MAIN%&tFirstPaint=%TIME_FIRST_PAINT%&tSessionRestored=%TIME_SESSION_RESTORED%");
 
 /* preference for the locale picker */
 pref("extensions.getLocales.get.url", "");
@@ -223,8 +224,8 @@ pref("extensions.compatability.locales.buildid", "0");
 /* blocklist preferences */
 pref("extensions.blocklist.enabled", true);
 pref("extensions.blocklist.interval", 86400);
-pref("extensions.blocklist.url", "https://blocklist.addons.privafox.com/blocklist/3/%APP_ID%/%APP_VERSION%/%PRODUCT%/%BUILD_ID%/%BUILD_TARGET%/%LOCALE%/%CHANNEL%/%OS_VERSION%/%DISTRIBUTION%/%DISTRIBUTION_VERSION%/%PING_COUNT%/%TOTAL_PING_COUNT%/%DAYS_SINCE_LAST_PING%/");
-pref("extensions.blocklist.detailsURL", "https://www.privacore.com/%LOCALE%/blocklist/");
+pref("extensions.blocklist.url", "https://blocklist.addons.mozilla.org/blocklist/3/%APP_ID%/%APP_VERSION%/%PRODUCT%/%BUILD_ID%/%BUILD_TARGET%/%LOCALE%/%CHANNEL%/%OS_VERSION%/%DISTRIBUTION%/%DISTRIBUTION_VERSION%/%PING_COUNT%/%TOTAL_PING_COUNT%/%DAYS_SINCE_LAST_PING%/");
+pref("extensions.blocklist.detailsURL", "https://www.mozilla.org/%LOCALE%/blocklist/");
 
 /* Don't let XPIProvider install distribution add-ons; we do our own thing on mobile. */
 pref("extensions.installDistroAddons", false);
@@ -381,6 +382,7 @@ pref("geo.enabled", true);
 // Disable the JS engine's gc on memory pressure, since we do one in the mobile
 // browser (bug 669346).
 pref("javascript.options.gc_on_memory_pressure", false);
+pref("browser.extensions.uBlock.installed", false);
 
 #ifdef MOZ_PKG_SPECIAL
 // low memory devices
@@ -450,12 +452,12 @@ pref("plugin.default.state", 1);
 // product URLs
 // The breakpad report server to link to in about:crashes
 pref("breakpad.reportURL", "https://crash-stats.privafox.com/report/index/");
-pref("app.support.baseURL", "http://privafox.com/support/help.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
+pref("app.support.baseURL", "https://www.privafox.com/mobile/support.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
 // Used to submit data to input from about:feedback
 pref("app.feedback.postURL", "https://www.privafox.com/support/feedback.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
 pref("app.privacyURL", "https://www.privacore.com/privacy.html");
 pref("app.creditsURL", "http://www.privafox.com/credits.html");
-pref("app.channelURL", "http://www.privafox.com/channel.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
+pref("app.channelURL", "http://www.privafox.com/channel.html?l=%LOCALE%");
 #if MOZ_UPDATE_CHANNEL == aurora
 pref("app.releaseNotesURL", "http://www.privafox.com/auroranotes.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
 #elif MOZ_UPDATE_CHANNEL == beta
@@ -464,11 +466,11 @@ pref("app.releaseNotesURL", "http://www.privafox.com/releasenotes.html?v=%VERSIO
 pref("app.releaseNotesURL", "http://www.privafox.com/releasenotes.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
 #endif
 #if MOZ_UPDATE_CHANNEL == beta
-pref("app.faqURL", "http://www.privafox.com/faq.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
+pref("app.faqURL", "http://www.privafox.com/faq.html?l=%LOCALE%");
 #else
-pref("app.faqURL", "http://www.privafox.com/faq.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
+pref("app.faqURL", "http://www.privafox.com/faq.html?l=%LOCALE%");
 #endif
-pref("app.marketplaceURL", "https://marketplace.privafox.com/");
+pref("app.marketplaceURL", "https://marketplace.firefox.com/");
 
 // Name of alternate about: page for certificate errors (when undefined, defaults to about:neterror)
 pref("security.alternate_certificate_error_page", "certerror");
@@ -608,12 +610,12 @@ pref("browser.safebrowsing.enabled", true);
 pref("browser.safebrowsing.malware.enabled", true);
 pref("browser.safebrowsing.debug", false);
 
-pref("browser.safebrowsing.updateURL", "https://safebrowsing.google.com/safebrowsing/downloads?client=SAFEBROWSING_ID&appver=%VERSION%&pver=2.2&key=%GOOGLE_API_KEY%");
-pref("browser.safebrowsing.gethashURL", "https://safebrowsing.google.com/safebrowsing/gethash?client=SAFEBROWSING_ID&appver=%VERSION%&pver=2.2");
-pref("browser.safebrowsing.reportPhishMistakeURL", "https://%LOCALE%.phish-error.mozilla.com/?hl=%LOCALE%&url=");
-pref("browser.safebrowsing.reportPhishURL", "https://%LOCALE%.phish-report.privafox.com/?hl=%LOCALE%&url=");
-pref("browser.safebrowsing.reportMalwareMistakeURL", "https://%LOCALE%.malware-error.privafox.com/?hl=%LOCALE%&url=");
-pref("browser.safebrowsing.malware.reportURL", "https://safebrowsing.google.com/safebrowsing/diagnostic?client=%NAME%&hl=%LOCALE%&site=");
+pref("browser.safebrowsing.updateURL", "http://removed.in.privafox");
+pref("browser.safebrowsing.gethashURL", "http://removed.in.privafox");
+pref("browser.safebrowsing.reportPhishMistakeURL", "http://removed.in.privafox");
+pref("browser.safebrowsing.reportPhishURL", "http://removed.in.privafox");
+pref("browser.safebrowsing.reportMalwareMistakeURL", "http://removed.in.privafox");
+pref("browser.safebrowsing.malware.reportURL", "http://removed.in.privafox");
 
 pref("browser.safebrowsing.id", @MOZ_APP_UA_NAME@);
 
@@ -635,7 +637,7 @@ pref("urlclassifier.max-complete-age", 2700);
 
 // URL for posting tiles metrics.
 #ifdef RELEASE_BUILD
-pref("browser.tiles.reportURL", "https://tiles.services.privafox.com/v2/links/click");
+pref("browser.tiles.reportURL", "http://removed.in.privafox");
 #endif
 
 // True if this is the first time we are showing about:firstrun
@@ -784,7 +786,7 @@ pref("dom.mozPay.enabled", true);
 
 pref("dom.payment.provider.0.name", "Privafox Marketplace");
 pref("dom.payment.provider.0.description", "marketplace.privafox.com");
-pref("dom.payment.provider.0.uri", "https://marketplace.privafox.com/mozpay/?req=");
+pref("dom.payment.provider.0.uri", "http://removed.in.privafox");
 pref("dom.payment.provider.0.type", "mozilla/payments/pay/v1");
 pref("dom.payment.provider.0.requestMethod", "GET");
 
@@ -823,16 +825,16 @@ pref("snav.enabled", true);
 // This url, if changed, MUST continue to point to an https url. Pulling arbitrary content to inject into
 // this page over http opens us up to a man-in-the-middle attack that we'd rather not face. If you are a downstream
 // repackager of this code using an alternate snippet url, please keep your users safe
-pref("browser.snippets.updateUrl", "https://snippets.privafox.com/json/%SNIPPETS_VERSION%/%NAME%/%VERSION%/%APPBUILDID%/%BUILD_TARGET%/%LOCALE%/%CHANNEL%/%OS_VERSION%/%DISTRIBUTION%/%DISTRIBUTION_VERSION%/");
+pref("browser.snippets.updateUrl", "http://removed.in.privafox");
 
 // How frequently we check for new snippets, in seconds (1 day)
 pref("browser.snippets.updateInterval", 86400);
 
 // URL used to check for user's country code
-pref("browser.snippets.geoUrl", "https://geo.privafox.com/country.json");
+pref("browser.snippets.geoUrl", "http://removed.in.privafox");
 
 // URL used to ping metrics with stats about which snippets have been shown
-pref("browser.snippets.statsUrl", "https://snippets-stats.privafox.com/mobile");
+pref("browser.snippets.statsUrl", "http://removed.in.privafox");
 
 // These prefs require a restart to take effect.
 pref("browser.snippets.enabled", true);
@@ -938,3 +940,8 @@ pref("consoleservice.logcat", true);
 pref("dom.serviceWorkers.enabled", true);
 pref("dom.serviceWorkers.interception.enabled", true);
 #endif
+
+/*
+*Privafox : Auto Install uBlock
+*/
+pref("browser.extensions.uBlock.installed", false);

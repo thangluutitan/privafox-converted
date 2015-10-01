@@ -4759,7 +4759,7 @@ pref("layout.accessiblecaret.timeout_ms", 3000);
 pref("dom.wakelock.enabled", false);
 
 // The URL of the Firefox Accounts auth server backend
-pref("identity.fxaccounts.auth.uri", "https://api.accounts.firefox.com/v1");
+//pref("identity.fxaccounts.auth.uri", "https://api.accounts.firefox.com/v1");
 
 // disable mozsample size for now
 pref("image.mozsamplesize.enabled", false);

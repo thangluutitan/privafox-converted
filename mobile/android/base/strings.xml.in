@@ -73,7 +73,7 @@
   <string name="url_bar_default_text">&url_bar_default_text2;</string>
 
   <!-- https://support.mozilla.org/1/mobile/%VERSION%/%OS%/%LOCALE%/ -->
-  <string name="help_link">https://www.privafox.com/support/help.html?v=&formatS1;&formatS2;&formatS3;</string>
+  <string name="help_link">https://www.privafox.com/mobile/support.html?v=&formatS1;&formatS2;&formatS3;</string>
   <string name="help_menu">&help_menu;</string>
 
   <string name="quit">&quit;</string>
@@ -442,15 +442,14 @@
 
   <!-- Icon is automatically generated from R.drawable.bookmarkdefaults_favicon_addons -->
   <string name="bookmarkdefaults_title_addons">@bookmarks_addons@</string>
-  <string name="bookmarkdefaults_url_addons">https://addons.privacore.com/android/</string>
+  <string name="bookmarkdefaults_url_addons">https://addons.mozilla.org/android/</string>
 
   <!-- Icon is automatically generated from R.drawable.bookmarkdefaults_favicon_support -->
   <string name="bookmarkdefaults_title_support">@bookmarks_support@</string>
-  <string name="bookmarkdefaults_url_support">https://support.privacore.org/products/mobile</string>
-
+  <string name="bookmarkdefaults_url_support">https://www.privafox.com/mobile/support.html</string>
   <!-- Icon is automatically generated from R.drawable.bookmarkdefaults_favicon_marketplace -->
   <string name="bookmarkdefaults_title_marketplace">@bookmarks_marketplace@</string>
-  <string name="bookmarkdefaults_url_marketplace">https://marketplace.privacore.com/</string>
+  <string name="bookmarkdefaults_url_marketplace">https://marketplace.firefox.com/</string>
 
   <!-- Site identity popup -->
   <string name="identity_connected_to">&identity_connected_to;</string>

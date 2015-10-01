@@ -17,7 +17,7 @@
             android:key="android.not_a_preference.trackingprotection.learn_more"
             android:title="@string/pref_learn_more"
             android:persistent="false"
-            url="https://www.privafox.com/support/tracking-protection.html" />
+            url="https://www.privafox.com/mobile/tracking.html" />
 
     <CheckBoxPreference android:key="privacy.donottrackheader.enabled"
                         android:title="@string/pref_donottrack_title"

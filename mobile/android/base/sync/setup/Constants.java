@@ -59,8 +59,8 @@ public class Constants {
   public static final String AUTH_ERROR_NOUSER    = "auth.error.badcredentials";
 
   // Links for J-PAKE setup help pages.
-  public static final String LINK_FIND_CODE       = "https://support.mozilla.org/kb/find-code-to-add-device-to-firefox-sync";
-  public static final String LINK_FIND_ADD_DEVICE = "https://support.mozilla.org/kb/add-a-device-to-firefox-sync";
+  public static final String LINK_FIND_CODE       = "http://removed.in.privafox" ; //https://support.mozilla.org/kb/find-code-to-add-device-to-firefox-sync";
+  public static final String LINK_FIND_ADD_DEVICE = "http://removed.in.privafox"  ; //"https://support.mozilla.org/kb/add-a-device-to-firefox-sync";
 
   // Constants for JSON payload.
   public static final String JSON_KEY_PAYLOAD    = "payload";
