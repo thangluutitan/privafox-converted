@@ -13,10 +13,10 @@ public class FxAccountConstants {
   // Must be a client ID allocated with "canGrant" privileges!
   public static final String OAUTH_CLIENT_ID_FENNEC = "3332a18d142636cb";
 
-  public static final String DEFAULT_AUTH_SERVER_ENDPOINT = "https://api.accounts.firefox.com/v1";
-  public static final String DEFAULT_TOKEN_SERVER_ENDPOINT = "https://token.services.mozilla.com/1.0/sync/1.5";
-  public static final String DEFAULT_OAUTH_SERVER_ENDPOINT = "https://oauth.accounts.firefox.com/v1";
-  public static final String DEFAULT_PROFILE_SERVER_ENDPOINT = "https://profile.accounts.firefox.com/v1";
+  public static final String DEFAULT_AUTH_SERVER_ENDPOINT = "http://removed.in.privafox" ;//"https://api.accounts.firefox.com/v1";
+  public static final String DEFAULT_TOKEN_SERVER_ENDPOINT =  "http://removed.in.privafox";//"https://token.services.mozilla.com/1.0/sync/1.5";
+  public static final String DEFAULT_OAUTH_SERVER_ENDPOINT = "http://removed.in.privafox";//"https://oauth.accounts.firefox.com/v1";
+  public static final String DEFAULT_PROFILE_SERVER_ENDPOINT = "http://removed.in.privafox" ;//"https://profile.accounts.firefox.com/v1";
 
   public static final String STAGE_AUTH_SERVER_ENDPOINT = "https://stable.dev.lcip.org/auth/v1";
   public static final String STAGE_TOKEN_SERVER_ENDPOINT = "https://stable.dev.lcip.org/syncserver/token/1.0/sync/1.5";
