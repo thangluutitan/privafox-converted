@@ -393,7 +393,8 @@ var excludeKeys = ["toolkit.telemetry.server","toolkit.telemetry.enabled","toolk
 					"browser.sessionstore.resume_from_crash","toolkit.asyncshutdown.timeout.crash","toolkit.startup.max_resumed_crashes",
 					"browser.search.geoSpecificDefaults","geo.provider.ms-windows-location","javascript.options.mem.gc_allocation_threshold_mb",
 					"dom.disable_window_open_feature.location","geo.enabled","geo.wifi.uri","browser.search.geoip.url","browser.search.geoip.timeout",
-					"datareporting.healthreport.service.enabled","datareporting.healthreport.uploadEnabled","identity.fxaccounts.auth.uri"];
+					"datareporting.healthreport.service.enabled","datareporting.healthreport.uploadEnabled","identity.fxaccounts.auth.uri","identity.fxaccounts.migrateToDevEdition",
+					"identity.fxaccounts.profile_image.enabled"];
 function ExcludeKey()
 {
 	//Services.ww.getNewPrompter(null).alert("gPrefView.length:", gPrefView.length);

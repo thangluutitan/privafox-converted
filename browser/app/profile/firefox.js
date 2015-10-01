@@ -1878,11 +1878,11 @@ pref("browser.uiCustomization.state", "");
 
 // Migrate any existing Firefox Account data from the default profile to the
 // Developer Edition profile.
-#ifdef MOZ_DEV_EDITION
-pref("identity.fxaccounts.migrateToDevEdition", true);
-#else
-pref("identity.fxaccounts.migrateToDevEdition", false);
-#endif
+//#ifdef MOZ_DEV_EDITION
+//pref("identity.fxaccounts.migrateToDevEdition", true);
+//#else
+//pref("identity.fxaccounts.migrateToDevEdition", false);
+//#endif
 
 // On GTK, we now default to showing the menubar only when alt is pressed:
 #ifdef MOZ_WIDGET_GTK
