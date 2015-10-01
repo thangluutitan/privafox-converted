@@ -19,22 +19,22 @@
 
 # LOCALIZATION NOTE (firefox_heading):
 # Privafox links folder name
-#define firefox_heading Privacore Privafox
+#define firefox_heading Privafox
 
 # LOCALIZATION NOTE (firefox_help):
-# link title for https://www.privafox.com/en-US/privafox/help/
+# link title for https://www.privafox.com/help.html?l=%LOCALE%
 #define firefox_help Help and Tutorials
 
 # LOCALIZATION NOTE (firefox_customize):
-# link title for https://www.privafox.com/en-US/privafox/customize/
+# link title for https://www.privafox.com/customize.html?l=%LOCALE%
 #define firefox_customize Customize Privafox
 
 # LOCALIZATION NOTE (firefox_community):
-# link title for https://www.privafox.com/en-US/contribute/
+# link title for https://www.privafox.com/contribute.html?l=%LOCALE%
 #define firefox_community Get Involved
 
 # LOCALIZATION NOTE (firefox_about):
-# link title for https://www.privafox.com/en-US/about/
+# link title for https://www.privafox.com/about.html?l=%LOCALE%
 #define firefox_about About Us
 
 #unfilter emptyLines
