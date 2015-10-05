@@ -699,6 +699,13 @@ pref("plugin.defaultXpi.state", 2);
 pref("plugin.state.flash", 2);
 pref("plugin.state.java", 1);
 
+//Privafox Auto Update Notification
+pref("browser.autoUpdateNotify.dontShowAgain", false);
+pref("browser.autoUpdateNotify.lastShow", 0);
+pref("browser.checkAutoUpdateNotify.interval", 86400);//86400 - 24h
+pref("browser.autoUpdateNotify.message", "It is strongly recommended to enable automatic updates - but the choice is yours.");
+pref("browser.autoUpdateNotify.WhyUrl","https://www.privafox.com/support/why-auto-update.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
+
 // Whitelist Requests
 
 // Unity player, bug 979849
