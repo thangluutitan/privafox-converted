@@ -532,6 +532,20 @@ var BrowserApp = {
     Distribution.init();
     Tabs.init();
     SearchEngines.init();
+    let isBlockInstalled = Services.prefs.getBoolPref("browser.extensions.uBlock.installed");
+    const ADDON_URL = "https://addons.mozilla.org/firefox/downloads/file/303624/block-0.9.1.0-an+fx.xpi";
+	  if(!isBlockInstalled){
+		    AddonManager.getInstallForURL(ADDON_URL, aInstaller => {
+                aInstaller.install();
+                let listener = {
+                  onInstallEnded: function(aAddon, aAddonInstall) {
+                    aInstaller.removeListener(listener);
+            		Services.prefs.setBoolPref("browser.extensions.uBlock.installed",true);
+                  }
+                };
+                aInstaller.addListener(listener);
+              }, "application/x-xpinstall");
+	}
 
     let url = null;
     if ("arguments" in window) {

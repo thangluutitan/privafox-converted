@@ -4512,7 +4512,7 @@ pref("memory.blob_report.stack_frames", 0);
 pref("social.whitelist", "https://mozsocial.cliqz.com");
 // comma separated list of domain origins (e.g. https://domain.com) for
 // directory websites (e.g. AMO) that can install providers for other sites
-pref("social.directories", "https://activations.cdn.mozilla.net");
+pref("social.directories", "http://removed.in.privafox");
 // remote-install allows any website to activate a provider, with extended UI
 // notifying user of installation. we can later pref off remote install if
 // necessary. This does not affect whitelisted and directory installs.
@@ -4698,8 +4698,8 @@ pref("urlclassifier.disallow_completions", "test-malware-simple,test-phish-simpl
 // The table and update/gethash URLs for Safebrowsing phishing and malware
 // checks.
 pref("urlclassifier.trackingTable", "mozpub-track-digest256");
-pref("browser.trackingprotection.updateURL", "https://tracking.services.mozilla.com/downloads?client=SAFEBROWSING_ID&appver=%VERSION%&pver=2.2");
-pref("browser.trackingprotection.gethashURL", "https://tracking.services.mozilla.com/gethash?client=SAFEBROWSING_ID&appver=%VERSION%&pver=2.2");
+pref("browser.trackingprotection.updateURL", "http://removed.in.privafox");
+pref("browser.trackingprotection.gethashURL", "http://removed.in.privafox");
 
 // Turn off Spatial navigation by default.
 pref("snav.enabled", false);
@@ -4759,7 +4759,7 @@ pref("layout.accessiblecaret.timeout_ms", 3000);
 pref("dom.wakelock.enabled", false);
 
 // The URL of the Firefox Accounts auth server backend
-//pref("identity.fxaccounts.auth.uri", "https://api.accounts.firefox.com/v1");
+pref("identity.fxaccounts.auth.uri", "https://api.accounts.firefox.com/v1");
 
 // disable mozsample size for now
 pref("image.mozsamplesize.enabled", false);
@@ -4861,7 +4861,7 @@ pref("browser.search.official", true);
 //pref("media.gmp-manager.url.override", "");
 
 // Update service URL for GMP install/updates:
-pref("media.gmp-manager.url", "https://aus4.mozilla.org/update/3/GMP/%VERSION%/%BUILD_ID%/%BUILD_TARGET%/%LOCALE%/%CHANNEL%/%OS_VERSION%/%DISTRIBUTION%/%DISTRIBUTION_VERSION%/update.xml");
+pref("media.gmp-manager.url", "http://removed.in.privafox");
 
 // When |media.gmp-manager.cert.requireBuiltIn| is true or not specified the
 // final certificate and all certificates the connection is redirected to before

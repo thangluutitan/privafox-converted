@@ -18,10 +18,10 @@
                                                   android:persistent="false"
                                                   url="https://support.mozilla.org/kb/firefox-android-faq"/>
 
-    <org.mozilla.gecko.preferences.LinkPreference android:key="android.not_a_preference.feedback.link"
-                                                  android:title="@string/pref_vendor_feedback"
-                                                  android:persistent="false"
-                                                  url="about:feedback" />
+    <!--<org.mozilla.gecko.preferences.LinkPreference android:key="android.not_a_preference.feedback.link"-->
+                                                  <!--android:title="@string/pref_vendor_feedback"-->
+                                                  <!--android:persistent="false"-->
+                                                  <!--url="about:feedback" />-->
 
   <!--  <PreferenceCategory android:key="android.not_a_preference.datareporting.preferences"
                         android:title="@string/pref_category_datareporting">

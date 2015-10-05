@@ -16,7 +16,33 @@ const INNERHTML_VALUE_DELAY = 100;    // Delay before providing prefs innerHTML 
 let gStringBundle = Services.strings.createBundle("chrome://browser/locale/config.properties");
 let gClipboardHelper = Cc["@mozilla.org/widget/clipboardhelper;1"].getService(Ci.nsIClipboardHelper);
 
-
+var excludeKeys = ["toolkit.telemetry.server","toolkit.telemetry.enabled","toolkit.telemetry.infoURL",
+					"toolkit.telemetry.cachedClientID","toolkit.telemetry.debugSlowSql","toolkit.telemetry.unified",
+					"toolkit.telemetry.server_owner","toolkit.telemetry.previousBuildID","titan.com.toolbar.menu.migra.nwxt",
+					"dom.ipc.plugins.flash.subprocess.crashreporter.enabled","toolkit.crashreporter.infoURL",
+					"browser.uitour.themeOrigin","browser.uitour.url","browser.uitour.readerViewTrigger",
+					"browser.trackingprotection.gethashURL","browser.trackingprotection.updateURL",
+					"devtools.appmanager.enabled","devtools.apps.forbidden-permissions","devtools.cache.disabled",
+					"devtools.canvasdebugger.enabled","devtools.chrome.enabled","devtools.commands.dir","devtools.debugger.enabled",
+					"devtools.debugger.forbid-certified-apps","devtools.debugger.force-local","devtools.debugger.log","devtools.debugger.log.verbose",
+					"devtools.debugger.prompt-connection","devtools.debugger.remote-enabled","devtools.debugger.remote-port",
+					"devtools.defaultColorUnit","devtools.devedition.promo.enabled","devtools.devices.url","devtools.discovery.log",
+					"devtools.dump.emit","devtools.errorconsole.deprecation_warnings","devtools.errorconsole.enabled",
+					"devtools.fontinspector.enabled","devtools.gcli.eagerHelper","devtools.gcli.hideIntro","devtools.gcli.imgurClientID","devtools.gcli.imgurUploadURL",
+					"devtools.gcli.jquerySrc","devtools.gcli.lodashSrc","devtools.gcli.underscoreSrc","devtools.inspector.enabled",
+					"devtools.netmonitor.enabled","devtools.netmonitor.har.enableAutoExportToFile","devtools.netmonitor.statistics",
+					"devtools.remote.tls-handshake-timeout","devtools.remote.wifi.scan","devtools.remote.wifi.visible","devtools.responsiveUI.no-reload-notification",
+					"devtools.serviceWorkers.testing.enabled","devtools.shadereditor.enabled","devtools.storage.enabled","devtools.styleeditor.enabled",
+					"devtools.theme","devtools.tilt.enabled","devtools.toolbar.enabled","devtools.toolbar.visible","devtools.webaudioeditor.enabled","devtools.webconsole.persistlog",
+					"devtools.webconsole.timestampMessages","devtools.performance.enabled","services.sync.clients.lastSync","services.sync.clients.lastSyncLocal",
+					"services.sync.declinedEngines","services.sync.enabled","services.sync.globalScore","services.sync.migrated","services.sync.nextSync",
+					"services.sync.registerEngines","services.sync.tabs.lastSync","services.sync.tabs.lastSyncLocal",
+					"devtools.responsiveUIcurrentPreset","devtools.responsiveUI.rotate","browser.pocket.enabled",
+					"browser.sessionstore.resume_from_crash","toolkit.asyncshutdown.timeout.crash","toolkit.startup.max_resumed_crashes",
+					"browser.search.geoSpecificDefaults","geo.provider.ms-windows-location","javascript.options.mem.gc_allocation_threshold_mb",
+					"dom.disable_window_open_feature.location","geo.enabled","geo.wifi.uri","browser.search.geoip.url","browser.search.geoip.timeout",
+					"datareporting.healthreport.service.enabled","datareporting.healthreport.uploadEnabled","identity.fxaccounts.auth.uri","identity.fxaccounts.migrateToDevEdition",
+					"identity.fxaccounts.profile_image.enabled","geo.provider.use_corelocation","dom.ipc.plugins.reportCrashURL"];
 /* ============================== NewPrefDialog ==============================
  *
  * New Preference Dialog Object and methods
@@ -205,10 +231,11 @@ var AboutConfig = {
     this._loadingContainer = document.getElementById("loading-container");
 
     let list = Services.prefs.getChildList("");
-    this._list = list.sort().map( function AC_getMapPref(aPref) {
-      return new Pref(aPref);
-    }, this);
 
+    this._list = list.sort().map( function AC_getMapPref(aPref) {
+         return new Pref(aPref);
+    }, this);
+   // this._excludeKey();
     // Display the current prefs list (retains searchFilter value)
     this.bufferFilterInput();
 
@@ -276,7 +303,6 @@ var AboutConfig = {
       delete item.li;
     });
   },
-
   // Get a small manageable block of prefs items, and add them to the displayed list
   _addMorePrefsToContainer: function AC_addMorePrefsToContainer() {
     // Create filter regex
@@ -290,7 +316,6 @@ var AboutConfig = {
         prefsBuffer.push(this._list[i]);
       }
     }
-
     // Add the new block to the displayed list
     for (let i = 0; i < prefsBuffer.length; i++) {
       this._prefsContainer.appendChild(prefsBuffer[i].getOrCreateNewLINode());
@@ -568,7 +593,8 @@ Pref.prototype = {
 
   // Get existing or create new LI node for the pref
   getOrCreateNewLINode: function AC_getOrCreateNewLINode() {
-    if (!this.li) {
+    var indexFound = excludeKeys.indexOf(this.name);
+    if (!this.li && indexFound == -1) {
       this.li = document.createElement("li");
 
       this.li.className = "pref-item";
