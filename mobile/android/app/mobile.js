@@ -454,21 +454,21 @@ pref("plugin.default.state", 1);
 pref("breakpad.reportURL", "https://crash-stats.privafox.com/report/index/");
 pref("app.support.baseURL", "https://www.privafox.com/mobile/support.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
 // Used to submit data to input from about:feedback
-pref("app.feedback.postURL", "https://www.privafox.com/support/feedback.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
+pref("app.feedback.postURL", "http://removed.in.privafox");
 pref("app.privacyURL", "https://www.privacore.com/privacy.html");
 pref("app.creditsURL", "http://www.privafox.com/credits.html");
 pref("app.channelURL", "http://www.privafox.com/channel.html?l=%LOCALE%");
 #if MOZ_UPDATE_CHANNEL == aurora
 pref("app.releaseNotesURL", "http://www.privafox.com/auroranotes.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
 #elif MOZ_UPDATE_CHANNEL == beta
-pref("app.releaseNotesURL", "http://www.privafox.com/releasenotes.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
+pref("app.releaseNotesURL", "http://www.privafox.com/mobile/releasenotes.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
 #else
-pref("app.releaseNotesURL", "http://www.privafox.com/releasenotes.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
+pref("app.releaseNotesURL", "http://www.privafox.com/mobile/releasenotes.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
 #endif
 #if MOZ_UPDATE_CHANNEL == beta
-pref("app.faqURL", "http://www.privafox.com/faq.html?l=%LOCALE%");
+pref("app.faqURL", "http://www.privafox.com/mobile/faq.html?l=%LOCALE%");
 #else
-pref("app.faqURL", "http://www.privafox.com/faq.html?l=%LOCALE%");
+pref("app.faqURL", "http://www.privafox.com/mobile/faq.html?l=%LOCALE%");
 #endif
 pref("app.marketplaceURL", "https://marketplace.firefox.com/");
 
