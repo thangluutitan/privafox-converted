@@ -922,6 +922,142 @@ function LoadInOtherProcess(browser, loadOptions, historyIndex = -1) {
   let tab = gBrowser.getTabForBrowser(browser);
   SessionStore.navigateAndRestore(tab, loadOptions, historyIndex);
 }
+/*
+Privafox Show Notification when AutoUpdate Disabled
+*/
+function showAutoUpdateNotification() {
+	//Key relate app.update.enabled app.update.auto app.update.mode
+	var isAutoUpdate = gPrefService.getBoolPref("app.update.enabled");
+	var isOverTimeRemind = true;
+	let now = Math.round(Date.now() / 1000);
+	var _actionTaken = false;
+	var lastCheck = Services.prefs.getIntPref("browser.autoUpdateNotify.lastShow");
+	var checkInterval = Services.prefs.getIntPref("browser.checkAutoUpdateNotify.interval");
+	//Services.prompt.alert(null, "Info", "LastCheck:"+lastCheck+";now:"+now+";Interval:"+checkInterval);
+	if ((lastCheck===0 && !isAutoUpdate) || (now - lastCheck > checkInterval)){
+		
+		isOverTimeRemind = true;
+		if (lastCheck === 0 && !isAutoUpdate){
+			Services.prefs.setBoolPref("browser.autoUpdateNotify.dontShowAgain",false);
+		}else{
+			//Services.prompt.alert(null, "Over Time :", now - lastCheck);
+		}
+			
+	}else{
+		isOverTimeRemind = false;
+	}
+	
+	var isDontShowAgain = Services.prefs.getBoolPref("browser.autoUpdateNotify.dontShowAgain");
+	if(isDontShowAgain|| isAutoUpdate || !isOverTimeRemind){
+		return;
+	} 
+	let notificationBox = gBrowser.getNotificationBox();
+    let value = "browser-auto-update-notification";
+    let previousNotification = notificationBox.getNotificationWithValue(value);
+    if (previousNotification) {
+      notificationBox.removeNotification(previousNotification);
+    }
+
+	let buttons = [
+	  {
+        label: "Why?",
+        accessKey: "W",
+        callback: function() {
+          // Do not set this preference while in private browsing.
+            //let pref = "browser.autoUpdateNotify.dontShowAgain";
+            //Services.prefs.setBoolPref(pref, true);
+			//openLinkIn(href, where, params);
+		  
+		  var whyUrl = Services.urlFormatter.formatURLPref("browser.autoUpdateNotify.WhyUrl");
+		  //Services.prefs.getCharPref("browser.autoUpdateNotify.WhyUrl");
+          openUILinkIn(whyUrl, "tab");
+		  _actionTaken = true;
+		  //gBrowser.addTab(whyUrl);
+		  throw new Error('prevent notification box close after click');
+        }
+      },
+      {
+        label: "Enable",
+        accessKey: "E",
+        callback: function() {
+			Services.prefs.setBoolPref("app.update.enabled", true);
+			Services.prefs.setBoolPref("app.update.auto", true);
+			_actionTaken = true;
+          //openUILinkIn(alternativeURI.spec, "current");
+        }
+      },
+	  {
+        label: "Not now",
+        accessKey: "O",
+        callback: function() {
+			//Services.prompt.alert(null, "Enable", "Not now Cliced");
+			let now = Math.round(Date.now() / 1000);
+			Services.prefs.setIntPref("browser.autoUpdateNotify.lastShow", now);
+			_actionTaken = true;
+        }
+      },
+	  {
+        label: "Never ask again.",
+        accessKey: "N",
+        callback: function() {
+		    //Services.prompt.alert(null, "Enable", "Not now Cliced");
+            Services.prefs.setBoolPref("browser.autoUpdateNotify.dontShowAgain", true);
+			_actionTaken = true;
+			let now = Math.round(Date.now() / 1000);
+			Services.prefs.setIntPref("browser.autoUpdateNotify.lastShow", now);
+          //openUILinkIn(alternativeURI.spec, "current");
+        }
+      }
+    ];
+	var autoUpdateNotifyMessage = Services.prefs.getCharPref("browser.autoUpdateNotify.message");
+	//var docFrag = document.createDocumentFragment();
+	//var a = document.createElement("a");
+	//var textNode = document.createTextNode("It is strongly recommended to enable automatic updates – but the choice is yours. ");
+	//var linkText = document.createTextNode("Why?");
+	//a.appendChild(linkText);
+	//a.title = "Why?";
+	//a.href = "https://www.privafox.com/support/why-auto-update.html";
+	//docFrag.appendChild(textNode);
+	//docFrag.appendChild(a);
+	//"",
+	//https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Method/appendNotification#Notification_box_events
+	
+	var notifCallback = function(what) {
+		//alert("what: "+what);
+         // console.log('what:', what);
+      /*
+          var fObj = {};
+          var fRes = Services.focus.getFocusedElementForWindow(win.gBrowser.selectedTab.linkedBrowser.contentWindow, true, fObj);
+      console.log('fRes:', fRes);
+      console.log('fObj:', fObj);
+      //"fObj:" Object { value: Window → notification.xml }
+      //"fRes:" <html>
+      //focus messes up so was trying to fix, needs more research
+      //on close mxr code move focus forward 1: http://mxr.mozilla.org/mozilla-release/source/toolkit/content/widgets/notification.xml#187
+      */
+          if (what == 'removed') {
+            if (!_actionTaken) {
+             //alert("what"+what);
+			 let now = Math.round(Date.now() / 1000);
+			 Services.prefs.setIntPref("browser.autoUpdateNotify.lastShow", now);
+            } else {
+              //alert("what"+what);
+            }
+          }
+    }
+	
+    let notification = notificationBox.appendNotification(autoUpdateNotifyMessage,
+      value,
+	  null,
+      //"chrome://global/skin/icons/blacklist_favicon.png",
+      notificationBox.PRIORITY_CRITICAL_HIGH,
+      buttons,
+	  notifCallback
+    );
+    // Persist the notification until the user removes so it
+    // doesn't get removed on redirects.
+    notification.persistence = 2;
+}
 
 // Called when a docshell has attempted to load a page in an incorrect process.
 // This function is responsible for loading the page in the correct process.
@@ -948,13 +1084,13 @@ var gBrowserInit = {
   delayedStartupFinished: false,
 
   onLoad: function() {
+	
+	//Services.ww.getNewPrompter(null).alert("onLoad", "onLoad Called");
+	showAutoUpdateNotification();
 
     gBrowser.addEventListener("DOMUpdatePageReport", gPopupBlockerObserver, false);
-
     Services.obs.addObserver(gPluginHandler.NPAPIPluginCrashed, "plugin-crashed", false);
-
     window.addEventListener("AppCommand", HandleAppCommandEvent, true);
-    
     // These routines add message listeners. They must run before
     // loading the frame script to ensure that we don't miss any
     // message sent between when the frame script is loaded and when

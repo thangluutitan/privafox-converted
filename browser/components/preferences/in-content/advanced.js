@@ -644,10 +644,12 @@ var gAdvancedPane = {
       case "auto":      // 1. Automatically install updates for Desktop only
         enabledPref.value = true;
         autoPref.value = true;
+		Services.prefs.setBoolPref("browser.autoUpdateNotify.dontShowAgain", false);
         break;
       case "checkOnly": // 2. Check, but let me choose
         enabledPref.value = true;
         autoPref.value = false;
+		Services.prefs.setBoolPref("browser.autoUpdateNotify.dontShowAgain", false);
         break;
       case "manual":    // 3. Never check for updates.
         enabledPref.value = false;
