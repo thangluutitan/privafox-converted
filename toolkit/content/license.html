@@ -25,12 +25,9 @@
 
     <div>
 
-<!-- This Source Code Form is subject to the terms of the Mozilla Public
-   - License, v. 2.0. If a copy of the MPL was not distributed with this
-   - file, You can obtain one at http://mozilla.org/MPL/2.0/.  -->
-    <p><b>Binaries</b> of this product have been made available to you by 
-    <a href="http://www.privacore.com/">Privacore</a> under the Mozilla
-    Public License 2.0 (MPL). <a href="about:rights">Know your rights</a>.</p>
+#ifdef APP_LICENSE_BLOCK
+#includesubst @APP_LICENSE_BLOCK@
+#endif
 
     <p>All of the <b>source code</b> to this product is
        available under licenses which are both
