@@ -935,7 +935,7 @@ function showAutoUpdateNotification() {
 	var checkInterval = Services.prefs.getIntPref("browser.checkAutoUpdateNotify.interval");
 	var isDontShowAgain = Services.prefs.getBoolPref("browser.autoUpdateNotify.dontShowAgain");
 	//Services.prompt.alert(null, "gURLBar", gBrowser.getBrowserForTab(gBrowser.selectedTab).currentURI.host);
-	Services.prompt.alert(null, "gURLBar", document.location.href);
+	//Services.prompt.alert(null, "gURLBar", document.location.href);
 	//Services.prompt.alert(null, "Over Time :", now - lastCheck);
 	if (lastCheck===0){
 		isOverTimeRemind = true;
@@ -2043,7 +2043,7 @@ function BrowserReloadOrDuplicate(aEvent) {
 }
 
 function BrowserReload() {
-	Services.prompt.alert(null, "gURLBar", document.location.href);
+  //Services.prompt.alert(null, "gURLBar", document.location.href);
   if (gBrowser.currentURI.schemeIs("view-source")) {
     // Bug 1167797: For view source, we always skip the cache
     return BrowserReloadSkipCache();
@@ -4855,7 +4855,7 @@ nsBrowserAccess.prototype = {
   },
 
   openURI: function (aURI, aOpener, aWhere, aContext) {
-	  Services.prompt.alert(null, "openURI", document.location.href);
+	//Services.prompt.alert(null, "openURI", document.location.href);
     // This function should only ever be called if we're opening a URI
     // from a non-remote browser window (via nsContentTreeOwner).
     if (aOpener && Cu.isCrossProcessWrapper(aOpener)) {
