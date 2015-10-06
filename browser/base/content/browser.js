@@ -933,28 +933,30 @@ function showAutoUpdateNotification() {
 	var _actionTaken = false;
 	var lastCheck = Services.prefs.getIntPref("browser.autoUpdateNotify.lastShow");
 	var checkInterval = Services.prefs.getIntPref("browser.checkAutoUpdateNotify.interval");
-	//Services.prompt.alert(null, "Info", "LastCheck:"+lastCheck+";now:"+now+";Interval:"+checkInterval);
-	if ((lastCheck===0 && !isAutoUpdate) || (now - lastCheck > checkInterval)){
-		
+	var isDontShowAgain = Services.prefs.getBoolPref("browser.autoUpdateNotify.dontShowAgain");
+	//Services.prompt.alert(null, "gURLBar", gBrowser.getBrowserForTab(gBrowser.selectedTab).currentURI.host);
+	Services.prompt.alert(null, "gURLBar", document.location.href);
+	//Services.prompt.alert(null, "Over Time :", now - lastCheck);
+	if (lastCheck===0){
 		isOverTimeRemind = true;
-		if (lastCheck === 0 && !isAutoUpdate){
-			Services.prefs.setBoolPref("browser.autoUpdateNotify.dontShowAgain",false);
-		}else{
-			//Services.prompt.alert(null, "Over Time :", now - lastCheck);
-		}
-			
+	}else if (lastCheck === 1){
+		isOverTimeRemind = true;
+	}else if (now - lastCheck > checkInterval){
+		isOverTimeRemind = true;
 	}else{
 		isOverTimeRemind = false;
 	}
+	//Services.prompt.alert(null, "isOverTimeRemind: ",isOverTimeRemind);
+	//if (!isAutoUpdate && isDontShowAgain) isOverTimeRemind = true;
 	
-	var isDontShowAgain = Services.prefs.getBoolPref("browser.autoUpdateNotify.dontShowAgain");
 	if(isDontShowAgain|| isAutoUpdate || !isOverTimeRemind){
+		//Services.prompt.alert(null, "isAutoUpdate: ",isAutoUpdate + " isDontShowAgain:"+isDontShowAgain);
 		return;
 	} 
 	let notificationBox = gBrowser.getNotificationBox();
     let value = "browser-auto-update-notification";
     let previousNotification = notificationBox.getNotificationWithValue(value);
-    if (previousNotification) {
+    if (previousNotification){
       notificationBox.removeNotification(previousNotification);
     }
 
@@ -970,6 +972,7 @@ function showAutoUpdateNotification() {
 		  
 		  var whyUrl = Services.urlFormatter.formatURLPref("browser.autoUpdateNotify.WhyUrl");
 		  //Services.prefs.getCharPref("browser.autoUpdateNotify.WhyUrl");
+		  Services.prefs.setIntPref("browser.autoUpdateNotify.lastShow", 1);
           openUILinkIn(whyUrl, "tab");
 		  _actionTaken = true;
 		  //gBrowser.addTab(whyUrl);
@@ -980,6 +983,7 @@ function showAutoUpdateNotification() {
         label: "Enable",
         accessKey: "E",
         callback: function() {
+			Services.prefs.setIntPref("browser.autoUpdateNotify.lastShow", 1);
 			Services.prefs.setBoolPref("app.update.enabled", true);
 			Services.prefs.setBoolPref("app.update.auto", true);
 			_actionTaken = true;
@@ -1003,8 +1007,7 @@ function showAutoUpdateNotification() {
 		    //Services.prompt.alert(null, "Enable", "Not now Cliced");
             Services.prefs.setBoolPref("browser.autoUpdateNotify.dontShowAgain", true);
 			_actionTaken = true;
-			let now = Math.round(Date.now() / 1000);
-			Services.prefs.setIntPref("browser.autoUpdateNotify.lastShow", now);
+			Services.prefs.setIntPref("browser.autoUpdateNotify.lastShow", 1);
           //openUILinkIn(alternativeURI.spec, "current");
         }
       }
@@ -1604,7 +1607,7 @@ var gBrowserInit = {
     //                      ignored).
     if (!window.arguments || !window.arguments[0])
       return null;
-
+	
     let uri = window.arguments[0];
     let sessionStartup = Cc["@mozilla.org/browser/sessionstartup;1"]
                            .getService(Ci.nsISessionStartup);
@@ -2040,6 +2043,7 @@ function BrowserReloadOrDuplicate(aEvent) {
 }
 
 function BrowserReload() {
+	Services.prompt.alert(null, "gURLBar", document.location.href);
   if (gBrowser.currentURI.schemeIs("view-source")) {
     // Bug 1167797: For view source, we always skip the cache
     return BrowserReloadSkipCache();
@@ -2254,6 +2258,7 @@ function BrowserTryToCloseWindow()
 
 function loadURI(uri, referrer, postData, allowThirdPartyFixup, referrerPolicy) {
   try {
+	  
     openLinkIn(uri, "current",
                { referrerURI: referrer,
                  referrerPolicy: referrerPolicy,
@@ -4850,6 +4855,7 @@ nsBrowserAccess.prototype = {
   },
 
   openURI: function (aURI, aOpener, aWhere, aContext) {
+	  Services.prompt.alert(null, "openURI", document.location.href);
     // This function should only ever be called if we're opening a URI
     // from a non-remote browser window (via nsContentTreeOwner).
     if (aOpener && Cu.isCrossProcessWrapper(aOpener)) {
