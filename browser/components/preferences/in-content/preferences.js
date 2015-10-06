@@ -153,8 +153,10 @@ function gotoPref(aCategory) {
       if (!kMasterPref) {
           Services.prefs.setBoolPref(kEnableUseMasterPasswordPref, true);
           var checkbox = document.getElementById("useMasterPassword");
-          checkbox.checked = true;
-          gSecurityPane.updateMasterPasswordButton();
+          if(!checkbox.checked){
+              checkbox.checked = true;
+              gSecurityPane.updateMasterPasswordButton();
+          }
       }
   }
 }

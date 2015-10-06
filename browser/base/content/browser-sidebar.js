@@ -141,6 +141,12 @@ let SidebarUI = {
     fireSidebarFocusedEvent();
   },
 
+  refreshBookmark() {
+    let isHasProtectBookmark = PlacesCommandHook.bookmarkIsProtectMasterPassword();
+    document.getElementById("sidebar-box-master-password").hidden=!isHasProtectBookmark;
+    let event = new CustomEvent("refreshBookmark", {bubbles: true});
+    this.browser.contentWindow.dispatchEvent(event);
+  },
   /**
    * True if the sidebar is currently open.
    */
@@ -194,7 +200,9 @@ let SidebarUI = {
         reject(new Error("Invalid sidebar broadcaster specified"));
         return;
       }
-
+      let isHasProtectBookmark = PlacesCommandHook.bookmarkIsProtectMasterPassword();
+      document.getElementById("sidebar-box-master-password").hidden=!isHasProtectBookmark;
+      
       let broadcasters = document.getElementsByAttribute("group", "sidebar");
       for (let broadcaster of broadcasters) {
         // skip elements that observe sidebar broadcasters and random
@@ -230,7 +238,7 @@ let SidebarUI = {
       // does that is that we want to delay sidebar load a bit when a browser
       // window opens. See delayedStartup() and SidebarUI.startDelayedLoad().
       this._box.setAttribute("src", url);
-
+      
       if (this.browser.contentDocument.location.href != url) {
         let onLoad = event => {
           this.browser.removeEventListener("load", onLoad, true);
@@ -249,7 +257,8 @@ let SidebarUI = {
         this.browser.addEventListener("load", onLoad, true);
       } else {
         // Older code handled this case, so we do it too.
-        this._fireFocusedEvent();
+          this._fireFocusedEvent();
+
         resolve();
       }
 

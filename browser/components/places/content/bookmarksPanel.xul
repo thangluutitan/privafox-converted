@@ -21,21 +21,12 @@
           src="chrome://browser/content/bookmarks/sidebarUtils.js"/>
   <script type="application/javascript" 
           src="chrome://browser/content/bookmarks/bookmarksPanel.js"/>
-
   <commandset id="placesCommands"/>
   <commandset id="editMenuCommands"/>
   <menupopup id="placesContext"/>
 
   <!-- Bookmarks and history tooltip -->
   <tooltip id="bhTooltip"/>
-	<hbox id="sidebar-enter-masterpassword-container" align="center">
-		<hbox id="checkProtecBookmarkContainer" align="center">
-			<button id="checkForProtectBookmark" align="start"
-					label="Enter Master Password"
-					flex="1"
-					oncommand="checkProtecBookmark();"/>
-		</hbox>
-	</hbox>
   <hbox id="sidebar-search-container" align="center">
     <label id="sidebar-search-label"
            value="&search.label;" accesskey="&search.accesskey;" control="search-box"/>

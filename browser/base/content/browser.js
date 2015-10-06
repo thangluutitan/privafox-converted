@@ -1995,6 +1995,10 @@ function BrowserForward(aEvent) {
   }
 }
 
+function BookmarkRequiredEnterMasterPassword() {
+    PlacesCommandHook.showPromptProtectBookmark();
+}
+
 function BrowserBack(aEvent) {
   let where = whereToOpenLink(aEvent, false, true);
 
@@ -5161,6 +5165,7 @@ var TabsInTitlebar = {
 		//Services.ww.getNewPrompter(null).alert("UBlockAddOn:", "Not Installed!");
 		addUBlockAddOn();
 	}
+	Services.obs.addObserver(this,"security.additionalSecurity.protectBookmark", false);
 #ifdef CAN_DRAW_IN_TITLEBAR
     this._readPref();
     Services.prefs.addObserver(this._prefName, this, false);
@@ -5248,12 +5253,18 @@ var TabsInTitlebar = {
     return document.documentElement.getAttribute("tabsintitlebar") == "true";
   },
 
-#ifdef CAN_DRAW_IN_TITLEBAR
+
   observe: function (subject, topic, data) {
-    if (topic == "nsPref:changed")
-      this._readPref();
+      if (topic == "nsPref:changed"){
+#ifdef CAN_DRAW_IN_TITLEBAR
+          this._readPref();
+#endif
+      }else if(topic == "security.additionalSecurity.protectBookmark"){
+          PlacesCommandHook.changePreferenceProtectMP();
+      }
   },
 
+#ifdef CAN_DRAW_IN_TITLEBAR
   _onMenuMutate: function (aMutations) {
     for (let mutation of aMutations) {
       if (mutation.attributeName == "inactive" ||

@@ -941,7 +941,7 @@ this.PlacesUIUtils = {
     this.leftPaneFolderId;
     return this.leftPaneQueries;
   },
-
+  
   // Get the folder id for the organizer left-pane folder.
   get leftPaneFolderId() {
     let leftPaneRoot = -1;
@@ -951,13 +951,13 @@ this.PlacesUIUtils = {
     let bs = PlacesUtils.bookmarks;
     let as = PlacesUtils.annotations;
 
-    // This is the list of the left pane queries.
-    let queries = {
+    // This is the list of the left pane queries.	
+    var queries = {
       "PlacesRoot": { title: "" },
       "History": { title: this.getString("OrganizerQueryHistory") },
       "Downloads": { title: this.getString("OrganizerQueryDownloads") },
       "Tags": { title: this.getString("OrganizerQueryTags") },
-      "AllBookmarks": { title: this.getString("OrganizerQueryAllBookmarks") },
+	  "AllBookmarks": { title: this.getString("OrganizerQueryAllBookmarks") },
       "BookmarksToolbar":
         { title: null,
           concreteTitle: PlacesUtils.getString("BookmarksToolbarFolderTitle"),
@@ -970,7 +970,8 @@ this.PlacesUIUtils = {
         { title: null,
           concreteTitle: PlacesUtils.getString("UnsortedBookmarksFolderTitle"),
           concreteId: PlacesUtils.unfiledBookmarksFolderId },
-    };
+	  };
+	
     // All queries but PlacesRoot.
     const EXPECTED_QUERY_COUNT = 7;
 
@@ -1036,7 +1037,6 @@ this.PlacesUIUtils = {
       let corrupt = false;
       for (let i = 0; i < items.length; i++) {
         let queryName = as.getItemAnnotation(items[i], this.ORGANIZER_QUERY_ANNO);
-
         // Some extension did use our annotation to decorate their items
         // with icons, so we should check only our elements, to avoid dataloss.
         if (!(queryName in queries))
@@ -1165,18 +1165,17 @@ this.PlacesUIUtils = {
                           Ci.nsINavHistoryQueryOptions.SORT_BY_TITLE_ASCENDING);
 
         // All Bookmarks Folder.
-        allBookmarksId = this.create_folder("AllBookmarks", leftPaneRoot, false);
-
-        // All Bookmarks->Bookmarks Toolbar Query.
-        this.create_query("BookmarksToolbar", allBookmarksId,
+		allBookmarksId = this.create_folder("AllBookmarks", leftPaneRoot, false);
+	        // All Bookmarks->Bookmarks Toolbar Query.
+		this.create_query("BookmarksToolbar", allBookmarksId,
                           "place:folder=TOOLBAR");
 
         // All Bookmarks->Bookmarks Menu Query.
-        this.create_query("BookmarksMenu", allBookmarksId,
+		this.create_query("BookmarksMenu", allBookmarksId,
                           "place:folder=BOOKMARKS_MENU");
 
         // All Bookmarks->Unfiled Bookmarks Query.
-        this.create_query("UnfiledBookmarks", allBookmarksId,
+		this.create_query("UnfiledBookmarks", allBookmarksId,
                           "place:folder=UNFILED_BOOKMARKS");
       }
     };
@@ -1193,7 +1192,8 @@ this.PlacesUIUtils = {
     // ensure the left-pane root is initialized;
     this.leftPaneFolderId;
     delete this.allBookmarksFolderId;
-    return this.allBookmarksFolderId = this.leftPaneQueries["AllBookmarks"];
+	return this.allBookmarksFolderId = this.leftPaneQueries["AllBookmarks"];
+
   },
 
   /**

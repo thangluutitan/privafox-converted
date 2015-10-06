@@ -164,6 +164,7 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY subscribeToPageMenuitem.label "Subscribe to This Page…">
 <!ENTITY addCurPagesCmd.label "Bookmark All Tabs…">
 <!ENTITY showAllBookmarks2.label "Show All Bookmarks">
+<!ENTITY showProtecMasterPassword.label "Enter Master Password">
 <!ENTITY unsortedBookmarksCmd.label "Unsorted Bookmarks">
 <!ENTITY bookmarksToolbarChevron.tooltip "Show more bookmarks">
 
@@ -196,6 +197,7 @@ These should match what Safari and other Apple applications use on OS X Lion. --
 <!ENTITY bookmarksMenuButton.label          "Bookmarks">
 <!ENTITY bookmarksMenuButton.unsorted.label "Unsorted Bookmarks">
 <!ENTITY viewBookmarksSidebar2.label        "View Bookmarks Sidebar">
+<!ENTITY enterMasterPassword.label        "Enter Master Password">
 <!ENTITY viewBookmarksToolbar.label         "View Bookmarks Toolbar">
 
 <!-- LOCALIZATION NOTE (bookmarksSidebarGtkCmd.commandkey): This command

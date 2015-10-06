@@ -91,7 +91,7 @@
 
 <!ENTITY search.label                              "Search:">
 <!ENTITY search.accesskey                          "S">
-
+<!ENTITY enterMasterPasswordButton.label                              "Enter Master Password">
 <!ENTITY cmd.find.key  "f">
 
 <!ENTITY maintenance.label      "Import and Backup">

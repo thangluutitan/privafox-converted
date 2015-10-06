@@ -1955,9 +1955,11 @@
             default:
               throw new Error("Invalid argument: " + aCloseTabs);
           }
-
-          if (tabsToClose <= 1)
+			
+          if (tabsToClose <= 1){
+			Services.prefs.setBoolPref("security.additionalSecurity.protectBookmark.isAlreadyLogin",false);
             return true;
+		  }
 
           const pref = aCloseTabs == this.closingTabsEnum.ALL ?
                        "browser.tabs.warnOnClose" : "browser.tabs.warnOnCloseOtherTabs";
@@ -1994,9 +1996,11 @@
           var reallyClose = (buttonPressed == 0);
 
           // don't set the pref unless they press OK and it's false
-          if (aCloseTabs == this.closingTabsEnum.ALL && reallyClose && !warnOnClose.value)
+          if (aCloseTabs == this.closingTabsEnum.ALL && reallyClose && !warnOnClose.value){
             Services.prefs.setBoolPref(pref, false);
-
+			Services.prefs.setBoolPref("security.additionalSecurity.protectBookmark.isAlreadyLogin",false);
+		}
+			
           return reallyClose;
         ]]>
       </body>

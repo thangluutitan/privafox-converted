@@ -5,6 +5,7 @@
 
 Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
 Components.utils.import("resource://gre/modules/TelemetryStopwatch.jsm");
+Components.utils.import('resource://gre/modules/Services.jsm');
 XPCOMUtils.defineLazyModuleGetter(this, "MigrationUtils",
                                   "resource:///modules/MigrationUtils.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "Task",
@@ -32,15 +33,22 @@ var PlacesOrganizer = {
   ],
 
   _initFolderTree: function() {
-    var leftPaneRoot = PlacesUIUtils.leftPaneFolderId;
+      var leftPaneRoot = PlacesUIUtils.leftPaneFolderId;
     this._places.place = "place:excludeItems=1&expandQueries=0&folder=" + leftPaneRoot;
   },
 
   selectLeftPaneQuery: function PO_selectLeftPaneQuery(aQueryName) {
     var itemId = PlacesUIUtils.leftPaneQueries[aQueryName];
-    this._places.selectItems([itemId]);
+    let isProtectBookmark = this._bookmarkIsProtectMasterPassword();
+    var isFocus = true;
+    if(isProtectBookmark && aQueryName == "AllBookmarks"){
+        isFocus = false; 
+    }
+    if(isFocus){
+        this._places.selectItems([itemId]);
+    }
     // Forcefully expand all-bookmarks
-    if (aQueryName == "AllBookmarks" || aQueryName == "History")
+    if (!isFocus || aQueryName == "History")
       PlacesUtils.asContainer(this._places.selectedNode).containerOpen = true;
   },
 
@@ -90,10 +98,8 @@ var PlacesOrganizer = {
 
   init: function PO_init() {
     ContentArea.init();
-
     this._places = document.getElementById("placesList");
     this._initFolderTree();
-
     var leftPaneSelection = "AllBookmarks"; // default to all-bookmarks
     if (window.arguments && window.arguments[0])
       leftPaneSelection = window.arguments[0];
@@ -218,6 +224,45 @@ var PlacesOrganizer = {
     this.location = historyEntry;
   },
 
+_bookmarkIsProtectMasterPassword: function() {
+    let kCheckBookmarksIsMasterPassword = Services.prefs.getBoolPref("security.additionalSecurity.protectBookmark");
+    let kAlreadyLogin = Services.prefs.getBoolPref("security.additionalSecurity.protectBookmark.isAlreadyLogin");
+    var hasProtectPassword = false;
+    if(kCheckBookmarksIsMasterPassword && kAlreadyLogin){
+        hasProtectPassword =  false;
+    }else if(kCheckBookmarksIsMasterPassword){
+        hasProtectPassword =  true;
+        var tokendb = Components.classes["@mozilla.org/security/pk11tokendb;1"].createInstance(Components.interfaces.nsIPK11TokenDB);
+        var token = tokendb.getInternalKeyToken();
+        // if there is no master password, still give the user a chance to opt-out of displaying passwords
+        if (token.checkPassword("")){
+            hasProtectPassword =  false;
+        }           
+    }
+    return hasProtectPassword;
+
+},
+_showPromptProtectBookmark: function() {
+    let isHassProtectBookmark = this._bookmarkIsProtectMasterPassword();
+    var vLogin = false;
+    if(isHassProtectBookmark){
+        var tokendb = Components.classes["@mozilla.org/security/pk11tokendb;1"].createInstance(Components.interfaces.nsIPK11TokenDB);
+        var token = tokendb.getInternalKeyToken();        
+        // so there's a master password. but since checkpassword didn't succeed, we're logged out (per nsipk11token.idl).
+        try {
+            // relogin and ask for the master password.
+            token.login(true);  // 'true' means always prompt for token password. user will be prompted until
+            // clicking 'cancel' or entering the correct password.
+        } catch (e) {
+        }
+        vLogin =  token.isLoggedIn();
+        if(vLogin){
+            Services.prefs.setBoolPref("security.additionalSecurity.protectBookmark.isAlreadyLogin",true);
+        }
+    }
+    return vLogin;
+},
+
   /**
    * Called when a place folder is selected in the left pane.
    * @param   resetSearchBox
@@ -236,7 +281,6 @@ var PlacesOrganizer = {
 
     var node = this._places.selectedNode;
     var queries = PlacesUtils.asQuery(node).getQueries();
-
     // Items are only excluded on the left pane.
     var options = node.queryOptions.clone();
     options.excludeItems = false;
@@ -305,12 +349,22 @@ var PlacesOrganizer = {
 
     let node = this._places.selectedNode;
     if (node) {
-      let middleClick = aEvent.button == 1 && aEvent.detail == 1;
-      if (middleClick && PlacesUtils.nodeIsContainer(node)) {
-        // The command execution function will take care of seeing if the
-        // selection is a folder or a different container type, and will
-        // load its contents in tabs.
-        PlacesUIUtils.openContainerNodeInTabs(selectedNode, aEvent, this._places);
+      Services.prefs.setCharPref("titan.com.place.onPlacesListClick", node);
+      let itemId = node.itemId;
+      var isLogin = false;
+      if (itemId == PlacesUIUtils.leftPaneQueries["AllBookmarks"]) 
+      {
+          isLogin = this._showPromptProtectBookmark();
+      }
+      if(isLogin){
+          //Services.obs.notifyObservers(window, "bookmark-protect-master-password", "");           
+          let middleClick = aEvent.button == 1 && aEvent.detail == 1;
+          if (middleClick && PlacesUtils.nodeIsContainer(node)) {
+              // The command execution function will take care of seeing if the
+              // selection is a folder or a different container type, and will
+              // load its contents in tabs.
+              PlacesUIUtils.openContainerNodeInTabs(selectedNode, aEvent, this._places);
+          }
       }
     }
   },
