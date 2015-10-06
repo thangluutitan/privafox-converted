@@ -61,7 +61,9 @@
          PlacesCommandHook.updateBookmarkAllTabsCommand() -->
     <command id="Browser:BookmarkAllTabs"
              oncommand="PlacesCommandHook.bookmarkCurrentPages();"/>
-    <command id="Browser:Home"    oncommand="BrowserHome();"/>
+	<command id="Browser:Home"    oncommand="BrowserHome();"/>
+    <command id="Browser:RequiredEnterMasterPassword"    oncommand="BookmarkRequiredEnterMasterPassword();"/>
+    <command id="Browser:ShowEnterMasterPassword" oncommand="PlacesCommandHook.showPromptProtectBookmark();"/>
     <command id="Browser:Back"    oncommand="BrowserBack();" disabled="true"/>
     <command id="Browser:BackOrBackDuplicate" oncommand="BrowserBack(event);" disabled="true">
       <observes element="Browser:Back" attribute="disabled"/>

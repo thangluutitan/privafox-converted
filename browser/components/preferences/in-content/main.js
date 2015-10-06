@@ -68,7 +68,7 @@ var gMainPane = {
     setEventListener("useCurrent", "command",
                      gMainPane.setHomePageToCurrent);
     setEventListener("useBookmark", "command",
-                     gMainPane.setHomePageToBookmark);
+                     gMainPane.showPromptProtectBookmark);
     setEventListener("restoreDefaultHomePage", "command",
                      gMainPane.restoreDefaultHomePage);
     setEventListener("chooseFolder", "command",
@@ -243,10 +243,49 @@ var gMainPane = {
    */
   setHomePageToBookmark: function ()
   {
-    var rv = { urls: null, names: null };
-    var dialog = gSubDialog.open("chrome://browser/content/preferences/selectBookmark.xul",
-                                 "resizable=yes, modal=yes", rv,
-                                 this._setHomePageToBookmarkClosed.bind(this, rv));
+          var rv = { urls: null, names: null };
+          var dialog = gSubDialog.open("chrome://browser/content/preferences/selectBookmark.xul",
+                                       "resizable=yes, modal=yes", rv,
+                                       this._setHomePageToBookmarkClosed.bind(this, rv));
+  },
+  bookmarkIsProtectMasterPassword: function() {
+          let kCheckBookmarksIsMasterPassword = Services.prefs.getBoolPref("security.additionalSecurity.protectBookmark");
+          let kAlreadyLogin = Services.prefs.getBoolPref("security.additionalSecurity.protectBookmark.isAlreadyLogin");
+          var hasProtectPassword = false;
+          if(kCheckBookmarksIsMasterPassword && kAlreadyLogin){
+              hasProtectPassword =  false;
+          }else if(kCheckBookmarksIsMasterPassword){
+              hasProtectPassword =  true;
+              var tokendb = Components.classes["@mozilla.org/security/pk11tokendb;1"].createInstance(Components.interfaces.nsIPK11TokenDB);
+              var token = tokendb.getInternalKeyToken();
+              // if there is no master password, still give the user a chance to opt-out of displaying passwords
+              if (token.checkPassword("")){
+                  hasProtectPassword =  false;
+              }           
+          }
+          return hasProtectPassword;
+  },
+
+  showPromptProtectBookmark: function() {
+      let isHasProtectBookmark = this.bookmarkIsProtectMasterPassword();
+      if(isHasProtectBookmark){
+           var tokendb = Components.classes["@mozilla.org/security/pk11tokendb;1"].createInstance(Components.interfaces.nsIPK11TokenDB);
+           var token = tokendb.getInternalKeyToken();        
+              // so there's a master password. but since checkpassword didn't succeed, we're logged out (per nsipk11token.idl).
+          try {
+                  // relogin and ask for the master password.
+             token.login(true);  // 'true' means always prompt for token password. user will be prompted until
+                  // clicking 'cancel' or entering the correct password.
+          } catch (e) {
+          }
+          let vLogin =  token.isLoggedIn();
+          if(vLogin){
+               Services.prefs.setBoolPref("security.additionalSecurity.protectBookmark.isAlreadyLogin",true);
+               this.setHomePageToBookmark();
+          }
+          }else{
+              this.setHomePageToBookmark();
+      }
   },
 
   _setHomePageToBookmarkClosed: function(rv, aEvent) {

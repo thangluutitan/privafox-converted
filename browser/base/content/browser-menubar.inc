@@ -372,7 +372,7 @@
                                class="hide-if-empty-places-result"/>
               </menupopup>
             </menu> -->
-			
+		
   <menu id="bookmarksMenu"
         label="&bookmarksMenu.label;"
         accesskey="&bookmarksMenu.accesskey;"
@@ -387,11 +387,11 @@
                openInTabs="children"
                oncommand="BookmarksEventHandler.onCommand(event, this.parentNode._placesView);"
                onclick="BookmarksEventHandler.onClick(event, this.parentNode._placesView);"
-               onpopupshowing="BookmarkingUI.onMainMenuPopupShowing(event);
-                               BookmarkingUI.updatePocketItemVisibility('menu_');
-                               if (!this.parentNode._placesView)
-                                 new PlacesMenu(event, 'place:folder=BOOKMARKS_MENU');"
+			   onpopupshowing="BookmarkingUI.onMainMenuPopupShowing(event,this.parentNode._placesView);"
                tooltip="bhTooltip" popupsinherittooltip="true">
+	<menuitem id="bookmarksProtecMasterPassword"
+					label="&showProtecMasterPassword.label;"
+					command="Browser:RequiredEnterMasterPassword"/>
       <menuitem id="bookmarksShowAll"
                 label="&showAllBookmarks2.label;"
                 command="Browser:ShowAllBookmarks"
@@ -401,8 +401,9 @@
 #ifndef XP_MACOSX
                 class="menuitem-iconic"
 #endif
+				hidden="true"
                 oncommand="openUILink(Pocket.listURL, event);"/>
-      <menuseparator id="menu_pocketSeparator"/>
+      <menuseparator id="menu_pocketSeparator" hidden="true"/>
       <menuitem id="menu_bookmarkThisPage"
                 command="Browser:AddBookmarkAs"
                 observes="bookmarkThisPageBroadcaster"
@@ -470,7 +471,7 @@
 #endif
       <menuseparator id="bookmarksMenuItemsSeparator"/>
       <!-- Bookmarks menu items -->
-      <menuseparator builder="end"
+      <menuseparator id="bookmarksPlacesResultSeparator" builder="end"
                      class="hide-if-empty-places-result"/>
       <menuitem id="menu_unsortedBookmarks"
                 label="&unsortedBookmarksCmd.label;"

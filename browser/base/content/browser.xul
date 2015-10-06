@@ -836,10 +836,13 @@
                      openInTabs="children"
                      oncommand="BookmarksEventHandler.onCommand(event, this.parentNode._placesView);"
                      onclick="BookmarksEventHandler.onClick(event, this.parentNode._placesView);"
-                     onpopupshowing="BookmarkingUI.onPopupShowing(event);
-                                     BookmarkingUI.updatePocketItemVisibility('BMB_');
-                                     BookmarkingUI.attachPlacesView(event, this);"
+                     onpopupshowing="BookmarkingUI.onPopupShowing(event,this);
+									BookmarkingUI.attachPlacesView(event, this);"
                      tooltip="bhTooltip" popupsinherittooltip="true">
+            <menuitem id="BMB_viewEnterMasterPassword"
+                      label="&enterMasterPassword.label;"
+                      oncommand="PlacesCommandHook.showPromptProtectBookmark();">
+			</menuitem>
             <menuitem id="BMB_viewBookmarksSidebar"
                       class="subviewbutton"
                       label="&viewBookmarksSidebar2.label;"
@@ -853,12 +856,13 @@
                       label="&showAllBookmarks2.label;"
                       command="Browser:ShowAllBookmarks"
                       key="manBookmarkKb"/>
-            <menuseparator/>
+            <menuseparator id="BMB_Seperator4" />
             <menuitem id="BMB_pocket"
                       class="menuitem-iconic bookmark-item subviewbutton"
                       label="&pocketMenuitem.label;"
                       oncommand="openUILink(Pocket.listURL, event);"/>
-            <menuseparator id="BMB_pocketSeparator"/>
+            <menuseparator id="BMB_pocketSeparator"/> 
+			
             <menuitem id="BMB_subscribeToPageMenuitem"
 #ifndef XP_MACOSX
                       class="menuitem-iconic subviewbutton"
@@ -882,7 +886,7 @@
                          oncommand="return FeedHandler.subscribeToFeed(null, event);"
                          onclick="checkForMiddleClick(this, event);"/>
             </menu>
-            <menuseparator/>
+            <menuseparator id="BMB_Seperator1" />
             <menu id="BMB_bookmarksToolbar"
                   class="menu-iconic bookmark-item subviewbutton"
                   label="&personalbarCmd.label;"
@@ -914,7 +918,7 @@
                                            new PlacesMenu(event, 'place:folder=UNFILED_BOOKMARKS',
                                                           PlacesUIUtils.getViewForNode(this.parentNode.parentNode).options);"/>
             </menu>
-            <menuseparator>
+            <menuseparator id="BMB_Seperator2" >
               <observes element="readingListSidebar" attribute="hidden"/>
             </menuseparator>
             <menu id="BMB_readingList"
@@ -930,7 +934,7 @@
                           label="&readingList.showSidebar.label;"/>
               </menupopup>
             </menu>
-            <menuseparator/>
+            <menuseparator id="BMB_Seperator3"/>
             <!-- Bookmarks menu items will go here -->
             <menuitem id="BMB_bookmarksShowAll"
                       class="subviewbutton panel-subview-footer"
@@ -1022,6 +1026,14 @@
                        mousethrough="never"
                        label="&bookmarksToolbarItem.label;"
                        oncommand="PlacesToolbarHelper.onPlaceholderCommand();"/>
+		<hbox flex="1" 
+              id="PlacesToolbar-Protect"
+              context="placesContext"
+              tooltip="bhTooltip"
+              popupsinherittooltip="true">
+          <button id="enterMasterPassword" label="&enterMasterPassword.label;" oncommand="PlacesCommandHook.showPromptProtectBookmark();"/>
+        </hbox>
+
         <hbox flex="1"
               id="PlacesToolbar"
               context="placesContext"
@@ -1105,7 +1117,7 @@
 
   <hbox id="fullscr-toggler" hidden="true"/>
 
-  <deck id="content-deck" flex="1">
+  <deck id="content-deck" flex="1">	
     <hbox flex="1" id="browser">
       <vbox id="browser-border-start" hidden="true" layer="true"/>
       <vbox id="sidebar-box" hidden="true" class="chromeclass-extrachrome">
@@ -1114,6 +1126,10 @@
           <image id="sidebar-throbber"/>
           <toolbarbutton class="close-icon tabbable" tooltiptext="&sidebarCloseButton.tooltip;" oncommand="SidebarUI.hide();"/>
         </sidebarheader>
+		<hbox id="sidebar-header" align="center" >
+			<toolbarbutton id="sidebar-box-master-password"  align="start" label="&enterMasterPassword.label;" oncommand="PlacesCommandHook.showPromptProtectBookmark();" flex="1"/>
+        </hbox>
+				
         <browser id="sidebar" flex="1" autoscroll="false" disablehistory="true"
                   style="min-width: 14em; width: 18em; max-width: 36em;" tooltip="aHTMLTooltip"/>
       </vbox>

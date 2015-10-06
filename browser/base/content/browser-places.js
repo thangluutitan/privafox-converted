@@ -4,6 +4,8 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 //// StarUI
+const PREF_PROTECT_BOOKMARK = "security.additionalSecurity.protectBookmark";
+const PREF_PROTECT_BOOKMARK_ALREADYLOGIN = PREF_PROTECT_BOOKMARK + ".isAlreadyLogin";
 
 var StarUI = {
   _itemId: -1,
@@ -558,7 +560,54 @@ var PlacesCommandHook = {
     goSetCommandEnabled("Browser:BookmarkAllTabs",
                         this.uniqueCurrentPages.length >= 2);
   },
+   bookmarkIsProtectMasterPassword: function() {
+       let kCheckBookmarksIsMasterPassword = Services.prefs.getBoolPref(PREF_PROTECT_BOOKMARK);
+       let kAlreadyLogin = Services.prefs.getBoolPref(PREF_PROTECT_BOOKMARK_ALREADYLOGIN);
+          var hasProtectPassword = false;
+          if(kCheckBookmarksIsMasterPassword && kAlreadyLogin){
+              hasProtectPassword =  false;
+          }else if(kCheckBookmarksIsMasterPassword){
+              hasProtectPassword =  true;
+              var tokendb = Components.classes["@mozilla.org/security/pk11tokendb;1"].createInstance(Components.interfaces.nsIPK11TokenDB);
+              var token = tokendb.getInternalKeyToken();
+              // if there is no master password, still give the user a chance to opt-out of displaying passwords
+              if (token.checkPassword("")){
+                  hasProtectPassword =  false;
+              }           
+          }
+          return hasProtectPassword;
+   },
 
+   changePreferenceProtectMP:function(){
+       PlacesToolbarHelper.showBookmarkToolbar();
+       SidebarUI.refreshBookmark();
+   },
+
+  showPromptProtectBookmark: function() {
+      let isHasProtectBookmark = this.bookmarkIsProtectMasterPassword();
+      if(isHasProtectBookmark){
+          var tokendb = Components.classes["@mozilla.org/security/pk11tokendb;1"].createInstance(Components.interfaces.nsIPK11TokenDB);
+          var token = tokendb.getInternalKeyToken();        
+          // so there's a master password. but since checkpassword didn't succeed, we're logged out (per nsipk11token.idl).
+          try {
+              // relogin and ask for the master password.
+              token.login(true);  // 'true' means always prompt for token password. user will be prompted until
+              // clicking 'cancel' or entering the correct password.
+          } catch (e) {
+          }
+          let vLogin =  token.isLoggedIn();
+          if(vLogin){
+              Services.prefs.setBoolPref(PREF_PROTECT_BOOKMARK_ALREADYLOGIN,true);
+              PlacesToolbarHelper.showBookmarkToolbar();
+              SidebarUI.refreshBookmark();
+          }
+          return vLogin;
+      }else{
+          PlacesToolbarHelper.showBookmarkToolbar();
+          SidebarUI.refreshBookmark();
+      }
+
+   },
   /**
    * Adds a Live Bookmark to a feed associated with the current page. 
    * @param     url
@@ -604,7 +653,13 @@ var PlacesCommandHook = {
    *          UnfiledBookmarks, Tags and Downloads.
    */
   showPlacesOrganizer: function PCH_showPlacesOrganizer(aLeftPaneRoot) {
-    var organizer = Services.wm.getMostRecentWindow("Places:Organizer");
+      var organizer = Services.wm.getMostRecentWindow("Places:Organizer");
+      Services.prefs.setCharPref("titan.com.showPlacesOrganizer.aLeftPaneRoot",aLeftPaneRoot);
+      var leftPaneMasterPassword = aLeftPaneRoot;
+      if(aLeftPaneRoot == "AllBookmarks"){
+         //let isProtectBookmark = this.showPromptProtectBookmark();      
+         // leftPaneMasterPassword = "EnterMasterPassword";
+      }      
     // Due to bug 528706, getMostRecentWindow can return closed windows.
     if (!organizer || organizer.closed) {
       // No currently open places window, so open one with the specified mode.
@@ -612,9 +667,10 @@ var PlacesCommandHook = {
                  "", "chrome,toolbar=yes,dialog=no,resizable", aLeftPaneRoot);
     }
     else {
-      organizer.PlacesOrganizer.selectLeftPaneContainerByHierarchy(aLeftPaneRoot);
-      organizer.focus();
+        organizer.PlacesOrganizer.selectLeftPaneContainerByHierarchy(aLeftPaneRoot);
+        organizer.focus();
     }
+
   }
 };
 
@@ -1056,14 +1112,23 @@ let PlacesToolbarHelper = {
     let toolbar = this._getParentToolbar(viewElt);
     if (!toolbar || toolbar.collapsed || this._isCustomizing ||
         getComputedStyle(toolbar, "").display == "none")
-      return;
+        return;
 
     new PlacesToolbar(this._place);
     if (forceToolbarOverflowCheck) {
-      viewElt._placesView.updateOverflowStatus();
+        viewElt._placesView.updateOverflowStatus();
     }
     this._shouldWrap = false;
     this._setupPlaceholder();
+
+    this.showBookmarkToolbar();
+
+  },
+  
+  showBookmarkToolbar : function(){
+      let isHasProtectBookmark =  PlacesCommandHook.bookmarkIsProtectMasterPassword()              
+      document.getElementById("PlacesToolbar-Protect").hidden = !isHasProtectBookmark;
+      document.getElementById("PlacesToolbar").hidden = isHasProtectBookmark;
   },
 
   uninit: function PTH_uninit() {
@@ -1276,7 +1341,7 @@ let BookmarkingUI = {
     this._popupNeedsUpdate = true;
   },
 
-  onPopupShowing: function BUI_onPopupShowing(event) {
+  onPopupShowing: function BUI_onPopupShowing(event , aNode) {
     // Don't handle events for submenus.
     if (event.target != event.currentTarget)
       return;
@@ -1324,14 +1389,29 @@ let BookmarkingUI = {
     // If the view is already there, bail out early.
     if (node.parentNode._placesView)
       return;
-
-    new PlacesMenu(event, "place:folder=BOOKMARKS_MENU", {
-      extraClasses: {
-        entry: "subviewbutton",
-        footer: "panel-subview-footer"
-      },
-      insertionPoint: ".panel-subview-footer"
-    });
+    let isHasProtectBookmark = PlacesCommandHook.bookmarkIsProtectMasterPassword();
+    let menuEnterMassterPassword = document.getElementById("BMB_viewEnterMasterPassword");
+    menuEnterMassterPassword.hidden = !isHasProtectBookmark;
+    document.getElementById("BMB_viewBookmarksSidebar").hidden = isHasProtectBookmark;
+    document.getElementById("BMB_bookmarksShowAllTop").hidden = isHasProtectBookmark;      
+    document.getElementById("BMB_subscribeToPageMenuitem").hidden = isHasProtectBookmark;
+    document.getElementById("BMB_bookmarksToolbar").hidden = isHasProtectBookmark;
+    document.getElementById("BMB_unsortedBookmarks").hidden = isHasProtectBookmark;   
+    document.getElementById("BMB_bookmarksShowAll").hidden = isHasProtectBookmark;
+    document.getElementById("BMB_pocket").hidden = true;//alway hide 
+    document.getElementById("BMB_pocketSeparator").hidden = true;    
+    document.getElementById("BMB_Seperator1").hidden = isHasProtectBookmark;      
+    document.getElementById("BMB_Seperator3").hidden = isHasProtectBookmark;    
+    document.getElementById("BMB_Seperator4").hidden = isHasProtectBookmark;      
+    if(!isHasProtectBookmark){
+        new PlacesMenu(event, "place:folder=BOOKMARKS_MENU", {
+            extraClasses: {
+                entry: "subviewbutton",
+                footer: "panel-subview-footer"
+            },
+            insertionPoint: ".panel-subview-footer"
+        });
+    }
   },
 
   /**
@@ -1560,9 +1640,27 @@ let BookmarkingUI = {
     }
   },
 
-  onMainMenuPopupShowing: function BUI_onMainMenuPopupShowing(event) {
-    this._updateBookmarkPageMenuItem();
-    PlacesCommandHook.updateBookmarkAllTabsCommand();
+   onMainMenuPopupShowing: function BUI_onMainMenuPopupShowing(event , aNode) {
+      let isHassProtectBookmark = PlacesCommandHook.bookmarkIsProtectMasterPassword();
+      let menuEnterMassterPassword = document.getElementById("bookmarksProtecMasterPassword");
+      menuEnterMassterPassword.hidden = !isHassProtectBookmark;
+      document.getElementById("bookmarksShowAll").hidden = isHassProtectBookmark;
+      document.getElementById("organizeBookmarksSeparator").hidden = isHassProtectBookmark;      
+      document.getElementById("subscribeToPageMenuitem").hidden = isHassProtectBookmark;            
+      document.getElementById("menu_bookmarkThisPage").hidden = isHassProtectBookmark;
+      document.getElementById("menu_bookmarkAllTabs").hidden = isHassProtectBookmark;
+      document.getElementById("bookmarksToolbarSeparator").hidden = isHassProtectBookmark;
+      document.getElementById("bookmarksToolbarFolderMenu").hidden = isHassProtectBookmark;      
+      document.getElementById("menu_unsortedBookmarks").hidden = isHassProtectBookmark;
+      document.getElementById("bookmarksMenuItemsSeparator").hidden = isHassProtectBookmark;
+      document.getElementById("bookmarksPlacesResultSeparator").hidden = isHassProtectBookmark;      
+      if(!isHassProtectBookmark){
+          this._updateBookmarkPageMenuItem();
+          PlacesCommandHook.updateBookmarkAllTabsCommand();     
+          if(!aNode){
+              new PlacesMenu(event, 'place:folder=BOOKMARKS_MENU');          
+          }
+      }
   },
 
   updatePocketItemVisibility: function BUI_updatePocketItemVisibility(prefix) {

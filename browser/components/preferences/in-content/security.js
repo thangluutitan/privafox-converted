@@ -145,9 +145,14 @@ var gSecurityPane = {
     checkbox.checked = !noMP;
     
     var checkboxProtectBookmark = document.getElementById("protectedBookmarkMasterPassword");
+    //Services.prefs.setBoolPref("security.additionalSecurity.protectBookmark.isAlreadyLogin", noMP);
+    if (!noMP) {
+        checkboxProtectBookmark.checked = noMP;
+    } else {
+       // var pref = document.getElementById("security.additionalSecurity.protectBookmark");
+        //checkboxProtectBookmark.checked = pref.value;
+    }
     checkboxProtectBookmark.disabled = noMP;
-    var pref = document.getElementById("security.additionalSecurity.protectBookmark");
-    checkboxProtectBookmark.checked = pref.value;
   },
 
   /**
@@ -226,6 +231,14 @@ var gSecurityPane = {
                     "resizable=no", null, this._initMasterPasswordUI.bind(this));
   },
 
+  changeProtectBookmark: function () {
+      var checkboxProtectBookmark = document.getElementById("protectedBookmarkMasterPassword");
+      Services.prefs.setBoolPref("security.additionalSecurity.protectBookmark", checkboxProtectBookmark.checked);
+      if (!checkboxProtectBookmark.checked) {
+          Services.prefs.setBoolPref("security.additionalSecurity.protectBookmark.isAlreadyLogin", false);
+      }
+      Services.obs.notifyObservers(null, "security.additionalSecurity.protectBookmark", checkboxProtectBookmark.checked);
+  },
   /**
    * Shows the sites where the user has saved passwords and the associated login
    * information.
