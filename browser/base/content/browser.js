@@ -925,12 +925,15 @@ function LoadInOtherProcess(browser, loadOptions, historyIndex = -1) {
 /*
 Privafox Show Notification when AutoUpdate Disabled
 */
+var _actionTaken = false;
 function showAutoUpdateNotification() {
 	//Key relate app.update.enabled app.update.auto app.update.mode
+	//Services.prompt.alert(null, "onRefreshAttempted - TabIndex: ", gBrowser.tabContainer.selectedIndex);
+	if(gBrowser.tabContainer.selectedIndex>0) return;
 	var isAutoUpdate = gPrefService.getBoolPref("app.update.enabled");
 	var isOverTimeRemind = true;
 	let now = Math.round(Date.now() / 1000);
-	var _actionTaken = false;
+	
 	var lastCheck = Services.prefs.getIntPref("browser.autoUpdateNotify.lastShow");
 	var checkInterval = Services.prefs.getIntPref("browser.checkAutoUpdateNotify.interval");
 	var isDontShowAgain = Services.prefs.getBoolPref("browser.autoUpdateNotify.dontShowAgain");
@@ -948,16 +951,26 @@ function showAutoUpdateNotification() {
 	}
 	//Services.prompt.alert(null, "isOverTimeRemind: ",isOverTimeRemind);
 	//if (!isAutoUpdate && isDontShowAgain) isOverTimeRemind = true;
-	
+	let notificationBox = gBrowser.getNotificationBox();
+	let value = "browser-auto-update-notification";
+    let previousNotification = notificationBox.getNotificationWithValue(value);
 	if(isDontShowAgain|| isAutoUpdate || !isOverTimeRemind){
 		//Services.prompt.alert(null, "isAutoUpdate: ",isAutoUpdate + " isDontShowAgain:"+isDontShowAgain);
+		if (previousNotification){
+			//Services.prompt.alert(null, "previousNotification: ","Showing...");
+			_actionTaken = true;
+			notificationBox.removeNotification(previousNotification);
+		}else{
+			_actionTaken = false;
+		}
+			
 		return;
 	} 
-	let notificationBox = gBrowser.getNotificationBox();
-    let value = "browser-auto-update-notification";
-    let previousNotification = notificationBox.getNotificationWithValue(value);
+	
+    
     if (previousNotification){
-      notificationBox.removeNotification(previousNotification);
+      //notificationBox.removeNotification(previousNotification);
+	  return;
     }
 
 	let buttons = [
@@ -1001,7 +1014,7 @@ function showAutoUpdateNotification() {
         }
       },
 	  {
-        label: "Never ask again.",
+        label: "Never ask again",
         accessKey: "N",
         callback: function() {
 		    //Services.prompt.alert(null, "Enable", "Not now Cliced");
@@ -1038,13 +1051,16 @@ function showAutoUpdateNotification() {
       //focus messes up so was trying to fix, needs more research
       //on close mxr code move focus forward 1: http://mxr.mozilla.org/mozilla-release/source/toolkit/content/widgets/notification.xml#187
       */
+	  //Services.prompt.alert(null, "_actionTaken: ",_actionTaken);
           if (what == 'removed') {
-            if (!_actionTaken) {
+            if (_actionTaken === false) {
              //alert("what"+what);
 			 let now = Math.round(Date.now() / 1000);
+			 //Services.prompt.alert(null, "set: ","_actionTaken...");
 			 Services.prefs.setIntPref("browser.autoUpdateNotify.lastShow", now);
             } else {
               //alert("what"+what);
+			  //Services.prompt.alert(null, "notset: ","_actionTaken...");
             }
           }
     }
@@ -1059,7 +1075,7 @@ function showAutoUpdateNotification() {
     );
     // Persist the notification until the user removes so it
     // doesn't get removed on redirects.
-    notification.persistence = 2;
+    notification.persistence = -1;
 }
 
 // Called when a docshell has attempted to load a page in an incorrect process.
@@ -2559,7 +2575,7 @@ function BrowserPageInfo(doc, initialTab, imageElement) {
 function URLBarSetURI(aURI) {
   var value = gBrowser.userTypedValue;
   var valid = false;
-
+  showAutoUpdateNotification();
   if (value == null) {
     let uri = aURI || gBrowser.currentURI;
     // Strip off "wyciwyg://" and passwords for the location bar
@@ -3252,6 +3268,8 @@ function getWebNavigation()
 
 function BrowserReloadWithFlags(reloadFlags) {
   let url = gBrowser.currentURI.spec;
+  //Privafox prevent homepage reload - lost notification box
+  if(url == "about:home") return;
   if (gBrowser.updateBrowserRemotenessByURL(gBrowser.selectedBrowser, url)) {
     // If the remoteness has changed, the new browser doesn't have any
     // information of what was loaded before, so we need to load the previous
