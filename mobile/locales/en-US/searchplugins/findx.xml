@@ -1,0 +1,45 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<SearchPlugin xmlns="http://www.mozilla.org/2006/browser/search/">
+<ShortName>Findx</ShortName>
+<InputEncoding>UTF-8</InputEncoding>
+  <Image width="16" height="16">data:image/x-icon;base64,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/T4JrvO/jSAgIAvDpaC+oUErBBEQcClB/UOlA+sGRDkv/lCl9tUBdS4NQCWkAaiENACVkAagEtIAVEL+H/uaDCDtuoYwAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDE1LTA3LTIwVDA1OjIzOjQ2KzAyOjAwTBXxGQAAACV0RVh0ZGF0ZTptb2RpZnkAMjAxNS0wNy0yMFQwNToyMzo0NiswMjowMD1ISaUAAAARdEVYdGV4aWY6Q29sb3JTcGFjZQAxD5sCSQAAABJ0RVh0ZXhpZjpDb21wcmVzc2lvbgA2mNHnLQAAACF0RVh0ZXhpZjpEYXRlVGltZQAyMDE1OjA3OjIwIDEzOjIzOjM2xq6LaAAAABh0RVh0ZXhpZjpFeGlmSW1hZ2VMZW5ndGgAMjYwTnFt3gAAABd0RVh0ZXhpZjpFeGlmSW1hZ2VXaWR0aAAyNjDT7ujMAAAAE3RFWHRleGlmOkV4aWZPZmZzZXQAMTcyPAO/YAAAAB50RVh0ZXhpZjpKUEVHSW50ZXJjaGFuZ2VGb3JtYXQAMzEwQGUJ1gAAACV0RVh0ZXhpZjpKUEVHSW50ZXJjaGFuZ2VGb3JtYXRMZW5ndGgAMzU0MIOr2/YAAAAxdEVYdGV4aWY6U29mdHdhcmUAQWRvYmUgUGhvdG9zaG9wIENDIDIwMTQgKE1hY2ludG9zaCkbnXhcAAAAOHRFWHRpY2M6Y29weXJpZ2h0AENvcHlyaWdodCAoYykgMTk5OCBIZXdsZXR0LVBhY2thcmQgQ29tcGFueflXeTcAAAAhdEVYdGljYzpkZXNjcmlwdGlvbgBzUkdCIElFQzYxOTY2LTIuMVet2kcAAAAmdEVYdGljYzptYW51ZmFjdHVyZXIASUVDIGh0dHA6Ly93d3cuaWVjLmNoHH8ATAAAADd0RVh0aWNjOm1vZGVsAElFQyA2MTk2Ni0yLjEgRGVmYXVsdCBSR0IgY29sb3VyIHNwYWNlIC0gc1JHQkRTSKkAAAAASUVORK5CYII=</Image>
+<Url type="application/x-suggestions+json" method="GET"
+     template="https://search.findx.com/sugg/ff">
+  <Param name="output" value="fxjson" />
+  <Param name="appid" value="ffm" />
+  <Param name="command" value="{searchTerms}" />
+  <MozParam name="nresults" condition="pref" pref="maxSuggestions" />
+</Url>
+<!-- phone search -->
+<Url type="text/html" method="GET" template="https://search.findx.com/yhs/search" rel="searchform">
+  <Param name="ei"     value="UTF-8" />
+  <Param name="hspart" value="privacore" />
+  <Param name="hsimp"  value="yhsm-002" />
+  <Param name="p"  value="{searchTerms}" />
+</Url>
+<!-- tablet search -->
+<Url type="application/x-moz-tabletsearch" method="GET" template="https://search.findx.com/yhs/search">
+  <Param name="ei"     value="UTF-8" />
+  <Param name="hspart" value="privacore" />
+  <Param name="hsimp"  value="yhst-002" />
+  <Param name="p"  value="{searchTerms}" />
+</Url>
+<!-- phone Search activity -->
+<Url type="text/html" method="GET" rel="mobile" template="https://search.findx.com/yhs/search">
+  <Param name="ei"     value="UTF-8" />
+  <Param name="hspart" value="privacore" />
+  <Param name="hsimp"  value="yhsm-001" />
+  <Param name="p"  value="{searchTerms}" />
+</Url>
+<!-- Tablet Search activity -->
+<Url type="application/x-moz-tabletsearch" method="GET" 
+     rel="mobile" template="https://search.findx.com/yhs/search">
+  <Param name="ei"     value="UTF-8" />
+  <Param name="hspart" value="privacore" />
+  <Param name="hsimp"  value="yhst-002" />
+  <Param name="p"  value="{searchTerms}" />
+</Url>
+</SearchPlugin>
