@@ -16,6 +16,7 @@
 //               viewport height is 500
 //               => display port height will be 500 * 1.5 = 750
 //
+pref("security.additionalSecurity.protectBookmark.isAlreadyLogin", false);
 pref("toolkit.browser.cacheRatioWidth", 2000);
 pref("toolkit.browser.cacheRatioHeight", 3000);
 
@@ -370,7 +371,7 @@ pref("privacy.item.siteSettings", true);
 pref("privacy.item.syncAccount", true);
 
 // enable geo
-pref("geo.enabled", true);
+pref("geo.enabled", false);
 
 // content sink control -- controls responsiveness during page load
 // see https://bugzilla.mozilla.org/show_bug.cgi?id=481566#c9
@@ -606,8 +607,8 @@ pref("shumway.disabled", true);
 pref("dom.w3c_touch_events.enabled", 1);
 
 #ifdef MOZ_SAFE_BROWSING
-pref("browser.safebrowsing.enabled", true);
-pref("browser.safebrowsing.malware.enabled", true);
+pref("browser.safebrowsing.enabled", false);
+pref("browser.safebrowsing.malware.enabled", false);
 pref("browser.safebrowsing.debug", false);
 
 pref("browser.safebrowsing.updateURL", "http://removed.in.privafox");

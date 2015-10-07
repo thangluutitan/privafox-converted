@@ -51,6 +51,9 @@
                             android:title="@string/pref_use_master_password"
                             android:persistent="false" />
 
+        <CheckBoxPreference android:key="security.additionalSecurity.protectBookmark"
+            android:title="@string/pref_protect_bookmark_master_password"
+            android:persistent="false" />
     </PreferenceCategory>
 
     <!-- keys prefixed with "android.not_a_preference." are not synced with Gecko -->

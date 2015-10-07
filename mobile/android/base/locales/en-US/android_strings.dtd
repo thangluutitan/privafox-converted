@@ -258,6 +258,7 @@ size. -->
 <!ENTITY pref_qrcode_enabled_summary "Allow QR scanner in the title bar">
 
 <!ENTITY pref_use_master_password "Use master password">
+<!ENTITY pref_protect_bookmark_master_password "Protect bookmarks with master password">
 <!ENTITY pref_sync "Sync">
 <!ENTITY pref_sync_summary2 "Sync your tabs, bookmarks, logins, history">
 <!ENTITY pref_search_suggestions "Show search suggestions">
