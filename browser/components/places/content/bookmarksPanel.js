@@ -6,8 +6,6 @@ Components.utils.import('resource://gre/modules/Services.jsm');
 
 function init() {
     showBookmark();
-    document.getElementById("bookmarks-view").place =
-    "place:queryType=1&folder=" + window.top.PlacesUIUtils.allBookmarksFolderId;
 }
 function showBookmark() {
     let isHasProtectBookmark = this.bookmarkIsProtectMasterPassword();
@@ -15,6 +13,8 @@ function showBookmark() {
     let bookmarksContainer = document.getElementById("bookmarks-view");
      searchContainer.hidden = isHasProtectBookmark;
      bookmarksContainer.hidden = isHasProtectBookmark;
+   document.getElementById("bookmarks-view").place =
+     "place:queryType=1&folder=" + window.top.PlacesUIUtils.allBookmarksFolderId;
 }
 
 function bookmarkIsProtectMasterPassword() {
