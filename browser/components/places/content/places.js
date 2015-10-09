@@ -268,6 +268,7 @@ _showPromptProtectBookmark: function PO__showPromptProtectBookmark() {
         vLogin =  token.isLoggedIn();
         if(vLogin){
             Services.prefs.setBoolPref("security.additionalSecurity.protectBookmark.isAlreadyLogin",true);
+            Services.obs.notifyObservers(null, "security.additionalSecurity.protectBookmark", true);
         }
     }
     return vLogin;
@@ -288,19 +289,26 @@ _showPromptProtectBookmark: function PO__showPromptProtectBookmark() {
     // Don't change the right-hand pane contents when there's no selection.
     if (!this._places.hasSelection)
         return;
-    let isOpenleft = this._bookmarkIsProtectMasterPassword();
+    var node = this._places.selectedNode;
+    let itemId = node.itemId;
+    if(itemId == PlacesUIUtils.leftPaneQueries["History"] || itemId == PlacesUIUtils.leftPaneQueries["Downloads"] 
+        || itemId == PlacesUIUtils.leftPaneQueries["Tags"] ){
 
-    if(isOpenleft){
-        let isLogin = this._showPromptProtectBookmark();
-        if(!isLogin){
-            return ;
+    }else{
+        let isOpenleft = this._bookmarkIsProtectMasterPassword();
+        if(isOpenleft){
+            let isLogin = this._showPromptProtectBookmark();
+            if(!isLogin){
+                return ;
+            }
         }
     }
-    var node = this._places.selectedNode;
+
     var queries = PlacesUtils.asQuery(node).getQueries();
     // Items are only excluded on the left pane.
     var options = node.queryOptions.clone();
     options.excludeItems = false;
+
     var placeURI = PlacesUtils.history.queriesToQueryString(queries,
                                                             queries.length,
                                                             options);
