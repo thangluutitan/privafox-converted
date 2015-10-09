@@ -287,8 +287,15 @@ _showPromptProtectBookmark: function PO__showPromptProtectBookmark() {
   onPlaceSelected: function PO_onPlaceSelected(resetSearchBox) {
     // Don't change the right-hand pane contents when there's no selection.
     if (!this._places.hasSelection)
-      return;
+        return;
+    let isOpenleft = this._bookmarkIsProtectMasterPassword();
 
+    if(isOpenleft){
+        let isLogin = this._showPromptProtectBookmark();
+        if(!isLogin){
+            return ;
+        }
+    }
     var node = this._places.selectedNode;
     var queries = PlacesUtils.asQuery(node).getQueries();
     // Items are only excluded on the left pane.
