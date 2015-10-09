@@ -143,9 +143,9 @@ var gSecurityPane = {
 
     var checkbox = document.getElementById("useMasterPassword");
     checkbox.checked = !noMP;
-      /*
-      *Privafox : uncheck use MP ==> refresh Bookmark Menu
-      */
+     /*
+     *Privafox : uncheck use MP ==> refresh Bookmark Menu
+     */
     if (!checkbox.checked) {
         Services.obs.notifyObservers(null, "security.additionalSecurity.protectBookmark", false);
     }
@@ -155,6 +155,7 @@ var gSecurityPane = {
         checkboxProtectBookmark.checked = noMP;
     }
     checkboxProtectBookmark.disabled = noMP;
+    Services.prefs.setBoolPref("security.additionalSecurity.protectBookmark", checkboxProtectBookmark.checked);
   },
 
   /**
