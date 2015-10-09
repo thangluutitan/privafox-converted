@@ -282,9 +282,10 @@ var gMainPane = {
           if(vLogin){
                Services.prefs.setBoolPref("security.additionalSecurity.protectBookmark.isAlreadyLogin",true);
                this.setHomePageToBookmark();
+               Services.obs.notifyObservers(null, "security.additionalSecurity.protectBookmark", true);
           }
-          }else{
-              this.setHomePageToBookmark();
+      }else{
+         this.setHomePageToBookmark();
       }
   },
 

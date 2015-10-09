@@ -1185,7 +1185,7 @@
 
         <browser id="social-sidebar-browser"
                  type="content"
-                 context="contentAreaContextMenu"
+                 context="contentAreaContextMenu"	
                  message="true"
                  messagemanagergroup="social"
                  disableglobalhistory="true"
