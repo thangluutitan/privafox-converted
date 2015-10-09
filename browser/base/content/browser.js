@@ -992,17 +992,6 @@ function showAutoUpdateNotification() {
 		  throw new Error('prevent notification box close after click');
         }
       },
-      {
-        label: "Enable",
-        accessKey: "E",
-        callback: function() {
-			Services.prefs.setIntPref("browser.autoUpdateNotify.lastShow", 1);
-			Services.prefs.setBoolPref("app.update.enabled", true);
-			Services.prefs.setBoolPref("app.update.auto", true);
-			_actionTaken = true;
-          //openUILinkIn(alternativeURI.spec, "current");
-        }
-      },
 	  {
         label: "Not now",
         accessKey: "O",
@@ -1021,6 +1010,17 @@ function showAutoUpdateNotification() {
             Services.prefs.setBoolPref("browser.autoUpdateNotify.dontShowAgain", true);
 			_actionTaken = true;
 			Services.prefs.setIntPref("browser.autoUpdateNotify.lastShow", 1);
+          //openUILinkIn(alternativeURI.spec, "current");
+        }
+      },
+	  {
+        label: "Enable",
+        accessKey: "E",
+        callback: function() {
+			Services.prefs.setIntPref("browser.autoUpdateNotify.lastShow", 1);
+			Services.prefs.setBoolPref("app.update.enabled", true);
+			Services.prefs.setBoolPref("app.update.auto", true);
+			_actionTaken = true;
           //openUILinkIn(alternativeURI.spec, "current");
         }
       }
