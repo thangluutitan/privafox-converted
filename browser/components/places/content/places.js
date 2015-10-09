@@ -366,7 +366,6 @@ _showPromptProtectBookmark: function PO__showPromptProtectBookmark() {
 
     let node = this._places.selectedNode;
     if (node) {
-      Services.prefs.setCharPref("titan.com.place.onPlacesListClick", node);
       let itemId = node.itemId;
       var isLogin = false;
       if (itemId == PlacesUIUtils.leftPaneQueries["AllBookmarks"]) 
