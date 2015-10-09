@@ -145,12 +145,8 @@ var gSecurityPane = {
     checkbox.checked = !noMP;
     
     var checkboxProtectBookmark = document.getElementById("protectedBookmarkMasterPassword");
-    //Services.prefs.setBoolPref("security.additionalSecurity.protectBookmark.isAlreadyLogin", noMP);
     if (!noMP) {
         checkboxProtectBookmark.checked = noMP;
-    } else {
-       // var pref = document.getElementById("security.additionalSecurity.protectBookmark");
-        //checkboxProtectBookmark.checked = pref.value;
     }
     checkboxProtectBookmark.disabled = noMP;
   },

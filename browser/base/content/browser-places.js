@@ -6,7 +6,6 @@
 //// StarUI
 const PREF_PROTECT_BOOKMARK = "security.additionalSecurity.protectBookmark";
 const PREF_PROTECT_BOOKMARK_ALREADYLOGIN = PREF_PROTECT_BOOKMARK + ".isAlreadyLogin";
-
 var StarUI = {
   _itemId: -1,
   uri: null,
@@ -605,8 +604,8 @@ var PlacesCommandHook = {
       }else{
           PlacesToolbarHelper.showBookmarkToolbar();
           SidebarUI.refreshBookmark();
+          return false;
       }
-
    },
   /**
    * Adds a Live Bookmark to a feed associated with the current page. 
@@ -651,27 +650,30 @@ var PlacesCommandHook = {
    *          The query to select in the organizer window - options
    *          are: History, AllBookmarks, BookmarksMenu, BookmarksToolbar,
    *          UnfiledBookmarks, Tags and Downloads.
+   * Hot Key Open AlllBookmark to required entermaster password
    */
-  showPlacesOrganizer: function PCH_showPlacesOrganizer(aLeftPaneRoot) {
+   showPlacesOrganizer: function PCH_showPlacesOrganizer(aLeftPaneRoot) {
       var organizer = Services.wm.getMostRecentWindow("Places:Organizer");
-      Services.prefs.setCharPref("titan.com.showPlacesOrganizer.aLeftPaneRoot",aLeftPaneRoot);
-      var leftPaneMasterPassword = aLeftPaneRoot;
-      if(aLeftPaneRoot == "AllBookmarks"){
-         //let isProtectBookmark = this.showPromptProtectBookmark();      
-         // leftPaneMasterPassword = "EnterMasterPassword";
+      let requiredLogin = this.bookmarkIsProtectMasterPassword();
+      if(aLeftPaneRoot == "AllBookmarks" && requiredLogin){
+          let isLogin = this.showPromptProtectBookmark();      
+          if(isLogin){
+              requiredLogin = false;
+          }
       }      
-    // Due to bug 528706, getMostRecentWindow can return closed windows.
-    if (!organizer || organizer.closed) {
-      // No currently open places window, so open one with the specified mode.
-      openDialog("chrome://browser/content/places/places.xul", 
-                 "", "chrome,toolbar=yes,dialog=no,resizable", aLeftPaneRoot);
-    }
-    else {
-        organizer.PlacesOrganizer.selectLeftPaneContainerByHierarchy(aLeftPaneRoot);
-        organizer.focus();
-    }
-
-  }
+      if(!requiredLogin){
+      // Due to bug 528706, getMostRecentWindow can return closed windows.
+          if (!organizer || organizer.closed) {
+              // No currently open places window, so open one with the specified mode.
+              openDialog("chrome://browser/content/places/places.xul", 
+                         "", "chrome,toolbar=yes,dialog=no,resizable", aLeftPaneRoot);
+          }
+          else {
+              organizer.PlacesOrganizer.selectLeftPaneContainerByHierarchy(aLeftPaneRoot);
+              organizer.focus();
+          }
+      }
+   }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1050,14 +1052,19 @@ var PlacesMenuDNDHandler = {
    * @param   event
    *          The DragOver event. 
    */
-  onDragOver: function PMDH_onDragOver(event) {
-    let ip = new InsertionPoint(PlacesUtils.bookmarksMenuFolderId,
-                                PlacesUtils.bookmarks.DEFAULT_INDEX,
-                                Components.interfaces.nsITreeView.DROP_ON);
-    if (ip && PlacesControllerDragHelper.canDrop(ip, event.dataTransfer))
-      event.preventDefault();
+onDragOver: function PMDH_onDragOver(event) {
+    //let isHasProtectBookmark = PlacesCommandHook.bookmarkIsProtectMasterPassword();
+    //if(!isHasProtectBookmark){
+        let ip = new InsertionPoint(PlacesUtils.bookmarksMenuFolderId,
+                                    PlacesUtils.bookmarks.DEFAULT_INDEX,
+                                    Components.interfaces.nsITreeView.DROP_ON);
+        if (ip && PlacesControllerDragHelper.canDrop(ip, event.dataTransfer))
+            event.preventDefault();
 
-    event.stopPropagation();
+        event.stopPropagation();
+    //}else{
+
+    //}
   },
 
   /**
@@ -1066,13 +1073,18 @@ var PlacesMenuDNDHandler = {
    *          The Drop event. 
    */
   onDrop: function PMDH_onDrop(event) {
-    // Put the item at the end of bookmark menu.
-    let ip = new InsertionPoint(PlacesUtils.bookmarksMenuFolderId,
-                                PlacesUtils.bookmarks.DEFAULT_INDEX,
-                                Components.interfaces.nsITreeView.DROP_ON);
-    PlacesControllerDragHelper.onDrop(ip, event.dataTransfer);
-    PlacesControllerDragHelper.currentDropTarget = null;
-    event.stopPropagation();
+      // Put the item at the end of bookmark menu.
+      //let isHasProtectBookmark = PlacesCommandHook.bookmarkIsProtectMasterPassword();
+      //if(!isHasProtectBookmark){
+          let ip = new InsertionPoint(PlacesUtils.bookmarksMenuFolderId,
+                                      PlacesUtils.bookmarks.DEFAULT_INDEX,
+                                      Components.interfaces.nsITreeView.DROP_ON);
+          PlacesControllerDragHelper.onDrop(ip, event.dataTransfer);
+          PlacesControllerDragHelper.currentDropTarget = null;
+          event.stopPropagation();
+      //}else{
+
+      //}
   }
 };
 
@@ -1242,6 +1254,7 @@ let PlacesToolbarHelper = {
 let BookmarkingUI = {
   BOOKMARK_BUTTON_ID: "bookmarks-menu-button",
   BOOKMARK_BUTTON_SHORTCUT: "addBookmarkAsKb",
+  
   get button() {
     delete this.button;
     let widgetGroup = CustomizableUI.getWidget(this.BOOKMARK_BUTTON_ID);
@@ -1342,10 +1355,9 @@ let BookmarkingUI = {
   },
 
   onPopupShowing: function BUI_onPopupShowing(event , aNode) {
-    // Don't handle events for submenus.
+      // Don't handle events for submenus.
     if (event.target != event.currentTarget)
       return;
-
     // Ideally this code would never be reached, but if you click the outer
     // button's border, some cpp code for the menu button's so-called XBL binding
     // decides to open the popup even though the dropmarker is invisible.
@@ -1386,9 +1398,7 @@ let BookmarkingUI = {
   },
 
   attachPlacesView: function(event, node) {
-    // If the view is already there, bail out early.
-    if (node.parentNode._placesView)
-      return;
+      // If the view is already there, bail out early.
     let isHasProtectBookmark = PlacesCommandHook.bookmarkIsProtectMasterPassword();
     let menuEnterMassterPassword = document.getElementById("BMB_viewEnterMasterPassword");
     menuEnterMassterPassword.hidden = !isHasProtectBookmark;
@@ -1403,6 +1413,12 @@ let BookmarkingUI = {
     document.getElementById("BMB_Seperator1").hidden = isHasProtectBookmark;      
     document.getElementById("BMB_Seperator3").hidden = isHasProtectBookmark;    
     document.getElementById("BMB_Seperator4").hidden = isHasProtectBookmark;      
+
+    if (node.parentNode._placesView){      
+        PlacesMenu.prototype._refreshBookmarkMenu(event,isHasProtectBookmark);        
+        return;
+    }
+
     if(!isHasProtectBookmark){
         new PlacesMenu(event, "place:folder=BOOKMARKS_MENU", {
             extraClasses: {
@@ -1641,25 +1657,33 @@ let BookmarkingUI = {
   },
 
    onMainMenuPopupShowing: function BUI_onMainMenuPopupShowing(event , aNode) {
-      let isHassProtectBookmark = PlacesCommandHook.bookmarkIsProtectMasterPassword();
+       let isHasProtectBookmark = PlacesCommandHook.bookmarkIsProtectMasterPassword();
       let menuEnterMassterPassword = document.getElementById("bookmarksProtecMasterPassword");
-      menuEnterMassterPassword.hidden = !isHassProtectBookmark;
-      document.getElementById("bookmarksShowAll").hidden = isHassProtectBookmark;
-      document.getElementById("organizeBookmarksSeparator").hidden = isHassProtectBookmark;      
-      document.getElementById("subscribeToPageMenuitem").hidden = isHassProtectBookmark;            
-      document.getElementById("menu_bookmarkThisPage").hidden = isHassProtectBookmark;
-      document.getElementById("menu_bookmarkAllTabs").hidden = isHassProtectBookmark;
-      document.getElementById("bookmarksToolbarSeparator").hidden = isHassProtectBookmark;
-      document.getElementById("bookmarksToolbarFolderMenu").hidden = isHassProtectBookmark;      
-      document.getElementById("menu_unsortedBookmarks").hidden = isHassProtectBookmark;
-      document.getElementById("bookmarksMenuItemsSeparator").hidden = isHassProtectBookmark;
-      document.getElementById("bookmarksPlacesResultSeparator").hidden = isHassProtectBookmark;      
-      if(!isHassProtectBookmark){
-          this._updateBookmarkPageMenuItem();
-          PlacesCommandHook.updateBookmarkAllTabsCommand();     
+      menuEnterMassterPassword.hidden = !isHasProtectBookmark;
+      document.getElementById("bookmarksShowAll").hidden = isHasProtectBookmark;
+      document.getElementById("organizeBookmarksSeparator").hidden = isHasProtectBookmark;      
+      document.getElementById("subscribeToPageMenuitem").hidden = isHasProtectBookmark;            
+      document.getElementById("menu_bookmarkThisPage").hidden = isHasProtectBookmark;
+      document.getElementById("menu_bookmarkAllTabs").hidden = isHasProtectBookmark;
+      document.getElementById("bookmarksToolbarSeparator").hidden = isHasProtectBookmark;
+      document.getElementById("bookmarksToolbarFolderMenu").hidden = isHasProtectBookmark;      
+      document.getElementById("bookmarksToolbarFolderPopup").hidden = isHasProtectBookmark;      
+      
+      document.getElementById("menu_unsortedBookmarks").hidden = isHasProtectBookmark;
+      document.getElementById("bookmarksMenuItemsSeparator").hidden = isHasProtectBookmark;
+      document.getElementById("bookmarksPlacesResultSeparator").hidden = isHasProtectBookmark;      
+      this._updateBookmarkPageMenuItem();
+      PlacesCommandHook.updateBookmarkAllTabsCommand();  
+      if (aNode){      
+          PlacesMenu.prototype._refreshBookmarkMenu(event,isHasProtectBookmark);        
+          return;
+      }
+      if(!isHasProtectBookmark){
+          //this._updateBookmarkPageMenuItem();
+          //PlacesCommandHook.updateBookmarkAllTabsCommand();     
           if(!aNode){
               new PlacesMenu(event, 'place:folder=BOOKMARKS_MENU');          
-          }
+          }          
       }
   },
 
@@ -1732,7 +1756,7 @@ let BookmarkingUI = {
     }, 1000);
   },
 
-  _showSubview: function() {
+_showSubview: function() {
     let view = document.getElementById("PanelUI-bookmarks");
     view.addEventListener("ViewShowing", this);
     view.addEventListener("ViewHiding", this);
@@ -1742,11 +1766,11 @@ let BookmarkingUI = {
                         CustomizableUI.AREA_PANEL);
   },
 
-  onCommand: function BUI_onCommand(aEvent) {
+onCommand: function BUI_onCommand(aEvent) {
+    
     if (aEvent.target != aEvent.currentTarget) {
       return;
     }
-
     // Handle special case when the button is in the panel.
     let isBookmarked = this._itemIds.length > 0;
 

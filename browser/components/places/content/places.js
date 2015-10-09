@@ -25,7 +25,10 @@ var PlacesOrganizer = {
 
   // IDs of fields from editBookmarkOverlay that should be hidden when infoBox
   // is minimal. IDs should be kept in sync with the IDs of the elements
-  // observing additionalInfoBroadcaster.
+    // observing additionalInfoBroadcaster.
+    /*
+    *Privafox remove Sync
+    */
   _additionalInfoFields: [
     "editBMPanel_descriptionRow",
     "editBMPanel_loadInSidebarCheckbox",
@@ -65,7 +68,14 @@ var PlacesOrganizer = {
   selectLeftPaneContainerByHierarchy:
   function PO_selectLeftPaneContainerByHierarchy(aHierarchy) {
     if (!aHierarchy)
-      throw new Error("Invalid containers hierarchy");
+        throw new Error("Invalid containers hierarchy");
+    if(aHierarchy == "AllBookmarks"){
+        let isProtectBookmark = this._bookmarkIsProtectMasterPassword();
+        if(isProtectBookmark){
+            return;
+        }
+    }
+
     let hierarchy = [].concat(aHierarchy);
     let selectWasSuppressed = this._places.view.selection.selectEventsSuppressed;
     if (!selectWasSuppressed)
@@ -224,7 +234,7 @@ var PlacesOrganizer = {
     this.location = historyEntry;
   },
 
-_bookmarkIsProtectMasterPassword: function() {
+_bookmarkIsProtectMasterPassword: function PO__bookmarkIsProtectMasterPassword() {
     let kCheckBookmarksIsMasterPassword = Services.prefs.getBoolPref("security.additionalSecurity.protectBookmark");
     let kAlreadyLogin = Services.prefs.getBoolPref("security.additionalSecurity.protectBookmark.isAlreadyLogin");
     var hasProtectPassword = false;
@@ -242,7 +252,7 @@ _bookmarkIsProtectMasterPassword: function() {
     return hasProtectPassword;
 
 },
-_showPromptProtectBookmark: function() {
+_showPromptProtectBookmark: function PO__showPromptProtectBookmark() {
     let isHassProtectBookmark = this._bookmarkIsProtectMasterPassword();
     var vLogin = false;
     if(isHassProtectBookmark){
@@ -372,14 +382,17 @@ _showPromptProtectBookmark: function() {
   /**
    * Handle focus changes on the places list and the current content view.
    */
-  updateDetailsPane: function PO_updateDetailsPane() {
+updateDetailsPane: function PO_updateDetailsPane() {    
     if (!ContentArea.currentViewOptions.showDetailsPane)
-      return;
-    let view = PlacesUIUtils.getViewForNode(document.activeElement);
-    if (view) {
-      let selectedNodes = view.selectedNode ?
-                          [view.selectedNode] : view.selectedNodes;
-      this._fillDetailsPane(selectedNodes);
+        return;
+    let isOpenleft = this._bookmarkIsProtectMasterPassword();
+    if(!isOpenleft){
+        let view = PlacesUIUtils.getViewForNode(document.activeElement);
+        if (view) {
+            let selectedNodes = view.selectedNode ?
+                                [view.selectedNode] : view.selectedNodes;
+            this._fillDetailsPane(selectedNodes);
+        }
     }
   },
 
@@ -628,7 +641,7 @@ _showPromptProtectBookmark: function() {
     var infoBox = document.getElementById("infoBox");
     var infoBoxExpander = document.getElementById("infoBoxExpander");
     var infoBoxExpanderWrapper = document.getElementById("infoBoxExpanderWrapper");
-    var additionalInfoBroadcaster = document.getElementById("additionalInfoBroadcaster");
+   // var additionalInfoBroadcaster = document.getElementById("additionalInfoBroadcaster");
 
     if (!aNode) {
       infoBoxExpanderWrapper.hidden = true;
@@ -649,7 +662,7 @@ _showPromptProtectBookmark: function() {
         this._additionalInfoFields.every(function (id)
           document.getElementById(id).collapsed);
     }
-    additionalInfoBroadcaster.hidden = infoBox.getAttribute("minimal") == "true";
+   // additionalInfoBroadcaster.hidden = infoBox.getAttribute("minimal") == "true";
   },
 
   // NOT YET USED
@@ -796,21 +809,21 @@ _showPromptProtectBookmark: function() {
     var infoBox = document.getElementById("infoBox");
     var infoBoxExpander = document.getElementById("infoBoxExpander");
     var infoBoxExpanderLabel = document.getElementById("infoBoxExpanderLabel");
-    var additionalInfoBroadcaster = document.getElementById("additionalInfoBroadcaster");
+    //var additionalInfoBroadcaster = document.getElementById("additionalInfoBroadcaster");
 
     if (infoBox.getAttribute("minimal") == "true") {
       infoBox.removeAttribute("minimal");
       infoBoxExpanderLabel.value = infoBoxExpanderLabel.getAttribute("lesslabel");
       infoBoxExpanderLabel.accessKey = infoBoxExpanderLabel.getAttribute("lessaccesskey");
       infoBoxExpander.className = "expander-up";
-      additionalInfoBroadcaster.removeAttribute("hidden");
+      //additionalInfoBroadcaster.removeAttribute("hidden");
     }
     else {
       infoBox.setAttribute("minimal", "true");
       infoBoxExpanderLabel.value = infoBoxExpanderLabel.getAttribute("morelabel");
       infoBoxExpanderLabel.accessKey = infoBoxExpanderLabel.getAttribute("moreaccesskey");
       infoBoxExpander.className = "expander-down";
-      additionalInfoBroadcaster.setAttribute("hidden", "true");
+      //additionalInfoBroadcaster.setAttribute("hidden", "true");
     }
   },
 };

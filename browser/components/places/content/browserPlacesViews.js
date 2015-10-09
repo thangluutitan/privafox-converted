@@ -908,7 +908,6 @@ PlacesViewBase.prototype = {
   _onPopupShowing: function PVB__onPopupShowing(aEvent) {
     // Avoid handling popupshowing of inner views.
     let popup = aEvent.originalTarget;
-
     this._ensureMarkers(popup);
 
     // Remove any delayed element, see _cleanPopup for details.
@@ -920,10 +919,10 @@ PlacesViewBase.prototype = {
 
     if (popup._placesNode && PlacesUIUtils.getViewForNode(popup) == this) {
       if (!popup._placesNode.containerOpen)
-        popup._placesNode.containerOpen = true;
+          popup._placesNode.containerOpen = true;
+      
       if (!popup._built)
-        this._rebuildPopup(popup);
-
+          this._rebuildPopup(popup);
       this._mayAddCommandsItems(popup);
     }
   },
@@ -1801,7 +1800,18 @@ PlacesMenu.prototype = {
   _removeChild: function PM_removeChild(aChild) {
     PlacesViewBase.prototype._removeChild.apply(this, arguments);
   },
-
+  
+  _refreshBookmarkMenu: function PM__refreshBookmarkMenu(aEvent , isHasMasterPassword){
+      let aPopup = aEvent.originalTarget;
+      let resultNode = aPopup._placesNode;
+      for (let i = 0, node = aPopup._startMarker.nextSibling; node != aPopup._endMarker;
+           i++, node = node.nextSibling) 
+      {
+          if(node._placesNode){
+              node.hidden = isHasMasterPassword;
+          }
+      }
+  },
   uninit: function PM_uninit() {
     this._removeEventListeners(this._rootElt, ["popupshowing", "popuphidden"],
                                true);
@@ -1809,7 +1819,7 @@ PlacesMenu.prototype = {
 
     PlacesViewBase.prototype.uninit.apply(this, arguments);
   },
-
+  
   handleEvent: function PM_handleEvent(aEvent) {
     switch (aEvent.type) {
       case "unload":
