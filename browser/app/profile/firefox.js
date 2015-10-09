@@ -1183,7 +1183,7 @@ pref("app.support.baseURL", "https://www.privafox.com/support/index.html?v=%VERS
 //#else
 //pref("app.feedback.baseURL", "https://input.privafox.com/%LOCALE%/feedback/%APP%/%VERSION%/");
 //#endif
-pref("app.feedback.baseURL", "https://www..privafox.com/support/feedback.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
+pref("app.feedback.baseURL", "https://www.privafox.com/support/feedback.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
 
 // Name of alternate about: page for certificate errors (when undefined, defaults to about:neterror)
 pref("security.alternate_certificate_error_page", "certerror");
