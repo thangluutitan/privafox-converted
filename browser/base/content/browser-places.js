@@ -660,6 +660,8 @@ var PlacesCommandHook = {
           if(isLogin){
               requiredLogin = false;
           }
+      }else{
+          requiredLogin = false;
       }      
       if(!requiredLogin){
       // Due to bug 528706, getMostRecentWindow can return closed windows.
