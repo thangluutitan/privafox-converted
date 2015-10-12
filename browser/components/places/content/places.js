@@ -22,7 +22,7 @@ const HISTORY_LIBRARY_SEARCH_TELEMETRY = "PLACES_HISTORY_LIBRARY_SEARCH_TIME_MS"
 
 var PlacesOrganizer = {
   _places: null,
-
+  _showPromptMP:false,
   // IDs of fields from editBookmarkOverlay that should be hidden when infoBox
   // is minimal. IDs should be kept in sync with the IDs of the elements
     // observing additionalInfoBroadcaster.

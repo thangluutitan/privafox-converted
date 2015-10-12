@@ -577,6 +577,8 @@ var PlacesCommandHook = {
                if (token.checkPassword("")){
                    hasProtectPassword =  false;
                }           
+           }else{
+               hasProtectPassword = false;
            }
        }
        return hasProtectPassword;
