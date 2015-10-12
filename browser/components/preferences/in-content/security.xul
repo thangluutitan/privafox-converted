@@ -125,7 +125,6 @@
     <checkbox id="protectedBookmarkMasterPassword"
               label="&protectedBookmark.label;" accesskey="&protectedBookmark.accesskey;"
               preference="security.additionalSecurity.protectBookmark"
-			  oncommand="gSecurityPane.changeProtectBookmark();"
 			  disabled="true"/>    
   </hbox>
 </groupbox>

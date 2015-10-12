@@ -1127,7 +1127,7 @@
           <toolbarbutton class="close-icon tabbable" tooltiptext="&sidebarCloseButton.tooltip;" oncommand="SidebarUI.hide();"/>
         </sidebarheader>
 		<hbox id="sidebar-header" align="center" >
-			<toolbarbutton id="sidebar-box-master-password"  align="start" label="&enterMasterPassword.label;" oncommand="PlacesCommandHook.showPromptProtectBookmark();" flex="1"/>
+			<toolbarbutton id="sidebar-box-master-password" hidden="true"  align="start" label="&enterMasterPassword.label;" oncommand="PlacesCommandHook.showPromptProtectBookmark();" flex="1"/>
         </hbox>
 				
         <browser id="sidebar" flex="1" autoscroll="false" disablehistory="true"

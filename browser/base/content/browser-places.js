@@ -559,27 +559,32 @@ var PlacesCommandHook = {
     goSetCommandEnabled("Browser:BookmarkAllTabs",
                         this.uniqueCurrentPages.length >= 2);
   },
-   bookmarkIsProtectMasterPassword: function() {
-       let kCheckBookmarksIsMasterPassword = Services.prefs.getBoolPref(PREF_PROTECT_BOOKMARK);
-       let kAlreadyLogin = Services.prefs.getBoolPref(PREF_PROTECT_BOOKMARK_ALREADYLOGIN);
-          var hasProtectPassword = false;
-          if(kCheckBookmarksIsMasterPassword && kAlreadyLogin){
-              hasProtectPassword =  false;
-          }else if(kCheckBookmarksIsMasterPassword){
-              hasProtectPassword =  true;
-              var tokendb = Components.classes["@mozilla.org/security/pk11tokendb;1"].createInstance(Components.interfaces.nsIPK11TokenDB);
-              var token = tokendb.getInternalKeyToken();
-              // if there is no master password, still give the user a chance to opt-out of displaying passwords
-              if (token.checkPassword("")){
-                  hasProtectPassword =  false;
-              }           
-          }
-          return hasProtectPassword;
+  bookmarkIsProtectMasterPassword: function() {
+      let kCheckBookmarksIsMasterPassword = false ;
+      if(Services.prefs.prefHasUserValue(PREF_PROTECT_BOOKMARK)){
+         kCheckBookmarksIsMasterPassword = Services.prefs.getBoolPref(PREF_PROTECT_BOOKMARK);
+      }
+      let kAlreadyLogin = false;
+       if(Services.prefs.prefHasUserValue(PREF_PROTECT_BOOKMARK_ALREADYLOGIN)){
+         kAlreadyLogin = Services.prefs.getBoolPref(PREF_PROTECT_BOOKMARK_ALREADYLOGIN);
+       }
+       var hasProtectPassword = kCheckBookmarksIsMasterPassword;
+       if(hasProtectPassword){        
+           if(!kAlreadyLogin){
+               var tokendb = Components.classes["@mozilla.org/security/pk11tokendb;1"].createInstance(Components.interfaces.nsIPK11TokenDB);
+               var token = tokendb.getInternalKeyToken();
+               // if there is no master password, still give the user a chance to opt-out of displaying passwords
+               if (token.checkPassword("")){
+                   hasProtectPassword =  false;
+               }           
+           }
+       }
+       return hasProtectPassword;
    },
 
-   changePreferenceProtectMP:function(){
-       PlacesToolbarHelper.showBookmarkToolbar();
-       SidebarUI.refreshBookmark();
+   changePreferenceProtectMP:function(requestObs , isLogin){
+       PlacesToolbarHelper.showBookmarkToolbar(requestObs , isLogin);
+       SidebarUI.refreshBookmark(requestObs , isLogin);
    },
 
   showPromptProtectBookmark: function() {
@@ -597,13 +602,13 @@ var PlacesCommandHook = {
           let vLogin =  token.isLoggedIn();
           if(vLogin){
               Services.prefs.setBoolPref(PREF_PROTECT_BOOKMARK_ALREADYLOGIN,true);
-              PlacesToolbarHelper.showBookmarkToolbar();
-              SidebarUI.refreshBookmark();
+              PlacesToolbarHelper.showBookmarkToolbar(false, null);
+              SidebarUI.refreshBookmark(false,null);
           }
           return vLogin;
       }else{
-          PlacesToolbarHelper.showBookmarkToolbar();
-          SidebarUI.refreshBookmark();
+          PlacesToolbarHelper.showBookmarkToolbar(false, null);
+          SidebarUI.refreshBookmark(false,null);
           return false;
       }
    },
@@ -1055,8 +1060,6 @@ var PlacesMenuDNDHandler = {
    *          The DragOver event. 
    */
 onDragOver: function PMDH_onDragOver(event) {
-    //let isHasProtectBookmark = PlacesCommandHook.bookmarkIsProtectMasterPassword();
-    //if(!isHasProtectBookmark){
         let ip = new InsertionPoint(PlacesUtils.bookmarksMenuFolderId,
                                     PlacesUtils.bookmarks.DEFAULT_INDEX,
                                     Components.interfaces.nsITreeView.DROP_ON);
@@ -1064,9 +1067,6 @@ onDragOver: function PMDH_onDragOver(event) {
             event.preventDefault();
 
         event.stopPropagation();
-    //}else{
-
-    //}
   },
 
   /**
@@ -1076,17 +1076,12 @@ onDragOver: function PMDH_onDragOver(event) {
    */
   onDrop: function PMDH_onDrop(event) {
       // Put the item at the end of bookmark menu.
-      //let isHasProtectBookmark = PlacesCommandHook.bookmarkIsProtectMasterPassword();
-      //if(!isHasProtectBookmark){
           let ip = new InsertionPoint(PlacesUtils.bookmarksMenuFolderId,
                                       PlacesUtils.bookmarks.DEFAULT_INDEX,
                                       Components.interfaces.nsITreeView.DROP_ON);
           PlacesControllerDragHelper.onDrop(ip, event.dataTransfer);
           PlacesControllerDragHelper.currentDropTarget = null;
           event.stopPropagation();
-      //}else{
-
-      //}
   }
 };
 
@@ -1135,12 +1130,17 @@ let PlacesToolbarHelper = {
     this._shouldWrap = false;
     this._setupPlaceholder();
 
-    this.showBookmarkToolbar();
+    this.showBookmarkToolbar(false,null);
 
   },
   
-  showBookmarkToolbar : function(){
-      let isHasProtectBookmark =  PlacesCommandHook.bookmarkIsProtectMasterPassword()              
+  showBookmarkToolbar : function(requestObs , isAdditionalSercurity){
+      let isHasProtectBookmark =  false;
+      if(requestObs){
+          isHasProtectBookmark = isAdditionalSercurity;
+      }else{
+          isHasProtectBookmark =  PlacesCommandHook.bookmarkIsProtectMasterPassword();
+      }
       document.getElementById("PlacesToolbar-Protect").hidden = !isHasProtectBookmark;
       document.getElementById("PlacesToolbar").hidden = isHasProtectBookmark;
   },

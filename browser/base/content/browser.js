@@ -5260,7 +5260,7 @@ var TabsInTitlebar = {
           this._readPref();
 #endif
       }else if(topic == "security.additionalSecurity.protectBookmark"){
-          PlacesCommandHook.changePreferenceProtectMP();
+          PlacesCommandHook.changePreferenceProtectMP(false , data);
       }
   },
 

@@ -3,8 +3,11 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 Components.utils.import("resource://gre/modules/PrivateBrowsingUtils.jsm");
+const PREF_PROTECT_MP = "security.additionalSecurity.protectBookmark";
+const PREF_PROTECT_MP_ALREADYLOGIN = PREF_PROTECT_MP + ".isAlreadyLogin";
 var gSecurityPane = {
-  _pane: null,
+    _pane: null,
+    _initObsMP: false,
 
   /**
    * Initializes master password UI.
@@ -16,7 +19,7 @@ var gSecurityPane = {
       document.getElementById(aId)
               .addEventListener(aEventType, aCallback.bind(gSecurityPane));
     }
-
+    this._initObsMP = false;
     this._pane = document.getElementById("paneSecurity");
     this._initMasterPasswordUI();
 
@@ -28,6 +31,8 @@ var gSecurityPane = {
       gSecurityPane.updateMasterPasswordButton);
     setEventListener("changeMasterPassword", "command",
       gSecurityPane.changeMasterPassword);
+    setEventListener("protectedBookmarkMasterPassword", "command",
+      gSecurityPane.updateProtectBookmarkMP);
     setEventListener("showPasswords", "command",
       gSecurityPane.showPasswords);
 
@@ -146,16 +151,16 @@ var gSecurityPane = {
      /*
      *Privafox : uncheck use MP ==> refresh Bookmark Menu
      */
-    if (!checkbox.checked) {
-        Services.obs.notifyObservers(null, "security.additionalSecurity.protectBookmark", false);
+    if (this._initObsMP) {
+        Services.obs.notifyObservers(null, PREF_PROTECT_MP, false);
     }
     
     var checkboxProtectBookmark = document.getElementById("protectedBookmarkMasterPassword");
-    if (!noMP) {
-        checkboxProtectBookmark.checked = noMP;
-    }
+    //if (!noMP) {
+    //    checkboxProtectBookmark.checked = noMP;
+    //}
     checkboxProtectBookmark.disabled = noMP;
-    Services.prefs.setBoolPref("security.additionalSecurity.protectBookmark", checkboxProtectBookmark.checked);
+    this._initObsMP = true;
   },
 
   /**
@@ -214,9 +219,13 @@ var gSecurityPane = {
       var promptService = Cc["@mozilla.org/embedcomp/prompt-service;1"].
                           getService(Ci.nsIPromptService);
       var bundle = document.getElementById("bundlePreferences");
-      promptService.alert(window,
+     let result = promptService.alert(window,
                           bundle.getString("pw_change_failed_title"),
                           bundle.getString("pw_change2empty_in_fips_mode"));
+     let checkboxProtectBookmark = document.getElementById("protectedBookmarkMasterPassword");
+     var noMP = !this._masterPasswordSet();
+     checkboxProtectBookmark.disabled = noMP;
+
       this._initMasterPasswordUI();
     }
     else {
@@ -234,13 +243,13 @@ var gSecurityPane = {
                     "resizable=no", null, this._initMasterPasswordUI.bind(this));
   },
 
-  changeProtectBookmark: function () {
+  updateProtectBookmarkMP: function () {
       var checkboxProtectBookmark = document.getElementById("protectedBookmarkMasterPassword");
-      Services.prefs.setBoolPref("security.additionalSecurity.protectBookmark", checkboxProtectBookmark.checked);
+      Services.prefs.setBoolPref(PREF_PROTECT_MP, checkboxProtectBookmark.checked);
       if (!checkboxProtectBookmark.checked) {
-          Services.prefs.setBoolPref("security.additionalSecurity.protectBookmark.isAlreadyLogin", false);
+          Services.prefs.setBoolPref(PREF_PROTECT_MP_ALREADYLOGIN, false);
       }
-      Services.obs.notifyObservers(null, "security.additionalSecurity.protectBookmark", checkboxProtectBookmark.checked);
+      Services.obs.notifyObservers(null, PREF_PROTECT_MP, checkboxProtectBookmark.checked);
   },
   /**
    * Shows the sites where the user has saved passwords and the associated login
