@@ -37,6 +37,8 @@ function bookmarkIsProtectMasterPassword() {
             if (token.checkPassword("")){
                 hasProtectPassword =  false;
             }           
+        }else{
+            hasProtectPassword = false;
         }
     }
     return hasProtectPassword;
