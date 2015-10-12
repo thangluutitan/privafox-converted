@@ -31,7 +31,7 @@ let SidebarUI = {
     this.browser = document.getElementById("sidebar");
     this._title = document.getElementById("sidebar-title");
     this._splitter = document.getElementById("sidebar-splitter");
-
+    this.refreshBookmark(false,false);
     if (!this.adoptFromWindow(window.opener)) {
       let commandID = this._box.getAttribute("sidebarcommand");
       if (commandID) {
@@ -140,9 +140,14 @@ let SidebarUI = {
     // Run the original function for backwards compatibility.
     fireSidebarFocusedEvent();
   },
-
-  refreshBookmark() {
-    let isHasProtectBookmark = PlacesCommandHook.bookmarkIsProtectMasterPassword();
+  
+  refreshBookmark(requestObs , isAdditionalSercurity) {
+      let isHasProtectBookmark = false;
+      if(requestObs){
+          isHasProtectBookmark = isAdditionalSercurity;
+      }else{
+          isHasProtectBookmark = PlacesCommandHook.bookmarkIsProtectMasterPassword();
+      }
     document.getElementById("sidebar-box-master-password").hidden=!isHasProtectBookmark;
     let event = new CustomEvent("refreshBookmark", {bubbles: true});
     this.browser.contentWindow.dispatchEvent(event);
@@ -200,8 +205,8 @@ let SidebarUI = {
         reject(new Error("Invalid sidebar broadcaster specified"));
         return;
       }
-      let isHasProtectBookmark = PlacesCommandHook.bookmarkIsProtectMasterPassword();
-      document.getElementById("sidebar-box-master-password").hidden=!isHasProtectBookmark;
+      //let isHasProtectBookmark = PlacesCommandHook.bookmarkIsProtectMasterPassword();
+     // document.getElementById("sidebar-box-master-password").hidden=!isHasProtectBookmark;
       
       let broadcasters = document.getElementsByAttribute("group", "sidebar");
       for (let broadcaster of broadcasters) {
