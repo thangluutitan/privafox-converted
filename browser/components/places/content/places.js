@@ -19,7 +19,8 @@ XPCOMUtils.defineLazyModuleGetter(this, "DownloadUtils",
 
 const RESTORE_FILEPICKER_FILTER_EXT = "*.json;*.jsonlz4";
 const HISTORY_LIBRARY_SEARCH_TELEMETRY = "PLACES_HISTORY_LIBRARY_SEARCH_TIME_MS";
-
+const PREF_PROTECT_BOOKMARK = "security.additionalSecurity.protectBookmark";
+const PREF_PROTECT_BOOKMARK_ALREADYLOGIN = PREF_PROTECT_BOOKMARK + ".isAlreadyLogin";
 var PlacesOrganizer = {
   _places: null,
   _showPromptMP:false,
@@ -235,8 +236,16 @@ var PlacesOrganizer = {
   },
 
 _bookmarkIsProtectMasterPassword: function PO__bookmarkIsProtectMasterPassword() {
-    let kCheckBookmarksIsMasterPassword = Services.prefs.getBoolPref("security.additionalSecurity.protectBookmark");
-    let kAlreadyLogin = Services.prefs.getBoolPref("security.additionalSecurity.protectBookmark.isAlreadyLogin");
+    let kCheckBookmarksIsMasterPassword = false;
+    let kAlreadyLogin = false;
+
+    if(Services.prefs.prefHasUserValue(PREF_PROTECT_BOOKMARK)){
+        kCheckBookmarksIsMasterPassword = Services.prefs.getBoolPref(PREF_PROTECT_BOOKMARK);
+    }
+    if(Services.prefs.prefHasUserValue(PREF_PROTECT_BOOKMARK_ALREADYLOGIN)){
+        kAlreadyLogin = Services.prefs.getBoolPref(PREF_PROTECT_BOOKMARK_ALREADYLOGIN);
+    }
+
     var hasProtectPassword = false;
     if(kCheckBookmarksIsMasterPassword && kAlreadyLogin){
         hasProtectPassword =  false;
@@ -267,8 +276,8 @@ _showPromptProtectBookmark: function PO__showPromptProtectBookmark() {
         }
         vLogin =  token.isLoggedIn();
         if(vLogin){
-            Services.prefs.setBoolPref("security.additionalSecurity.protectBookmark.isAlreadyLogin",true);
-            Services.obs.notifyObservers(null, "security.additionalSecurity.protectBookmark", true);
+            Services.prefs.setBoolPref(PREF_PROTECT_BOOKMARK_ALREADYLOGIN,true);
+            Services.obs.notifyObservers(null, PREF_PROTECT_BOOKMARK, true);
         }
     }
     return vLogin;
@@ -381,7 +390,6 @@ _showPromptProtectBookmark: function PO__showPromptProtectBookmark() {
           isLogin = this._showPromptProtectBookmark();
       }
       if(isLogin){
-          //Services.obs.notifyObservers(window, "bookmark-protect-master-password", "");           
           let middleClick = aEvent.button == 1 && aEvent.detail == 1;
           if (middleClick && PlacesUtils.nodeIsContainer(node)) {
               // The command execution function will take care of seeing if the
