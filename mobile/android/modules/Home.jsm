@@ -98,7 +98,7 @@ let HomeBanner = (function () {
     for (let key in _messages) {
       let message = _messages[key];
       if (threshold < message.totalWeight) {
-        window.NativeWindow.toast.show("sendRequest:"+key, "short");
+        //window.NativeWindow.toast.show("sendRequest:"+key, "short");
         Messaging.sendRequest({
           type: "HomeBanner:Data",
           id: message.id,
