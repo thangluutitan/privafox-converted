@@ -16,6 +16,13 @@
 //               viewport height is 500
 //               => display port height will be 500 * 1.5 = 750
 //
+//Privafox Auto Update Notification
+pref("browser.autoUpdateNotify.dontShowAgain", false);
+pref("browser.autoUpdateNotify.lastShow", 0);
+pref("browser.checkAutoUpdateNotify.interval", 86400);//86400 - 24h
+pref("browser.autoUpdateNotify.message", "It is strongly recommended to enable automatic updates - but the choice is yours.");
+pref("browser.autoUpdateNotify.WhyUrl","https://www.privafox.com/support/why-auto-update.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
+//End Privafox Auto Update Notification
 pref("security.additionalSecurity.protectBookmark.isAlreadyLogin", false);
 pref("toolkit.browser.cacheRatioWidth", 2000);
 pref("toolkit.browser.cacheRatioHeight", 3000);

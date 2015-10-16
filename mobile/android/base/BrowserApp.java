@@ -2666,8 +2666,8 @@ public class BrowserApp extends GeckoApp
                 homeBanner.setOnDismissListener(new HomeBanner.OnDismissListener() {
                     @Override
                     public void onDismiss() {
-                        mHomePager.setBanner(null);
-                        mHomePagerContainer.removeView(homeBanner);
+                        //mHomePager.setBanner(null);
+                        //mHomePagerContainer.removeView(homeBanner);
                     }
                 });
             }
