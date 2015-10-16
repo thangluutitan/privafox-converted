@@ -1136,6 +1136,13 @@ OnSharedPreferenceChangeListener
         if (PREFS_MENU_CHAR_ENCODING.equals(prefName)) {
             setCharEncodingState(((String) newValue).equals("true"));
         } else if (PREFS_UPDATER_AUTODOWNLOAD.equals(prefName)) {
+            //Privafox reset don't ask again for Notification when AutoUpdate Disabled
+            //Toast.makeText(this, "onPreferenceChange :"+ newValue, Toast.LENGTH_SHORT).show();
+            if( !newValue.equals("disabled") ){
+                //Toast.makeText(this, "prefName newValue: "+ newValue, Toast.LENGTH_SHORT).show();
+                PrefsHelper.setPref("browser.autoUpdateNotify.dontShowAgain", false, true);//, true /* flush */            
+            }
+                
             UpdateServiceHelper.setAutoDownloadPolicy(this, UpdateService.AutoDownloadPolicy.get((String) newValue));
         } else if (PREFS_UPDATER_URL.equals(prefName)) {
             UpdateServiceHelper.setUpdateUrl(this, (String) newValue);
