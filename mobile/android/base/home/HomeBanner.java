@@ -30,6 +30,7 @@ import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
 public class HomeBanner extends LinearLayout
                         implements GeckoEventListener {
@@ -66,13 +67,15 @@ public class HomeBanner extends LinearLayout
         public void onDismiss();
     }
 
+    private Context _context;
+
     public HomeBanner(Context context) {
         this(context, null);
     }
 
     public HomeBanner(Context context, AttributeSet attrs) {
         super(context, attrs);
-
+        _context = context;
         LayoutInflater.from(context).inflate(R.layout.home_banner_content, this);
 
         mTextView = (EllipsisTextView) findViewById(R.id.text);
@@ -108,8 +111,8 @@ public class HomeBanner extends LinearLayout
         setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                HomeBanner.this.dismiss();
-
+                //HomeBanner.this.dismiss();
+                //Toast.makeText(_context, "setOnClickListener getTag: "+ (String) getTag(), Toast.LENGTH_SHORT).show();                                            
                 // Send the current message id back to JS.
                 GeckoAppShell.sendEventToGecko(GeckoEvent.createBroadcastEvent("HomeBanner:Click", (String) getTag()));
             }
@@ -121,7 +124,7 @@ public class HomeBanner extends LinearLayout
     @Override
     public void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-
+        //Toast.makeText(_context, "onDetachedFromWindow : Remove HomeBanner:Data "+ (String) getTag(), Toast.LENGTH_SHORT).show();
         EventDispatcher.getInstance().unregisterGeckoThreadListener(this, "HomeBanner:Data");
     }
 
@@ -155,22 +158,35 @@ public class HomeBanner extends LinearLayout
             mOnDismissListener.onDismiss();
         }
     }
+    private void show() {
+                    
+        setVisibility(View.VISIBLE);
+        ensureVisible();
+        setEnabled(true);
+
+        
+    }
 
     /**
      * Sends a message to gecko to request a new banner message. UI is updated in handleMessage.
      */
     public void update() {
+        //Toast.makeText(_context, "HomeBanner:Get", Toast.LENGTH_SHORT).show(); 
         GeckoAppShell.sendEventToGecko(GeckoEvent.createBroadcastEvent("HomeBanner:Get", null));
     }
 
     @Override
     public void handleMessage(String event, JSONObject message) {
+
         final String id = message.optString("id");
         final String text = message.optString("text");
         final String iconURI = message.optString("iconURI");
-
+        final String mode = message.optString("mode");
+        //Toast.makeText(_context, "handleMessage: Mode: "+ mode, Toast.LENGTH_SHORT).show(); 
+        
         // Don't update the banner if the message doesn't have valid id and text.
         if (TextUtils.isEmpty(id) || TextUtils.isEmpty(text)) {
+            //Toast.makeText(_context, "handleMessage ID is Empty", Toast.LENGTH_SHORT).show();                            
             return;
         }
 
@@ -194,15 +210,22 @@ public class HomeBanner extends LinearLayout
                         }
                     }
                 });
-
+                
+                //Toast.makeText(_context, "postToUiThread:Shown ID: "+id, Toast.LENGTH_SHORT).show();                            
                 GeckoAppShell.sendEventToGecko(GeckoEvent.createBroadcastEvent("HomeBanner:Shown", id));
 
                 // Enable the banner after a message is set.
                 setEnabled(true);
-
+                //HomeBanner.this.dismiss();
                 // Animate the banner if it is currently active.
                 if (mActive) {
+                    //Toast.makeText(_context, "HomeBanner: AnimateUp"+id, Toast.LENGTH_SHORT).show(); 
+                    //HomeBanner.this.show();
                     animateUp();
+                }
+                if (mode.equals("dismiss")){
+                     //Toast.makeText(_context, "HomeBanner: DissmissMod:"+id, Toast.LENGTH_SHORT).show(); 
+                     HomeBanner.this.dismiss();
                 }
             }
         });
@@ -239,7 +262,7 @@ public class HomeBanner extends LinearLayout
     }
 
     private void animateUp() {
-        // Don't try to animate if the user swiped the banner down previously to hide it.
+        //Don't try to animate if the user swiped the banner down previously to hide it.
         if (mUserSwipedDown) {
             return;
         }

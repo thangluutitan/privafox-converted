@@ -421,6 +421,130 @@ function InitLater(fn, object, name) {
   return DelayedInit.schedule(fn, object, name, 15000 /* 15s max wait */);
 }
 
+let autoUpdateNotificationBarID = -1;
+let text = "It is strongly recommended to enable automatic updates – Click here to choose your action.";
+let notifyMessage = {
+			text: text,
+			icon: "drawable://shield_disabled_doorhanger",
+      mode: "show",
+			onclick: function() {
+				//Services.prefs.setBoolPref("browser.snippets.firstrunHomepage.enabled", false);
+				//UITelemetry.addEvent("action.1", "banner", null, "firstrun-homepage");
+				// //{ label: "Pink", disabled: true, child: true },
+				//{ label: "Green", selected: true },
+				let notifyItems = [{
+					label: "Why?"
+				}, {
+					label: "Not now"
+				}, {
+					label: "Never ask again"
+				}, {
+					label: "Enable"
+				}, ];
+
+				var p = new Prompt({
+					window: window,
+					title: "Please choose action",
+				}).setSingleChoiceItems(notifyItems).show(function(data) {
+					//Services.prompt.alert(null, "onclick ", items[data.button]);
+					//window.NativeWindow.toast.show("NotificationBarID: " + autoUpdateNotificationBarID , "short");
+					//window.NativeWindow.toast.show("Your choice: " + data.button + "-  "+notifyItems[data.button].label, "short");
+					switch (data.button) {
+						case 0:
+							var whyUrl = Services.urlFormatter.formatURLPref("browser.autoUpdateNotify.WhyUrl");
+							//window.NativeWindow.toast.show("URL: "+ whyUrl , "short");	
+							//Services.prefs.getCharPref("browser.autoUpdateNotify.WhyUrl");
+							Services.prefs.setIntPref("browser.autoUpdateNotify.lastShow", 1);
+							let tab = BrowserApp.addTab(whyUrl, {
+								selected: true,
+								parentId: BrowserApp.selectedTab.id
+							});
+							//window.NativeWindow.toast.show("Info : 4 - TabID: "+ BrowserApp.selectedTab.id , "short");	
+							break;
+						case 1:
+							let now = Math.round(Date.now() / 1000);
+							Services.prefs.setIntPref("browser.autoUpdateNotify.lastShow", now);
+              Home.banner.dismiss(notifyMessage,autoUpdateNotificationBarID);
+							break;
+						case 2:
+							Services.prefs.setBoolPref("browser.autoUpdateNotify.dontShowAgain", true);
+							Services.prefs.setIntPref("browser.autoUpdateNotify.lastShow", 1);
+               Home.banner.dismiss(notifyMessage,autoUpdateNotificationBarID);
+							break;
+						case 3:
+							Services.prefs.setIntPref("browser.autoUpdateNotify.lastShow", 1);
+							Services.prefs.setCharPref("app.update.autodownload", "wifi");
+               Home.banner.dismiss(notifyMessage,autoUpdateNotificationBarID);
+							//Services.prefs.setBoolPref("app.update.auto", true);
+							break;
+
+					}
+					//Home.banner.remove(autoUpdateNotificationBarID);
+					//autoUpdateNotificationBarID = -1;
+					//alert("Your favorite color is: " + items[data.button]);
+				});
+
+				//Services.prompt.alert(null, "onClick ", "after Prompt Called");
+				//Home.banner.remove(id);
+			},
+			ondismiss: function() {
+				//Services.prompt.alert(null, "ondismiss ", "ondismiss Called");
+				let now = Math.round(Date.now() / 1000);
+				Services.prefs.setIntPref("browser.autoUpdateNotify.lastShow", now);
+				//Home.banner.remove(autoUpdateNotificationBarID);
+				//autoUpdateNotificationBarID = -1;
+				//Services.prefs.setBoolPref("browser.snippets.firstrunHomepage.enabled", false);
+			}
+		};
+//let dismissMassage = notifyMessage;
+function loadUpdateNotifyBanner(window) {
+  //dismissMassage.mode = "dismiss";
+	var isAutoUpdate = Services.prefs.getCharPref("app.update.autodownload"); //wifi, disabled (never), enabled (alway)
+	var isOverTimeRemind = true;
+	let now = Math.round(Date.now() / 1000);
+	var lastCheck = Services.prefs.getIntPref("browser.autoUpdateNotify.lastShow");
+	var checkInterval = Services.prefs.getIntPref("browser.checkAutoUpdateNotify.interval");
+	var isDontShowAgain = Services.prefs.getBoolPref("browser.autoUpdateNotify.dontShowAgain");
+
+
+	if (isAutoUpdate != "disabled") {
+		//window.NativeWindow.toast.show("isAutoUpdate:" + isAutoUpdate, "short");
+		//window.NativeWindow.toast.show("isDontShowAgain = true", "short");
+		//Services.prefs.setBoolPref("browser.autoUpdateNotify.dontShowAgain",false);
+		return;
+	}
+
+	if (lastCheck === 0) {
+		isOverTimeRemind = true;
+	} else if (lastCheck === 1) {
+		isOverTimeRemind = true;
+	} else if (now - lastCheck > checkInterval) {
+		isOverTimeRemind = true;
+	} else {
+		isOverTimeRemind = false;
+	}
+
+	
+
+
+	if (isDontShowAgain === true || isOverTimeRemind === false) {
+		//Services.prompt.alert(null, "isAutoUpdate: ",isAutoUpdate + " isDontShowAgain:"+isDontShowAgain);
+		//window.NativeWindow.toast.show("isDontShowAgain = true || isOverTimeRemind == false", "short");
+		return;
+	}
+	//window.NativeWindow.toast.show("Info : 3 - "+autoUpdateNotificationBarID, "short");	
+
+	if (autoUpdateNotificationBarID != -1) {
+		//window.NativeWindow.toast.show("Notification is existing", "short");
+    notifyMessage.mode = "show";
+		Home.banner.show(notifyMessage,autoUpdateNotificationBarID);
+		return;
+	}
+  notifyMessage.mode = "new";
+	autoUpdateNotificationBarID = Home.banner.add(notifyMessage);
+	//window.NativeWindow.toast.show("Show Notification Completed", "short");
+}
+
 var BrowserApp = {
   _tabs: [],
   _selectedTab: null,
@@ -443,6 +567,13 @@ var BrowserApp = {
   startup: function startup() {
     window.QueryInterface(Ci.nsIDOMChromeWindow).browserDOMWindow = new nsBrowserAccess();
     dump("zerdatime " + Date.now() + " - browser chrome startup finished.");
+
+     //Privafox AutoUpdate nitification bar    
+    //window.NativeWindow.toast.show("Call notification banner", "short");	   
+    //loadUpdateNotifyBanner(window);
+    //window.NativeWindow.toast.show("After notification banner", "short");	 
+    //End Privafox AutoUpdate nitification bar 
+
 
     this.deck = document.getElementById("browsers");
 
@@ -1169,6 +1300,8 @@ var BrowserApp = {
 
   loadURI: function loadURI(aURI, aBrowser, aParams) {
     aBrowser = aBrowser || this.selectedBrowser;
+    //Services.prompt.alert(null, "loadURI", "loadURI Called");
+    //window.NativeWindow.toast.show("loadURI", "short");	
     if (!aBrowser)
       return;
 
@@ -1298,6 +1431,7 @@ var BrowserApp = {
   // to Java to select the tab in the Java UI (we'll get a Tab:Selected message
   // back from Java when that happens).
   selectTab: function selectTab(aTab) {
+  window.NativeWindow.toast.show("selectTab", "short");	
     if (!aTab) {
       Cu.reportError("Error trying to select tab (tab doesn't exist)");
       return;
@@ -1352,6 +1486,7 @@ var BrowserApp = {
    *           to have about:downloads match about:downloads#123.
    */
   selectOrOpenTab: function selectOrOpenTab(aURL, aFlags) {
+    window.NativeWindow.toast.show("selectOrOpenTab", "short");	
     let tab = this.getTabWithURL(aURL, aFlags);
     if (tab == null) {
       tab = this.addTab(aURL);
@@ -1366,7 +1501,12 @@ var BrowserApp = {
   // in the Java UI.
   _handleTabSelected: function _handleTabSelected(aTab) {
     this.selectedTab = aTab;
-
+    //window.NativeWindow.toast.show("handleTabSelected: " + BrowserApp.selectedTab.id , "short");
+    if(BrowserApp.selectedTab.id == 0){
+      //window.NativeWindow.toast.show("loadUpdateNotifyBanner", "short");	
+      loadUpdateNotifyBanner(window);
+    }
+    //window.NativeWindow.toast.show("handleTabSelectedEnd: " + BrowserApp.selectedTab.id , "short");	
     let evt = document.createEvent("UIEvents");
     evt.initUIEvent("TabSelect", true, false, window, null);
     aTab.browser.dispatchEvent(evt);
