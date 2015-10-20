@@ -147,15 +147,20 @@ function gotoPref(aCategory) {
     *Privafox MBT-35 : Forece display Dialog Input master password
     *
     */
-  if(aCategory == "paneSecurity"){
-      const kEnableUseMasterPasswordPref = "preferences.security.useMasterPassword.enable.startup";
-      let kMasterPref = Services.prefs.getBoolPref(kEnableUseMasterPasswordPref);
-      if (!kMasterPref) {
-          Services.prefs.setBoolPref(kEnableUseMasterPasswordPref, true);
-          var checkbox = document.getElementById("useMasterPassword");
-          if(!checkbox.checked){
-              checkbox.checked = true;
-              gSecurityPane.updateMasterPasswordButton();
+  if(aCategory){
+      if(aCategory == "paneSecurity"){
+          const kEnableUseMasterPasswordPref = "preferences.security.useMasterPassword.enable.startup";
+          let kMasterPref = false;
+          if(Services.prefs.prefHasUserValue(kEnableUseMasterPasswordPref)){
+              kMasterPref = Services.prefs.getBoolPref(kEnableUseMasterPasswordPref);
+          }
+          if (!kMasterPref) {
+              Services.prefs.setBoolPref(kEnableUseMasterPasswordPref, true);
+              var checkbox = document.getElementById("useMasterPassword");
+              if(!checkbox.checked){
+                  checkbox.checked = true;
+                  gSecurityPane.updateMasterPasswordButton();
+              }
           }
       }
   }

@@ -249,21 +249,28 @@ var gMainPane = {
                                        this._setHomePageToBookmarkClosed.bind(this, rv));
   },
   bookmarkIsProtectMasterPassword: function() {
-          let kCheckBookmarksIsMasterPassword = Services.prefs.getBoolPref("security.additionalSecurity.protectBookmark");
-          let kAlreadyLogin = Services.prefs.getBoolPref("security.additionalSecurity.protectBookmark.isAlreadyLogin");
-          var hasProtectPassword = false;
-          if(kCheckBookmarksIsMasterPassword && kAlreadyLogin){
-              hasProtectPassword =  false;
-          }else if(kCheckBookmarksIsMasterPassword){
-              hasProtectPassword =  true;
-              var tokendb = Components.classes["@mozilla.org/security/pk11tokendb;1"].createInstance(Components.interfaces.nsIPK11TokenDB);
-              var token = tokendb.getInternalKeyToken();
+      let kCheckBookmarksIsMasterPassword = false;
+      if(Services.prefs.prefHasUserValue("security.additionalSecurity.protectBookmark")){
+          kCheckBookmarksIsMasterPassword = Services.prefs.getBoolPref("security.additionalSecurity.protectBookmark");
+      }
+      let kAlreadyLogin = false;
+      if(Services.prefs.prefHasUserValue("security.additionalSecurity.protectBookmark.isAlreadyLogin")){
+          kAlreadyLogin = Services.prefs.getBoolPref("security.additionalSecurity.protectBookmark.isAlreadyLogin");
+      }
+
+      var hasProtectPassword = false;
+      if(kCheckBookmarksIsMasterPassword && kAlreadyLogin){
+          hasProtectPassword =  false;
+      }else if(kCheckBookmarksIsMasterPassword){
+          hasProtectPassword =  true;
+          var tokendb = Components.classes["@mozilla.org/security/pk11tokendb;1"].createInstance(Components.interfaces.nsIPK11TokenDB);
+          var token = tokendb.getInternalKeyToken();
               // if there is no master password, still give the user a chance to opt-out of displaying passwords
-              if (token.checkPassword("")){
-                  hasProtectPassword =  false;
-              }           
-          }
-          return hasProtectPassword;
+          if (token.checkPassword("")){
+            hasProtectPassword =  false;
+          }           
+      }
+      return hasProtectPassword;
   },
 
   showPromptProtectBookmark: function() {
