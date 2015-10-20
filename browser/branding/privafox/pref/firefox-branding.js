@@ -33,3 +33,4 @@ pref("app.update.badgeWaitTime", 0);
 //Enable default menuBar & Bookmarks Toolbars
 pref("browser.startup.menubar.enable", 1);
 pref("browser.startup.bookmarksToolbar.enable", 1);
+pref("network.proxy.type", 0);
