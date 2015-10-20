@@ -706,6 +706,25 @@ pref("browser.checkAutoUpdateNotify.interval", 86400);//86400 - 24h
 pref("browser.autoUpdateNotify.message", "It is strongly recommended to enable automatic updates - but the choice is yours.");
 pref("browser.autoUpdateNotify.WhyUrl","https://www.privafox.com/support/why-auto-update.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
 
+//Privafox: ProxyChange Notification
+pref("browser.proxyChange.lastProxyInfo.type",0);
+pref("browser.proxyChange.lastProxyInfo.http","");
+pref("browser.proxyChange.lastProxyInfo.http_port",0);
+pref("browser.proxyChange.lastProxyInfo.ftp","");
+pref("browser.proxyChange.lastProxyInfo.ftp_port",0);
+pref("browser.proxyChange.lastProxyInfo.ssl","");
+pref("browser.proxyChange.lastProxyInfo.ssl_port",0);
+pref("browser.proxyChange.lastProxyInfo.socks","");
+pref("browser.proxyChange.lastProxyInfo.socks_port",0);
+pref("browser.proxyChange.lastProxyInfo.socks_version",5);
+pref("browser.proxyChange.lastProxyInfo.socks_remote_dns",false);
+pref("browser.proxyChange.lastProxyInfo.share_proxy_settings",false);
+pref("browser.proxyChange.lastProxyInfo.no_proxies_on","localhost, 127.0.0.1");
+ 
+pref("browser.proxyChange.isChange", false);
+pref("browser.proxyChange.message", "Warning: Your proxy settings have changed since last run.");
+pref("browser.proxyChange.lastShow", 0);
+pref("browser.checkProxyChange.interval", 86400);//86400 - 24h
 // Whitelist Requests
 
 // Unity player, bug 979849

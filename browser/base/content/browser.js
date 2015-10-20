@@ -925,10 +925,13 @@ function LoadInOtherProcess(browser, loadOptions, historyIndex = -1) {
 /*
 Privafox Show Notification when AutoUpdate Disabled
 */
-var _actionTaken = false;
+var _actionTakenAuttoUpdate = false;
+let autoUpdateNotifyBarID = "browser-auto-update-notification";
 function showAutoUpdateNotification() {
 	//Key relate app.update.enabled app.update.auto app.update.mode
 	//Services.prompt.alert(null, "onRefreshAttempted - TabIndex: ", gBrowser.tabContainer.selectedIndex);
+	
+	if (showProxyChangeNotification()) return;
 	if(gBrowser.tabContainer.selectedIndex>0) return;
 	var isAutoUpdate = gPrefService.getBoolPref("app.update.enabled");
 	var isOverTimeRemind = true;
@@ -952,16 +955,16 @@ function showAutoUpdateNotification() {
 	//Services.prompt.alert(null, "isOverTimeRemind: ",isOverTimeRemind);
 	//if (!isAutoUpdate && isDontShowAgain) isOverTimeRemind = true;
 	let notificationBox = gBrowser.getNotificationBox();
-	let value = "browser-auto-update-notification";
-    let previousNotification = notificationBox.getNotificationWithValue(value);
+	
+    let previousNotification = notificationBox.getNotificationWithValue(autoUpdateNotifyBarID);
 	if(isDontShowAgain|| isAutoUpdate || !isOverTimeRemind){
 		//Services.prompt.alert(null, "isAutoUpdate: ",isAutoUpdate + " isDontShowAgain:"+isDontShowAgain);
 		if (previousNotification){
 			//Services.prompt.alert(null, "previousNotification: ","Showing...");
-			_actionTaken = true;
+			_actionTakenAuttoUpdate = true;
 			notificationBox.removeNotification(previousNotification);
 		}else{
-			_actionTaken = false;
+			_actionTakenAuttoUpdate = false;
 		}
 			
 		return;
@@ -987,7 +990,7 @@ function showAutoUpdateNotification() {
 		  //Services.prefs.getCharPref("browser.autoUpdateNotify.WhyUrl");
 		  Services.prefs.setIntPref("browser.autoUpdateNotify.lastShow", 1);
           openUILinkIn(whyUrl, "tab");
-		  _actionTaken = true;
+		  _actionTakenAuttoUpdate = true;
 		  //gBrowser.addTab(whyUrl);
 		  throw new Error('prevent notification box close after click');
         }
@@ -999,7 +1002,7 @@ function showAutoUpdateNotification() {
 			//Services.prompt.alert(null, "Enable", "Not now Cliced");
 			let now = Math.round(Date.now() / 1000);
 			Services.prefs.setIntPref("browser.autoUpdateNotify.lastShow", now);
-			_actionTaken = true;
+			_actionTakenAuttoUpdate = true;
         }
       },
 	  {
@@ -1008,7 +1011,7 @@ function showAutoUpdateNotification() {
         callback: function() {
 		    //Services.prompt.alert(null, "Enable", "Not now Cliced");
             Services.prefs.setBoolPref("browser.autoUpdateNotify.dontShowAgain", true);
-			_actionTaken = true;
+			_actionTakenAuttoUpdate = true;
 			Services.prefs.setIntPref("browser.autoUpdateNotify.lastShow", 1);
           //openUILinkIn(alternativeURI.spec, "current");
         }
@@ -1020,53 +1023,34 @@ function showAutoUpdateNotification() {
 			Services.prefs.setIntPref("browser.autoUpdateNotify.lastShow", 1);
 			Services.prefs.setBoolPref("app.update.enabled", true);
 			Services.prefs.setBoolPref("app.update.auto", true);
-			_actionTaken = true;
+			_actionTakenAuttoUpdate = true;
           //openUILinkIn(alternativeURI.spec, "current");
         }
       }
     ];
 	var autoUpdateNotifyMessage = Services.prefs.getCharPref("browser.autoUpdateNotify.message");
-	//var docFrag = document.createDocumentFragment();
-	//var a = document.createElement("a");
-	//var textNode = document.createTextNode("It is strongly recommended to enable automatic updates – but the choice is yours. ");
-	//var linkText = document.createTextNode("Why?");
-	//a.appendChild(linkText);
-	//a.title = "Why?";
-	//a.href = "https://www.privafox.com/support/why-auto-update.html";
-	//docFrag.appendChild(textNode);
-	//docFrag.appendChild(a);
-	//"",
 	//https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Method/appendNotification#Notification_box_events
-	
 	var notifCallback = function(what) {
-		//alert("what: "+what);
-         // console.log('what:', what);
       /*
-          var fObj = {};
-          var fRes = Services.focus.getFocusedElementForWindow(win.gBrowser.selectedTab.linkedBrowser.contentWindow, true, fObj);
-      console.log('fRes:', fRes);
-      console.log('fObj:', fObj);
-      //"fObj:" Object { value: Window → notification.xml }
-      //"fRes:" <html>
       //focus messes up so was trying to fix, needs more research
       //on close mxr code move focus forward 1: http://mxr.mozilla.org/mozilla-release/source/toolkit/content/widgets/notification.xml#187
       */
-	  //Services.prompt.alert(null, "_actionTaken: ",_actionTaken);
+	  //Services.prompt.alert(null, "_actionTaken: ",_actionTakenAuttoUpdate);
           if (what == 'removed') {
-            if (_actionTaken === false) {
+            if (_actionTakenAuttoUpdate === false) {
              //alert("what"+what);
 			 let now = Math.round(Date.now() / 1000);
-			 //Services.prompt.alert(null, "set: ","_actionTaken...");
+			 //Services.prompt.alert(null, "set: ","_actionTakenAuttoUpdate...");
 			 Services.prefs.setIntPref("browser.autoUpdateNotify.lastShow", now);
             } else {
               //alert("what"+what);
-			  //Services.prompt.alert(null, "notset: ","_actionTaken...");
+			  //Services.prompt.alert(null, "notset: ","_actionTakenAuttoUpdate...");
             }
           }
     }
 	
     let notification = notificationBox.appendNotification(autoUpdateNotifyMessage,
-      value,
+      autoUpdateNotifyBarID,
 	  null,
       //"chrome://global/skin/icons/blacklist_favicon.png",
       notificationBox.PRIORITY_CRITICAL_HIGH,
@@ -1078,8 +1062,331 @@ function showAutoUpdateNotification() {
     notification.persistence = -1;
 }
 
-// Called when a docshell has attempted to load a page in an incorrect process.
-// This function is responsible for loading the page in the correct process.
+
+
+/*
+Privafox Show Notification when AutoUpdate Disabled
+*/
+function autoFixLenForPref(prefTitle, len) {//Ajust ProxyChangesDialog UI
+	var tmpString = prefTitle;
+	while(tmpString.length < len){
+		tmpString = tmpString + " ";
+	}
+	Services.prompt.alert(null, "Length: ",len + "-AfterLeng:"+tmpString.length);
+	return tmpString;
+}
+let proxyChangeNotifyBarID = "browser-proxy-changce-notification";
+var _actionTakenProxyChangce = false;
+var lastProxyInfo = [];
+var currentProxy = [];
+var proxyTypeName = ["No proxy","Manual proxy configuration","Automatic proxy configuration URL","No proxy","Auto-detect proxy settings for this network","Use system proxy settings"];
+function showProxyChangeNotification() {
+	//Services.prompt.alert(null, "onRefreshAttempted - TabIndex: ", gBrowser.tabContainer.selectedIndex);
+	// network.proxy.type == 1 (Manual)
+	// network.proxy.http , network.proxy.http_port, 
+	// network.proxy.ftp , network.proxy.ftp_port
+	// network.proxy.ssl , network.proxy.ssl_port
+	// network.proxy.socks_version , network.proxy.socks_remote_dns
+	// share_proxy_settings, network.proxy.no_proxies_on
+	currentProxy.type = Services.prefs.getIntPref("network.proxy.type");
+	currentProxy.http = Services.prefs.getCharPref("network.proxy.http");
+	currentProxy.http_port = Services.prefs.getIntPref("network.proxy.http_port");
+	currentProxy.ftp = Services.prefs.getCharPref("network.proxy.ftp");
+	currentProxy.ftp_port = Services.prefs.getIntPref("network.proxy.ftp_port");
+	currentProxy.ssl = Services.prefs.getCharPref("network.proxy.ssl");
+	currentProxy.ssl_port = Services.prefs.getIntPref("network.proxy.ssl_port");
+	currentProxy.socks = Services.prefs.getCharPref("network.proxy.socks");
+	currentProxy.socks_port = Services.prefs.getIntPref("network.proxy.socks_port");
+	currentProxy.socks_version = Services.prefs.getIntPref("network.proxy.socks_version");
+	currentProxy.socks_remote_dns = Services.prefs.getBoolPref("network.proxy.socks_remote_dns");
+	currentProxy.share_proxy_settings = Services.prefs.getBoolPref("network.proxy.share_proxy_settings");
+	currentProxy.no_proxies_on = Services.prefs.getCharPref("network.proxy.no_proxies_on");
+	
+	lastProxyInfo.type = Services.prefs.getIntPref("browser.proxyChange.lastProxyInfo.type");
+	lastProxyInfo.http = Services.prefs.getCharPref("browser.proxyChange.lastProxyInfo.http");
+	lastProxyInfo.http_port = Services.prefs.getIntPref("browser.proxyChange.lastProxyInfo.http_port");
+	lastProxyInfo.ftp = Services.prefs.getCharPref("browser.proxyChange.lastProxyInfo.ftp");
+	lastProxyInfo.ftp_port = Services.prefs.getIntPref("browser.proxyChange.lastProxyInfo.ftp_port");
+	lastProxyInfo.ssl = Services.prefs.getCharPref("browser.proxyChange.lastProxyInfo.ssl");
+	lastProxyInfo.ssl_port = Services.prefs.getIntPref("browser.proxyChange.lastProxyInfo.ssl_port");
+	lastProxyInfo.socks = Services.prefs.getCharPref("browser.proxyChange.lastProxyInfo.socks");
+	lastProxyInfo.socks_port = Services.prefs.getIntPref("browser.proxyChange.lastProxyInfo.socks_port");
+	lastProxyInfo.socks_version = Services.prefs.getIntPref("browser.proxyChange.lastProxyInfo.socks_version");
+	lastProxyInfo.socks_remote_dns = Services.prefs.getBoolPref("browser.proxyChange.lastProxyInfo.socks_remote_dns");
+	lastProxyInfo.share_proxy_settings = Services.prefs.getBoolPref("browser.proxyChange.lastProxyInfo.share_proxy_settings");
+	lastProxyInfo.no_proxies_on = Services.prefs.getCharPref("browser.proxyChange.lastProxyInfo.no_proxies_on");
+	var spacer =  "  ||  ";
+	//var headspacer = spacer + "";
+	var proxyChangeContent = "Proxy Settings: New || Old\n\n";
+	var prefName = "";
+	var isProxyChange = false;
+	if(currentProxy.type ===1){
+		if (currentProxy.type != lastProxyInfo.type && currentProxy.type != 0 && currentProxy.type != 3){
+			prefName = "ProxyType: ";
+			//prefName = autoFixLenForPref(prefName,spacer.length);
+			proxyChangeContent  = proxyChangeContent + prefName + proxyTypeName[currentProxy.type] + spacer + proxyTypeName[lastProxyInfo.type] + "\n";
+			isProxyChange = true;
+		} 
+		
+		if (currentProxy.http != lastProxyInfo.http){
+			prefName = "http: ";
+			//prefName = autoFixLenForPref(prefName,spacer.length);
+			proxyChangeContent  = proxyChangeContent + prefName + currentProxy.http + spacer + lastProxyInfo.http + "\n";
+			isProxyChange = true;
+		} 
+		if (currentProxy.http_port != lastProxyInfo.http_port){
+			isProxyChange = true;
+			prefName = "http_port: ";
+			//prefName = autoFixLenForPref(prefName,spacer.length);
+			proxyChangeContent  = proxyChangeContent + prefName + currentProxy.http_port + spacer + lastProxyInfo.http_port + "\n";
+		} 
+		if (currentProxy.ftp != lastProxyInfo.ftp){
+			isProxyChange = true;
+			prefName = "ftp: ";
+			//prefName = autoFixLenForPref(prefName,spacer.length);
+			proxyChangeContent  = proxyChangeContent + prefName + currentProxy.ftp + spacer + lastProxyInfo.ftp + "\n";
+		}
+		if (currentProxy.ftp_port != lastProxyInfo.ftp_port){
+			isProxyChange = true;
+			prefName = "ftp_port: ";
+			//prefName = autoFixLenForPref(prefName,spacer.length);
+			proxyChangeContent  = proxyChangeContent + prefName + currentProxy.ftp_port + spacer + lastProxyInfo.ftp_port + "\n";
+		}
+		if (currentProxy.ssl != lastProxyInfo.ssl){
+			isProxyChange = true;
+			prefName = "ssl: ";
+			//prefName = autoFixLenForPref(prefName,spacer.length);
+			proxyChangeContent  = proxyChangeContent + prefName + currentProxy.ssl + spacer + lastProxyInfo.ssl + "\n";
+		}
+		if (currentProxy.ssl_port != lastProxyInfo.ssl_port){
+			isProxyChange = true;
+			prefName = "ssl_port: ";
+			prefName = autoFixLenForPref(prefName,spacer.length);
+			proxyChangeContent  = proxyChangeContent + prefName + currentProxy.ssl_port + spacer + lastProxyInfo.ssl_port + "\n";
+		}
+		if (currentProxy.socks != lastProxyInfo.socks){
+			isProxyChange = true;
+			prefName = "socks: ";
+			//prefName = autoFixLenForPref(prefName,spacer.length);
+			proxyChangeContent  = proxyChangeContent + prefName + currentProxy.socks + spacer + lastProxyInfo.socks + "\n";
+		}
+		if (currentProxy.socks_port != lastProxyInfo.socks_port){
+			isProxyChange = true;
+			prefName = "socks_port: ";
+			prefName = autoFixLenForPref(prefName,spacer.length);
+			proxyChangeContent  = proxyChangeContent + prefName + currentProxy.socks_port + spacer + lastProxyInfo.socks_port + "\n";
+		}
+		if (currentProxy.socks_version != lastProxyInfo.socks_version){
+			isProxyChange = true;
+			prefName = "socks_version: ";
+			//prefName = autoFixLenForPref(prefName,spacer.length);
+			proxyChangeContent  = proxyChangeContent + prefName + currentProxy.socks_version + spacer + lastProxyInfo.socks_version + "\n";
+		}
+		if (currentProxy.socks_remote_dns != lastProxyInfo.socks_remote_dns){
+			isProxyChange = true;
+			prefName = "socks_remote_dns";
+			prefName = autoFixLenForPref(prefName,spacer.length);
+			proxyChangeContent  = proxyChangeContent + prefName + currentProxy.socks_remote_dns + spacer + lastProxyInfo.socks_remote_dns + "\n";
+		}
+		if (currentProxy.share_proxy_settings != lastProxyInfo.share_proxy_settings){
+			isProxyChange = true;
+			prefName = "share_proxy_settings: ";
+			//prefName = autoFixLenForPref(prefName,spacer.length);
+			proxyChangeContent  = proxyChangeContent + prefName + currentProxy.share_proxy_settings + spacer + lastProxyInfo.share_proxy_settings + "\n";
+		}
+		if (currentProxy.no_proxies_on != lastProxyInfo.no_proxies_on){
+			isProxyChange = true;
+			prefName = "no_proxies_on: ";
+			//prefName = autoFixLenForPref(prefName,spacer.length);
+			proxyChangeContent  = proxyChangeContent + prefName + currentProxy.no_proxies_on + spacer + lastProxyInfo.no_proxies_on + "\n";
+		}
+	}
+	//lastProxyInfo = JSON.parse(Services.prefs.getCharPref("browser.proxyChange.lastProxyInfo"));
+	//showProxyChangedDialog("LastProxy:",JSON.stringify(lastProxyInfo));		
+			
+	if(!isProxyChange) 
+		return false; //Proxy not change
+	//else Services.prompt.alert(null, "Proxy Changed","Warning!!!!");
+	//		showProxyChangedDialog("ShowProxyChange",JSON.stringify(currentProxy));
+	
+	if(gBrowser.tabContainer.selectedIndex>0) return false;
+	let notificationBox = gBrowser.getNotificationBox();
+	
+	let previousUpdateNotification = notificationBox.getNotificationWithValue(autoUpdateNotifyBarID);
+	if (previousUpdateNotification){
+		_actionTakenAuttoUpdate = true;
+		notificationBox.removeNotification(previousUpdateNotification);
+	}
+	
+	var isOverTimeRemind = true;
+	let now = Math.round(Date.now() / 1000);
+	var lastCheck = Services.prefs.getIntPref("browser.proxyChange.lastShow");
+	var checkInterval = Services.prefs.getIntPref("browser.checkProxyChange.interval");
+	if (lastCheck===0){
+		isOverTimeRemind = true;
+	}else if (lastCheck === 1){
+		isOverTimeRemind = true;
+	}else if (now - lastCheck > checkInterval){
+		isOverTimeRemind = true;
+	}else{
+		isOverTimeRemind = false;
+	}
+	
+	
+    let previousNotification = notificationBox.getNotificationWithValue(proxyChangeNotifyBarID);
+	if(!isOverTimeRemind){
+		if (previousNotification){
+			//Services.prompt.alert(null, "previousNotification: ","Showing...");
+			_actionTakenProxyChangce = true;
+			notificationBox.removeNotification(previousNotification);
+		}else{
+			_actionTakenProxyChangce = false;
+		}
+		return false;
+	} 
+	
+    if (previousNotification){
+	  //_actionTakenProxyChangce = true;
+      //notificationBox.removeNotification(previousNotification);
+	  return true;
+    }
+	var proxyChangeDialogTitle = "Proxy changes";
+	let buttons = [
+	  {
+        label: "Show Changes",
+        accessKey: "S",
+        callback: function() {
+	      //var isChange = compareProxy(lastProxyInfo);
+		  _actionTakenProxyChangce = true;
+		  Services.prompt.alert(null,proxyChangeDialogTitle, proxyChangeContent);
+		  //showProxyChangedDialog("Proxy changed", "Last:"+lastProxyInfo.ftp_port + "\tCurrent:"+currentProxy.ftp_port);
+		  throw new Error('prevent notification box close after click');
+        }
+      },
+	  {
+        label: "Accept Changes",
+        accessKey: "A",
+        callback: function() {
+			_actionTakenProxyChangce = true;
+			Services.prefs.setIntPref("browser.proxyChange.lastProxyInfo.type",currentProxy.type);
+			Services.prefs.setCharPref("browser.proxyChange.lastProxyInfo.http",currentProxy.http);
+			Services.prefs.setIntPref("browser.proxyChange.lastProxyInfo.http_port",currentProxy.http_port);
+			Services.prefs.setCharPref("browser.proxyChange.lastProxyInfo.ftp",currentProxy.ftp);
+			Services.prefs.setIntPref("browser.proxyChange.lastProxyInfo.ftp_port",currentProxy.ftp_port);
+			Services.prefs.setCharPref("browser.proxyChange.lastProxyInfo.ssl",currentProxy.ssl);
+			Services.prefs.setIntPref("browser.proxyChange.lastProxyInfo.ssl_port",currentProxy.ssl_port);
+			Services.prefs.setCharPref("browser.proxyChange.lastProxyInfo.socks",currentProxy.socks);
+			Services.prefs.setIntPref("browser.proxyChange.lastProxyInfo.socks_port",currentProxy.socks_port);
+			Services.prefs.setIntPref("browser.proxyChange.lastProxyInfo.socks_version",currentProxy.socks_version);
+			Services.prefs.setBoolPref("browser.proxyChange.lastProxyInfo.socks_remote_dns",currentProxy.socks_remote_dns);
+			Services.prefs.setBoolPref("browser.proxyChange.lastProxyInfo.share_proxy_settings",currentProxy.share_proxy_settings);
+			Services.prefs.setCharPref("browser.proxyChange.lastProxyInfo.no_proxies_on",currentProxy.no_proxies_on);
+        }
+      },
+	  {
+        label: "Restore",
+        accessKey: "R",
+        callback: function() {
+			_actionTakenProxyChangce = true;
+			Services.prefs.setIntPref("network.proxy.http.type",lastProxyInfo.type);
+			Services.prefs.setCharPref("network.proxy.http",lastProxyInfo.http);
+			Services.prefs.setIntPref("network.proxy.http_port",lastProxyInfo.http_port);
+			Services.prefs.setCharPref("network.proxy.ftp",lastProxyInfo.ftp);
+			Services.prefs.setIntPref("network.proxy.ftp_port",lastProxyInfo.ftp_port);
+			Services.prefs.setCharPref("network.proxy.ssl",lastProxyInfo.ssl);
+			Services.prefs.setIntPref("network.proxy.ssl_port",lastProxyInfo.ssl_port);
+			Services.prefs.setCharPref("network.proxy.socks",lastProxyInfo.socks);
+			Services.prefs.setIntPref("network.proxy.socks_port",lastProxyInfo.socks_port);
+			Services.prefs.setIntPref("network.proxy.socks_version",lastProxyInfo.socks_version);
+			Services.prefs.setBoolPref("network.proxy.socks_remote_dns",lastProxyInfo.socks_remote_dns);
+			Services.prefs.setBoolPref("network.proxy.share_proxy_settings",lastProxyInfo.share_proxy_settings);
+			Services.prefs.setCharPref("network.proxy.no_proxies_on",lastProxyInfo.no_proxies_on);
+        }
+      }
+	  
+    ];
+	var proxyChangeNotifyMessage = Services.prefs.getCharPref("browser.proxyChange.message");
+
+	var proxyChangeNotifCallback = function(what) {
+
+	  if (what == 'removed') {
+		if (_actionTakenProxyChangce === false) {
+		 //alert("what"+what);
+		 let now = Math.round(Date.now() / 1000);
+		 //Services.prompt.alert(null, "set: ","_actionTaken...");
+		 Services.prefs.setIntPref("browser.proxyChange.lastShow", now);
+		} else {
+		  //alert("what"+what);
+		  //Services.prompt.alert(null, "notset: ","_actionTaken...");
+		}
+	  }
+    }
+	
+    let proxyNotification = notificationBox.appendNotification(proxyChangeNotifyMessage,
+      proxyChangeNotifyBarID,
+	  null,
+      //"chrome://global/skin/icons/blacklist_favicon.png",
+      notificationBox.PRIORITY_CRITICAL_HIGH,
+      buttons,
+	  proxyChangeNotifCallback
+    );
+    // Persist the notification until the user removes so it
+    // doesn't get removed on redirects.
+    proxyNotification.persistence = -1;
+	return true;
+}
+
+function compareProxy(lastProxy) {
+	//var lastProxyInfo = JSON.parse(Services.prefs.getCharPref("browser.proxyChange.lastProxyInfo"));
+	var curProxy = {};
+	curProxy.http = Services.prefs.getCharPref("network.proxy.http");
+	curProxy.http_port = Services.prefs.getIntPref("network.proxy.http_port");
+	curProxy.ftp = Services.prefs.getCharPref("network.proxy.ftp");
+	curProxy.ftp_port = Services.prefs.getIntPref("network.proxy.ftp_port");
+	curProxy.ssl = Services.prefs.getCharPref("network.proxy.ssl");
+	curProxy.ssl_port = Services.prefs.getIntPref("network.proxy.ssl_port");
+	curProxy.socks_version = Services.prefs.getIntPref("network.proxy.socks_version");
+	curProxy.socks_remote_dns = Services.prefs.getBoolPref("network.proxy.socks_remote_dns");
+	curProxy.no_proxies_on = Services.prefs.getCharPref("network.proxy.no_proxies_on");
+	//showProxyChangedDialog("aa"+(curProxy.http == ""),"dd");
+	return Object.is(lastProxy,curProxy);
+	//if (curProxy.http != lastProxy.http) isChange = true;
+	//if (curProxy.http_port != lastProxy.http_port)) isChange = true;
+	/*
+	if (curProxy.ftp != lastProxy.ftp) return true;
+	if (curProxy.ftp_port != lastProxy.ftp_port)) return true;
+	
+	if (curProxy.ssl != lastProxy.ssl) return true;
+	if (curProxy.ssl_port != lastProxy.ssl_port)) return true;
+	
+	if (curProxy.socks_remote_dns != lastProxy.socks_remote_dns) return true;
+	if (curProxy.no_proxies_on != lastProxy.no_proxies_on) return true;
+	if (curProxy.socks_version != lastProxy.socks_version) return true;
+	*/
+	//return isChange;
+}
+
+function showProxyChangedDialog(current,last)
+{
+  var promptTitle = "Proxy Change Dialog Title";
+  var promptMsg   = "Last Proxy : "+ last + "\nCurrent Proxy: "+current;
+ 
+  Services.prompt.alert(null, promptTitle, promptMsg);
+  /* var pressedVal  = Services.prompt.confirmEx(window, promptTitle, promptMsg,
+                          Services.prompt.STD_YES_NO_BUTTONS,
+                          null, null, null, null, {value:0});
+	if (pressedVal == 0) {
+    try {
+      var str = Components.classes["@mozilla.org/supports-string;1"]
+                          .createInstance(Components.interfaces.nsISupportsString);
+      str.data = aURL;
+      gPrefService.setComplexValue("browser.startup.homepage",
+                                   Components.interfaces.nsISupportsString, str);
+    } catch (ex) {
+      dump("Failed to set the home page.\n"+ex+"\n");
+    }
+  }*/
+}
 function RedirectLoad({ target: browser, data }) {
   // We should only start the redirection if the browser window has finished
   // starting up. Otherwise, we should wait until the startup is done.
@@ -1640,6 +1947,12 @@ var gBrowserInit = {
   },
 
   onUnload: function() {
+	//Privafox : Save last Proxy before exit browser;
+	// Services.prompt.alert(null, "onUnload", "onUnload Message");
+	
+	
+	
+	
     // In certain scenarios it's possible for unload to be fired before onload,
     // (e.g. if the window is being closed after browser.js loads but before the
     // load completes). In that case, there's nothing to do here.
@@ -3320,6 +3633,7 @@ var PrintPreviewListener = {
     this._toggleAffectedChrome();
   },
   onExit: function () {
+	
     gBrowser.selectedTab = this._tabBeforePrintPreview;
     this._tabBeforePrintPreview = null;
     gInPrintPreviewMode = false;
