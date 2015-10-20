@@ -5770,6 +5770,7 @@ var TabsInTitlebar = {
 #ifdef CAN_DRAW_IN_TITLEBAR
     this._initialized = false;
     Services.prefs.removeObserver(this._prefName, this);
+    Services.obs.removeObserver(this,"security.additionalSecurity.protectBookmark");
     this._menuObserver.disconnect();
     CustomizableUI.removeListener(this);
 #endif
