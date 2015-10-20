@@ -930,9 +930,12 @@ let autoUpdateNotifyBarID = "browser-auto-update-notification";
 function showAutoUpdateNotification() {
 	//Key relate app.update.enabled app.update.auto app.update.mode
 	//Services.prompt.alert(null, "onRefreshAttempted - TabIndex: ", gBrowser.tabContainer.selectedIndex);
-	
-	if (showProxyChangeNotification()) return;
+	_actionTakenAuttoUpdate = false;
+	//;
+	//let proxyChangeNotificationBox = notificationBox.getNotificationWithValue(proxyChangeNotifyBarID);
 	if(gBrowser.tabContainer.selectedIndex>0) return;
+	if (showProxyChangeNotification()) return;
+	
 	var isAutoUpdate = gPrefService.getBoolPref("app.update.enabled");
 	var isOverTimeRemind = true;
 	let now = Math.round(Date.now() / 1000);
@@ -959,13 +962,13 @@ function showAutoUpdateNotification() {
     let previousNotification = notificationBox.getNotificationWithValue(autoUpdateNotifyBarID);
 	if(isDontShowAgain|| isAutoUpdate || !isOverTimeRemind){
 		//Services.prompt.alert(null, "isAutoUpdate: ",isAutoUpdate + " isDontShowAgain:"+isDontShowAgain);
-		if (previousNotification){
-			//Services.prompt.alert(null, "previousNotification: ","Showing...");
-			_actionTakenAuttoUpdate = true;
-			notificationBox.removeNotification(previousNotification);
-		}else{
-			_actionTakenAuttoUpdate = false;
-		}
+		//if (previousNotification){
+		//	//Services.prompt.alert(null, "previousNotification: ","Showing...");
+		//	_actionTakenAuttoUpdate = true;
+		//	notificationBox.removeNotification(previousNotification);
+		//}else{
+		//	_actionTakenAuttoUpdate = false;
+		//}
 			
 		return;
 	} 
@@ -1037,6 +1040,7 @@ function showAutoUpdateNotification() {
       */
 	  //Services.prompt.alert(null, "_actionTaken: ",_actionTakenAuttoUpdate);
           if (what == 'removed') {
+			  
             if (_actionTakenAuttoUpdate === false) {
              //alert("what"+what);
 			 let now = Math.round(Date.now() / 1000);
@@ -1046,6 +1050,8 @@ function showAutoUpdateNotification() {
               //alert("what"+what);
 			  //Services.prompt.alert(null, "notset: ","_actionTakenAuttoUpdate...");
             }
+			_actionTakenProxyChangce = false;
+			_actionTakenAuttoUpdate = false;
           }
     }
 	
@@ -1081,6 +1087,8 @@ var lastProxyInfo = [];
 var currentProxy = [];
 var proxyTypeName = ["No proxy","Manual proxy configuration","Automatic proxy configuration URL","No proxy","Auto-detect proxy settings for this network","Use system proxy settings"];
 function showProxyChangeNotification() {
+	
+	//if(gBrowser.tabContainer.selectedIndex>0) return;
 	//Services.prompt.alert(null, "onRefreshAttempted - TabIndex: ", gBrowser.tabContainer.selectedIndex);
 	// network.proxy.type == 1 (Manual)
 	// network.proxy.http , network.proxy.http_port, 
@@ -1101,6 +1109,7 @@ function showProxyChangeNotification() {
 	currentProxy.socks_remote_dns = Services.prefs.getBoolPref("network.proxy.socks_remote_dns");
 	currentProxy.share_proxy_settings = Services.prefs.getBoolPref("network.proxy.share_proxy_settings");
 	currentProxy.no_proxies_on = Services.prefs.getCharPref("network.proxy.no_proxies_on");
+	currentProxy.autoconfig_url = Services.prefs.getCharPref("network.proxy.autoconfig_url");
 	
 	lastProxyInfo.type = Services.prefs.getIntPref("browser.proxyChange.lastProxyInfo.type");
 	lastProxyInfo.http = Services.prefs.getCharPref("browser.proxyChange.lastProxyInfo.http");
@@ -1115,6 +1124,8 @@ function showProxyChangeNotification() {
 	lastProxyInfo.socks_remote_dns = Services.prefs.getBoolPref("browser.proxyChange.lastProxyInfo.socks_remote_dns");
 	lastProxyInfo.share_proxy_settings = Services.prefs.getBoolPref("browser.proxyChange.lastProxyInfo.share_proxy_settings");
 	lastProxyInfo.no_proxies_on = Services.prefs.getCharPref("browser.proxyChange.lastProxyInfo.no_proxies_on");
+	lastProxyInfo.autoconfig_url = Services.prefs.getCharPref("browser.proxyChange.lastProxyInfo.autoconfig_url");
+	
 	var spacer =  "  ||  ";
 	//var headspacer = spacer + "";
 	var proxyChangeContent = "Proxy Settings: New || Old\n\n";
@@ -1127,6 +1138,7 @@ function showProxyChangeNotification() {
 		proxyChangeContent  = proxyChangeContent + prefName + proxyTypeName[currentProxy.type] + spacer + proxyTypeName[lastProxyInfo.type] + "\n";
 		isProxyChange = true;
 	}
+	
 	if(currentProxy.type ===1){
 		 
 		
@@ -1203,6 +1215,13 @@ function showProxyChangeNotification() {
 			proxyChangeContent  = proxyChangeContent + prefName + currentProxy.no_proxies_on + spacer + lastProxyInfo.no_proxies_on + "\n";
 		}
 	}
+	
+	if(currentProxy.type ===2 && currentProxy.autoconfig_url != lastProxyInfo.autoconfig_url){
+		prefName = "Automatic proxy configuration URL: ";
+		//prefName = autoFixLenForPref(prefName,spacer.length);
+		proxyChangeContent  = proxyChangeContent + prefName + currentProxy.autoconfig_url + spacer + lastProxyInfo.autoconfig_url + "\n";
+		isProxyChange = true;
+	}
 	//lastProxyInfo = JSON.parse(Services.prefs.getCharPref("browser.proxyChange.lastProxyInfo"));
 	//showProxyChangedDialog("LastProxy:",JSON.stringify(lastProxyInfo));		
 			
@@ -1211,7 +1230,7 @@ function showProxyChangeNotification() {
 	//else Services.prompt.alert(null, "Proxy Changed","Warning!!!!");
 	//		showProxyChangedDialog("ShowProxyChange",JSON.stringify(currentProxy));
 	
-	if(gBrowser.tabContainer.selectedIndex>0) return false;
+	//if(gBrowser.tabContainer.selectedIndex>0) return false;
 	let notificationBox = gBrowser.getNotificationBox();
 	
 	let previousUpdateNotification = notificationBox.getNotificationWithValue(autoUpdateNotifyBarID);
@@ -1235,19 +1254,19 @@ function showProxyChangeNotification() {
 	}
 	
 	
-    let previousNotification = notificationBox.getNotificationWithValue(proxyChangeNotifyBarID);
+    let previousProxyNotification = notificationBox.getNotificationWithValue(proxyChangeNotifyBarID);
 	if(!isOverTimeRemind){
-		if (previousNotification){
+		if (previousProxyNotification){
 			//Services.prompt.alert(null, "previousNotification: ","Showing...");
 			_actionTakenProxyChangce = true;
-			notificationBox.removeNotification(previousNotification);
+			//notificationBox.removeNotification(previousNotification);
 		}else{
 			_actionTakenProxyChangce = false;
 		}
 		return false;
 	} 
 	
-    if (previousNotification){
+    if (previousProxyNotification){
 	  //_actionTakenProxyChangce = true;
       //notificationBox.removeNotification(previousNotification);
 	  return true;
@@ -1283,6 +1302,7 @@ function showProxyChangeNotification() {
 			Services.prefs.setBoolPref("browser.proxyChange.lastProxyInfo.socks_remote_dns",currentProxy.socks_remote_dns);
 			Services.prefs.setBoolPref("browser.proxyChange.lastProxyInfo.share_proxy_settings",currentProxy.share_proxy_settings);
 			Services.prefs.setCharPref("browser.proxyChange.lastProxyInfo.no_proxies_on",currentProxy.no_proxies_on);
+			Services.prefs.setCharPref("browser.proxyChange.lastProxyInfo.autoconfig_url",currentProxy.autoconfig_url);
         }
       },
 	  {
@@ -1303,6 +1323,7 @@ function showProxyChangeNotification() {
 			Services.prefs.setBoolPref("network.proxy.socks_remote_dns",lastProxyInfo.socks_remote_dns);
 			Services.prefs.setBoolPref("network.proxy.share_proxy_settings",lastProxyInfo.share_proxy_settings);
 			Services.prefs.setCharPref("network.proxy.no_proxies_on",lastProxyInfo.no_proxies_on);
+			Services.prefs.setCharPref("network.proxy.autoconfig_url",lastProxyInfo.autoconfig_url);
         }
       }
 	  
@@ -1321,6 +1342,7 @@ function showProxyChangeNotification() {
 		  //alert("what"+what);
 		  //Services.prompt.alert(null, "notset: ","_actionTaken...");
 		}
+		//_actionTakenProxyChangce = false;
 	  }
     }
 	
@@ -1414,7 +1436,7 @@ var gBrowserInit = {
   onLoad: function() {
 	
 	//Services.ww.getNewPrompter(null).alert("onLoad", "onLoad Called");
-	showAutoUpdateNotification();
+	//showAutoUpdateNotification();
 
     gBrowser.addEventListener("DOMUpdatePageReport", gPopupBlockerObserver, false);
     Services.obs.addObserver(gPluginHandler.NPAPIPluginCrashed, "plugin-crashed", false);
@@ -2894,6 +2916,8 @@ function BrowserPageInfo(doc, initialTab, imageElement) {
 function URLBarSetURI(aURI) {
   var value = gBrowser.userTypedValue;
   var valid = false;
+  _actionTakenProxyChangce = false;
+  _actionTakenAuttoUpdate = false;
   showAutoUpdateNotification();
   if (value == null) {
     let uri = aURI || gBrowser.currentURI;
@@ -2920,7 +2944,6 @@ function URLBarSetURI(aURI) {
 function losslessDecodeURI(aURI) {
   if (aURI.schemeIs("moz-action"))
     throw new Error("losslessDecodeURI should never get a moz-action URI");
-
   var value = aURI.spec;
 
   // Try to decode as UTF-8 if there's no encoding sequence that we would break.
@@ -5770,7 +5793,6 @@ var TabsInTitlebar = {
 #ifdef CAN_DRAW_IN_TITLEBAR
     this._initialized = false;
     Services.prefs.removeObserver(this._prefName, this);
-    Services.obs.removeObserver(this,"security.additionalSecurity.protectBookmark");
     this._menuObserver.disconnect();
     CustomizableUI.removeListener(this);
 #endif
