@@ -720,6 +720,8 @@ pref("browser.proxyChange.lastProxyInfo.socks_version",5);
 pref("browser.proxyChange.lastProxyInfo.socks_remote_dns",false);
 pref("browser.proxyChange.lastProxyInfo.share_proxy_settings",false);
 pref("browser.proxyChange.lastProxyInfo.no_proxies_on","localhost, 127.0.0.1");
+pref("browser.proxyChange.lastProxyInfo.autoconfig_url","");
+
  
 pref("browser.proxyChange.isChange", false);
 pref("browser.proxyChange.message", "Warning: Your proxy settings have changed since last run.");

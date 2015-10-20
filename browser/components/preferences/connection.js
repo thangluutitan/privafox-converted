@@ -67,6 +67,7 @@ var gConnectionsDialog = {
 		userProxySetting.socks_remote_dns = document.getElementById("network.proxy.socks_remote_dns").value;
 		userProxySetting.share_proxy_settings = document.getElementById("network.proxy.share_proxy_settings").value;
 		userProxySetting.no_proxies_on = document.getElementById("network.proxy.no_proxies_on").value;
+		userProxySetting.autoconfig_url = document.getElementById("network.proxy.autoconfig_url").value;
 		
 		
 		var isChange = Services.prefs.getBoolPref("browser.proxyChange.isChange");
@@ -84,6 +85,7 @@ var gConnectionsDialog = {
 			Services.prefs.setBoolPref("browser.proxyChange.lastProxyInfo.socks_remote_dns",userProxySetting.socks_remote_dns);
 			Services.prefs.setBoolPref("browser.proxyChange.lastProxyInfo.share_proxy_settings",userProxySetting.share_proxy_settings);
 			Services.prefs.setCharPref("browser.proxyChange.lastProxyInfo.no_proxies_on",userProxySetting.no_proxies_on);
+			Services.prefs.setCharPref("browser.proxyChange.lastProxyInfo.autoconfig_url",userProxySetting.autoconfig_url);
 			Services.prefs.setIntPref("browser.proxyChange.lastShow", 1);
 		}else
 			Services.prefs.setBoolPref("browser.proxyChange.isChange",true);
