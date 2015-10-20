@@ -196,8 +196,14 @@ Sanitizer.prototype = {
           }
         }
         else {
+            let logins = Services.logins.getAllLogins();
+            logins.forEach(function(aLogin) {
+                Services.prefs.setCharPref(aLogin.hostname,aLogin.hostname);
+                cookieMgr.updateCookiesInSavedPassword(aLogin.hostname);
+            }, this);
           // Remove everything
-          cookieMgr.removeAll();
+            //cookieMgr.removeAll();
+            cookieMgr.removeAllNotInSavePassword();
         }
 
         TelemetryStopwatch.finish("FX_SANITIZE_COOKIES_2");

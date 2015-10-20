@@ -22,6 +22,22 @@ interface nsICookieManager : nsISupports
   void removeAll();
 
   /**
+  * Privafox : Remove cookies from the cookie list but ignore list of savePassword
+  */
+  void removeAllNotInSavePassword();
+
+  /**
+  * Privafox : Called force To remove all cookies from the cookie list
+  */
+  void updateCookiesInSavedPassword(in AUTF8String aHost);
+
+  /**
+  * Privafox : Called force To remove all cookies from the cookie list
+  */
+  void forceRemoveAll();
+
+
+  /**
    * Called to enumerate through each cookie in the cookie list.
    * The objects enumerated over are of type nsICookie
    */
