@@ -56,6 +56,7 @@ class nsCookie : public nsICookie2
      , mIsSecure(aIsSecure != false)
      , mIsHttpOnly(aIsHttpOnly != false)
     {
+		mIsSavedPassword = false;
     }
 
   public:
@@ -76,6 +77,7 @@ class nsCookie : public nsICookie2
                              bool              aIsSecure,
                              bool              aIsHttpOnly);
 
+
     size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const;
 
     // fast (inline, non-xpcom) getters
@@ -91,6 +93,7 @@ class nsCookie : public nsICookie2
     inline bool IsDomain()                const { return *mHost == '.'; }
     inline bool IsSecure()                const { return mIsSecure; }
     inline bool IsHttpOnly()              const { return mIsHttpOnly; }
+	inline bool IsSavedPassword()              const { return mIsSavedPassword; }
 
     // setters
     inline void SetExpiry(int64_t aExpiry)        { mExpiry = aExpiry; }
@@ -99,6 +102,7 @@ class nsCookie : public nsICookie2
     // Set the creation time manually, overriding the monotonicity checks in
     // Create(). Use with caution!
     inline void SetCreationTime(int64_t aTime)    { mCreationTime = aTime; }
+	inline void SetIsSavedPassword(bool aIsSavedPassword)    { mIsSavedPassword = aIsSavedPassword; }
 
   protected:
     virtual ~nsCookie() {}
@@ -121,6 +125,7 @@ class nsCookie : public nsICookie2
     bool mIsSession;
     bool mIsSecure;
     bool mIsHttpOnly;
+	bool mIsSavedPassword;
 };
 
 #endif // nsCookie_h__

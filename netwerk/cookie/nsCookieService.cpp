@@ -139,6 +139,7 @@ struct nsCookieAttributes
   bool isSession;
   bool isSecure;
   bool isHttpOnly;
+  bool isSavedPassword;
 };
 
 // stores the nsCookieEntry entryclass and an index into the cookie array
@@ -1087,9 +1088,9 @@ nsCookieService::TryInitDB(bool aRecreateDB)
         rv = mDefaultDBState->dbConn->ExecuteSimpleSQL(NS_LITERAL_CSTRING(
           "INSERT INTO moz_cookies "
           "(baseDomain, appId, inBrowserElement, name, value, host, path, expiry,"
-          " lastAccessed, creationTime, isSecure, isHttpOnly) "
+          " lastAccessed, creationTime, isSecure, isHttpOnly, isSavedPassword) "
           "SELECT baseDomain, 0, 0, name, value, host, path, expiry,"
-          " lastAccessed, creationTime, isSecure, isHttpOnly "
+          " lastAccessed, creationTime, isSecure, isHttpOnly, isSavedPassword "
           "FROM moz_cookies_old"));
         NS_ENSURE_SUCCESS(rv, RESULT_RETRY);
 
@@ -1147,7 +1148,8 @@ nsCookieService::TryInitDB(bool aRecreateDB)
             "lastAccessed, "
             "creationTime, "
             "isSecure, "
-            "isHttpOnly "
+            "isHttpOnly, "
+			"isSavedPassword "
           "FROM moz_cookies"), getter_AddRefs(stmt));
         if (NS_SUCCEEDED(rv))
           break;
@@ -1189,7 +1191,8 @@ nsCookieService::TryInitDB(bool aRecreateDB)
       "lastAccessed, "
       "creationTime, "
       "isSecure, "
-      "isHttpOnly"
+      "isHttpOnly, "
+	  "isSavedPassword"
     ") VALUES ("
       ":baseDomain, "
       ":appId, "
@@ -1202,7 +1205,8 @@ nsCookieService::TryInitDB(bool aRecreateDB)
       ":lastAccessed, "
       ":creationTime, "
       ":isSecure, "
-      ":isHttpOnly"
+      ":isHttpOnly, "
+	  ":isSavedPassword"
     ")"),
     getter_AddRefs(mDefaultDBState->stmtInsert));
   NS_ENSURE_SUCCESS(rv, RESULT_RETRY);
@@ -1272,6 +1276,7 @@ nsCookieService::CreateTable()
       "creationTime INTEGER, "
       "isSecure INTEGER, "
       "isHttpOnly INTEGER, "
+	  "isSavedPassword INTEGER DEFAULT 0, "
       "CONSTRAINT moz_uniqueid UNIQUE (name, host, path, appId, inBrowserElement)"
     ")"));
   if (NS_FAILED(rv)) return rv;
@@ -1943,6 +1948,131 @@ nsCookieService::RemoveAll()
   NotifyChanged(nullptr, MOZ_UTF16("cleared"));
   return NS_OK;
 }
+NS_IMETHODIMP
+nsCookieService::RemoveAllNotInSavePassword()
+{
+	if (!mDBState) {
+		NS_WARNING("No DBState! Profile already closed?");
+		return NS_ERROR_NOT_AVAILABLE;
+	}
+
+	//RemoveAllFromMemory();
+
+	// clear the cookie file
+	if (mDBState->dbConn) {
+		NS_ASSERTION(mDBState == mDefaultDBState, "not in default DB state");
+
+		// Cancel any pending read. No further results will be received by our
+		// read listener.
+		if (mDefaultDBState->pendingRead) {
+			CancelAsyncRead(true);
+		}
+
+		nsCOMPtr<mozIStorageAsyncStatement> stmt;
+		nsresult rv = mDefaultDBState->dbConn->CreateAsyncStatement(NS_LITERAL_CSTRING(
+			"DELETE FROM moz_cookies WHERE isSavedPassword !=1 "), getter_AddRefs(stmt));
+		if (NS_SUCCEEDED(rv)) {
+			nsCOMPtr<mozIStoragePendingStatement> handle;
+			rv = stmt->ExecuteAsync(mDefaultDBState->removeListener,
+				getter_AddRefs(handle));
+			NS_ASSERT_SUCCESS(rv);
+		}
+		else {
+			// Recreate the database.
+			COOKIE_LOGSTRING(LogLevel::Debug,
+				("RemoveIgnoreListHosting(): corruption detected with rv 0x%x", rv));
+			HandleCorruptDB(mDefaultDBState);
+		}
+	}
+
+	NotifyChanged(nullptr, MOZ_UTF16("cleared"));
+	return NS_OK;
+}
+
+NS_IMETHODIMP
+nsCookieService::UpdateCookiesInSavedPassword(const nsACString &aHost)
+{
+	if (!mDBState) {
+		NS_WARNING("No DBState! Profile already closed?");
+		return NS_ERROR_NOT_AVAILABLE;
+	}
+	// first, normalize the hostname, and fail if it contains illegal characters.
+	nsAutoCString host(aHost);
+	nsresult rv;
+	rv = NormalizeHost(host);
+	NS_ENSURE_SUCCESS(rv, rv);
+
+	//// get the base domain for the host URI.
+	//// e.g. for "www.bbc.co.uk", this would be "bbc.co.uk".
+	nsAutoCString baseDomain;
+	rv = GetBaseDomainFromHost(host, baseDomain);
+	NS_ENSURE_SUCCESS(rv, rv);
+	if (mDBState->dbConn) {
+		NS_ASSERTION(mDBState == mDefaultDBState, "not in default DB state");
+		if (mDefaultDBState->pendingRead) {
+			CancelAsyncRead(true);
+		}
+		nsCOMPtr<mozIStorageAsyncStatement> stmt;
+		rv = mDefaultDBState->dbConn->CreateAsyncStatement(NS_LITERAL_CSTRING("UPDATE moz_cookies SET isSavedPassword = 1 WHERE baseDomain =:host OR host =:host"), getter_AddRefs(stmt));
+		if (NS_SUCCEEDED(rv)) {
+			rv = stmt->BindUTF8StringByName(NS_LITERAL_CSTRING("host"), baseDomain);
+			NS_ASSERT_SUCCESS(rv);
+
+			nsCOMPtr<mozIStoragePendingStatement> handle;
+			rv = stmt->ExecuteAsync(mDefaultDBState->removeListener,
+				getter_AddRefs(handle));
+			NS_ASSERT_SUCCESS(rv);
+		}else {
+			// Recreate the database.
+			COOKIE_LOGSTRING(LogLevel::Debug,
+				("UpdateCookiesInSavedPassword(): corruption detected with rv 0x%x", rv));
+			HandleCorruptDB(mDefaultDBState);
+		}
+	}
+
+	return NS_OK;
+}
+
+NS_IMETHODIMP
+nsCookieService::ForceRemoveAll()
+{
+	if (!mDBState) {
+		NS_WARNING("No DBState! Profile already closed?");
+		return NS_ERROR_NOT_AVAILABLE;
+	}
+
+	RemoveAllFromMemory();
+
+	// clear the cookie file
+	if (mDBState->dbConn) {
+		NS_ASSERTION(mDBState == mDefaultDBState, "not in default DB state");
+
+		// Cancel any pending read. No further results will be received by our
+		// read listener.
+		if (mDefaultDBState->pendingRead) {
+			CancelAsyncRead(true);
+		}
+
+		nsCOMPtr<mozIStorageAsyncStatement> stmt;
+		nsresult rv = mDefaultDBState->dbConn->CreateAsyncStatement(NS_LITERAL_CSTRING(
+			"DELETE FROM moz_cookies"), getter_AddRefs(stmt));
+		if (NS_SUCCEEDED(rv)) {
+			nsCOMPtr<mozIStoragePendingStatement> handle;
+			rv = stmt->ExecuteAsync(mDefaultDBState->removeListener,
+				getter_AddRefs(handle));
+			NS_ASSERT_SUCCESS(rv);
+		}
+		else {
+			// Recreate the database.
+			COOKIE_LOGSTRING(LogLevel::Debug,
+				("forceRemoveAll(): corruption detected with rv 0x%x", rv));
+			HandleCorruptDB(mDefaultDBState);
+		}
+	}
+
+	NotifyChanged(nullptr, MOZ_UTF16("cleared"));
+	return NS_OK;
+}
 
 static PLDHashOperator
 COMArrayCallback(nsCookieEntry *aEntry,
@@ -2104,6 +2234,7 @@ nsCookieService::Read()
       "creationTime, "
       "isSecure, "
       "isHttpOnly, "
+	  "isSavedPassword, "
       "baseDomain, "
       "appId,  "
       "inBrowserElement "
@@ -2272,7 +2403,8 @@ nsCookieService::EnsureReadDomain(const nsCookieKey &aKey)
         "lastAccessed, "
         "creationTime, "
         "isSecure, "
-        "isHttpOnly "
+        "isHttpOnly, "
+		"isSavedPassword "
       "FROM moz_cookies "
       "WHERE baseDomain = :baseDomain "
       "  AND appId = :appId "
@@ -4226,6 +4358,10 @@ bindCookieParameters(mozIStorageBindingParamsArray *aParamsArray,
                                aCookie->IsHttpOnly());
   NS_ASSERT_SUCCESS(rv);
 
+  rv = params->BindInt32ByName(NS_LITERAL_CSTRING("isSavedPassword"),
+	  aCookie->IsSavedPassword());
+  NS_ASSERT_SUCCESS(rv);
+
   // Bind the params to the array.
   rv = aParamsArray->AddParams(params);
   NS_ASSERT_SUCCESS(rv);
@@ -4245,7 +4381,7 @@ nsCookieService::AddCookieToList(const nsCookieKey             &aKey,
 
   nsCookieEntry *entry = aDBState->hostTable.PutEntry(aKey);
   NS_ASSERTION(entry, "can't insert element into a null entry!");
-
+  aCookie->SetIsSavedPassword(false);
   entry->GetCookies().AppendElement(aCookie);
   ++aDBState->cookieCount;
 

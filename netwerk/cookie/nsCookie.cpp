@@ -136,6 +136,7 @@ NS_IMETHODIMP nsCookie::GetIsSession(bool *aIsSession)   { *aIsSession = IsSessi
 NS_IMETHODIMP nsCookie::GetIsDomain(bool *aIsDomain)     { *aIsDomain = IsDomain();   return NS_OK; }
 NS_IMETHODIMP nsCookie::GetIsSecure(bool *aIsSecure)     { *aIsSecure = IsSecure();   return NS_OK; }
 NS_IMETHODIMP nsCookie::GetIsHttpOnly(bool *aHttpOnly)   { *aHttpOnly = IsHttpOnly(); return NS_OK; }
+NS_IMETHODIMP nsCookie::GetIsSavedPassword(bool *aSavedPassword)   { *aSavedPassword = IsSavedPassword(); return NS_OK; }
 NS_IMETHODIMP nsCookie::GetStatus(nsCookieStatus *aStatus) { *aStatus = 0;              return NS_OK; }
 NS_IMETHODIMP nsCookie::GetPolicy(nsCookiePolicy *aPolicy) { *aPolicy = 0;              return NS_OK; }
 NS_IMETHODIMP nsCookie::GetCreationTime(int64_t *aCreation){ *aCreation = CreationTime(); return NS_OK; }

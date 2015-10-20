@@ -709,7 +709,8 @@ var gCookiesWindow = {
       this.performDeletion(deleteItems);
     }
     else {
-      this._cm.removeAll();
+        //this._cm.removeAll();
+        this._cm.forceRemoveAll();
     }
     this._updateRemoveAllButton();
     this.focusFilterBox();
