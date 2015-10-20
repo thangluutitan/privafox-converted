@@ -1072,7 +1072,7 @@ function autoFixLenForPref(prefTitle, len) {//Ajust ProxyChangesDialog UI
 	while(tmpString.length < len){
 		tmpString = tmpString + " ";
 	}
-	Services.prompt.alert(null, "Length: ",len + "-AfterLeng:"+tmpString.length);
+	//Services.prompt.alert(null, "Length: ",len + "-AfterLeng:"+tmpString.length);
 	return tmpString;
 }
 let proxyChangeNotifyBarID = "browser-proxy-changce-notification";
@@ -1120,13 +1120,15 @@ function showProxyChangeNotification() {
 	var proxyChangeContent = "Proxy Settings: New || Old\n\n";
 	var prefName = "";
 	var isProxyChange = false;
+	// && currentProxy.type != 0 && currentProxy.type != 3
+	if (currentProxy.type != lastProxyInfo.type){
+		prefName = "ProxyType: ";
+		//prefName = autoFixLenForPref(prefName,spacer.length);
+		proxyChangeContent  = proxyChangeContent + prefName + proxyTypeName[currentProxy.type] + spacer + proxyTypeName[lastProxyInfo.type] + "\n";
+		isProxyChange = true;
+	}
 	if(currentProxy.type ===1){
-		if (currentProxy.type != lastProxyInfo.type && currentProxy.type != 0 && currentProxy.type != 3){
-			prefName = "ProxyType: ";
-			//prefName = autoFixLenForPref(prefName,spacer.length);
-			proxyChangeContent  = proxyChangeContent + prefName + proxyTypeName[currentProxy.type] + spacer + proxyTypeName[lastProxyInfo.type] + "\n";
-			isProxyChange = true;
-		} 
+		 
 		
 		if (currentProxy.http != lastProxyInfo.http){
 			prefName = "http: ";
@@ -1161,7 +1163,7 @@ function showProxyChangeNotification() {
 		if (currentProxy.ssl_port != lastProxyInfo.ssl_port){
 			isProxyChange = true;
 			prefName = "ssl_port: ";
-			prefName = autoFixLenForPref(prefName,spacer.length);
+			//prefName = autoFixLenForPref(prefName,spacer.length);
 			proxyChangeContent  = proxyChangeContent + prefName + currentProxy.ssl_port + spacer + lastProxyInfo.ssl_port + "\n";
 		}
 		if (currentProxy.socks != lastProxyInfo.socks){
@@ -1173,7 +1175,7 @@ function showProxyChangeNotification() {
 		if (currentProxy.socks_port != lastProxyInfo.socks_port){
 			isProxyChange = true;
 			prefName = "socks_port: ";
-			prefName = autoFixLenForPref(prefName,spacer.length);
+			//prefName = autoFixLenForPref(prefName,spacer.length);
 			proxyChangeContent  = proxyChangeContent + prefName + currentProxy.socks_port + spacer + lastProxyInfo.socks_port + "\n";
 		}
 		if (currentProxy.socks_version != lastProxyInfo.socks_version){
@@ -1184,8 +1186,8 @@ function showProxyChangeNotification() {
 		}
 		if (currentProxy.socks_remote_dns != lastProxyInfo.socks_remote_dns){
 			isProxyChange = true;
-			prefName = "socks_remote_dns";
-			prefName = autoFixLenForPref(prefName,spacer.length);
+			prefName = "socks_remote_dns: ";
+			//prefName = autoFixLenForPref(prefName,spacer.length);
 			proxyChangeContent  = proxyChangeContent + prefName + currentProxy.socks_remote_dns + spacer + lastProxyInfo.socks_remote_dns + "\n";
 		}
 		if (currentProxy.share_proxy_settings != lastProxyInfo.share_proxy_settings){
@@ -1288,7 +1290,7 @@ function showProxyChangeNotification() {
         accessKey: "R",
         callback: function() {
 			_actionTakenProxyChangce = true;
-			Services.prefs.setIntPref("network.proxy.http.type",lastProxyInfo.type);
+			Services.prefs.setIntPref("network.proxy.type",lastProxyInfo.type);
 			Services.prefs.setCharPref("network.proxy.http",lastProxyInfo.http);
 			Services.prefs.setIntPref("network.proxy.http_port",lastProxyInfo.http_port);
 			Services.prefs.setCharPref("network.proxy.ftp",lastProxyInfo.ftp);
