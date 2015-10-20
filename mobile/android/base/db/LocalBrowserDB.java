@@ -514,7 +514,7 @@ public class LocalBrowserDB implements BrowserDB {
     private Uri combinedUriWithLimit(int limit) {
         return mCombinedUriWithProfile.buildUpon()
                                       .appendQueryParameter(BrowserContract.PARAM_LIMIT,
-                                                            String.valueOf(limit))
+                                              String.valueOf(limit))
                                       .build();
     }
 

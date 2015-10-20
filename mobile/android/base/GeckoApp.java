@@ -678,7 +678,6 @@ public abstract class GeckoApp
                 if (rec != null) {
                   rec.recordGeckoStartupTime(mGeckoReadyStartupTimer.getElapsed());
                 }
-
             } else if (event.equals("Gecko:Exited")) {
                 // Gecko thread exited first; let GeckoApp die too.
                 doShutdown();
@@ -1379,6 +1378,7 @@ public abstract class GeckoApp
      */
     @Override
     public void onLocaleReady(final String locale) {
+        Log.d(LOGTAG, "Privafox Gecko App onLocaleReady");
         if (!ThreadUtils.isOnUiThread()) {
             throw new RuntimeException("onLocaleReady must always be called from the UI thread.");
         }
@@ -1626,7 +1626,7 @@ public abstract class GeckoApp
             @Override
             public void run() {
                 if (AppConstants.NIGHTLY_BUILD && AppConstants.MOZ_ANDROID_TAB_QUEUE
-                                               && TabQueueHelper.shouldOpenTabQueueUrls(GeckoApp.this)) {
+                        && TabQueueHelper.shouldOpenTabQueueUrls(GeckoApp.this)) {
 
                     EventDispatcher.getInstance().registerGeckoThreadListener(new NativeEventListener() {
                         @Override
@@ -1762,9 +1762,9 @@ public abstract class GeckoApp
         Log.d(LOGTAG, "Enabling Android StrictMode");
 
         StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
-                                  .detectAll()
-                                  .penaltyLog()
-                                  .build());
+                .detectAll()
+                .penaltyLog()
+                .build());
 
         StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder()
                                .detectAll()
@@ -1795,7 +1795,7 @@ public abstract class GeckoApp
             ViewGroup mCameraLayout = (ViewGroup) findViewById(R.id.camera_layout);
             // Some phones (eg. nexus S) need at least a 8x16 preview size
             mCameraLayout.addView(mCameraView,
-                                  new AbsoluteLayout.LayoutParams(8, 16, 0, 0));
+                    new AbsoluteLayout.LayoutParams(8, 16, 0, 0));
         }
     }
 
@@ -1893,7 +1893,39 @@ public abstract class GeckoApp
     protected int getOrientation() {
         return GeckoScreenOrientation.getInstance().getAndroidOrientation();
     }
-
+    /*
+    *Privafox : check bookmark required login with master password
+    *
+    */
+    private void showBookmarkSecurity()
+    {
+//        ThreadUtils.postToUiThread(new Runnable() {
+//            @Override
+//            public void run() {
+//                SharedPreferences prefsSecurity = this.getSharedPreferences();
+//                boolean isAppReady = false;
+//                    try {
+//                        JSONObject jsonPref = new JSONObject();
+//                        jsonPref.put("name", "");
+//                        final boolean mpEnable = prefsSecurity.getBoolean("privacy.masterpassword.enabled", false);
+//                        final boolean mpProtect = prefsSecurity.getBoolean("security.additionalSecurity.protectBookmark", false);
+//                        final boolean isLogin = prefsSecurity.getBoolean("security.additionalSecurity.protectBookmark.isAlreadyLogin", false);
+//
+//                        if (mpProtect) {
+//                            isAppReady = (mpEnable) ? true : false;
+//                            if (isLogin && mpEnable) {
+//                                isAppReady = false;
+//                            }
+//                        }
+//                        jsonPref.put("isProtected", isAppReady);
+                        Log.d(LOGTAG, "Titan : BookmarksPanel:EventSecurityBookmark ");
+                        GeckoAppShell.sendEventToGecko(GeckoEvent.createBroadcastEvent("BookmarksPanel:EventSecurityBookmark", null));
+//                    } catch (Exception ex) {
+//                        Log.e(LOGTAG, "Error setting Protected bookmark", ex);
+//                    }
+//            }
+//        });
+    }
     @Override
     public void onResume()
     {
@@ -1924,7 +1956,6 @@ public abstract class GeckoApp
         // track the duration of the session.
         final long now = System.currentTimeMillis();
         final long realTime = android.os.SystemClock.elapsedRealtime();
-
         ThreadUtils.postToBackgroundThread(new Runnable() {
             @Override
             public void run() {
@@ -1947,6 +1978,7 @@ public abstract class GeckoApp
                 }
             }
         });
+        this.showBookmarkSecurity();
     }
 
     @Override
@@ -2021,12 +2053,12 @@ public abstract class GeckoApp
 
     @Override
     public void onDestroy() {
-        EventDispatcher.getInstance().unregisterGeckoThreadListener((GeckoEventListener)this,
-            "Gecko:Ready",
-            "Gecko:DelayedStartup",
-            "Gecko:Exited",
-            "Accessibility:Event",
-            "NativeApp:IsDebuggable");
+        EventDispatcher.getInstance().unregisterGeckoThreadListener((GeckoEventListener) this,
+                "Gecko:Ready",
+                "Gecko:DelayedStartup",
+                "Gecko:Exited",
+                "Accessibility:Event",
+                "NativeApp:IsDebuggable");
 
         EventDispatcher.getInstance().unregisterGeckoThreadListener((NativeEventListener)this,
             "Accessibility:Ready",
@@ -2157,6 +2189,7 @@ public abstract class GeckoApp
                 mFormAssistPopup.hide();
             refreshChrome();
         }
+        this.showBookmarkSecurity();
         super.onConfigurationChanged(newConfig);
     }
 

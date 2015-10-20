@@ -24,6 +24,7 @@ pref("browser.autoUpdateNotify.message", "It is strongly recommended to enable a
 pref("browser.autoUpdateNotify.WhyUrl","https://www.privafox.com/support/why-auto-update.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
 //End Privafox Auto Update Notification
 pref("security.additionalSecurity.protectBookmark.isAlreadyLogin", false);
+pref("preferences.security.useMasterPassword.enable.startup", false);
 pref("toolkit.browser.cacheRatioWidth", 2000);
 pref("toolkit.browser.cacheRatioHeight", 3000);
 
@@ -845,8 +846,8 @@ pref("browser.snippets.geoUrl", "http://removed.in.privafox");
 pref("browser.snippets.statsUrl", "http://removed.in.privafox");
 
 // These prefs require a restart to take effect.
-pref("browser.snippets.enabled", true);
-pref("browser.snippets.syncPromo.enabled", true);
+pref("browser.snippets.enabled", false);
+pref("browser.snippets.syncPromo.enabled", false);
 pref("browser.snippets.firstrunHomepage.enabled", true);
 
 // The URL of the APK factory from which we obtain APKs for webapps.
@@ -872,7 +873,7 @@ pref("browser.webapps.checkForUpdates", 1);
 // To test updates, set this to http://apk-update-checker.paas.allizom.org,
 // which is a test server that always reports all apps as having updates.
 pref("browser.webapps.updateCheckUrl", "https://controller.apk.privafox.com/app_updates");
-
+pref("home.sync.removed", true);
 // The mode of home provider syncing.
 // 0: Sync always
 // 1: Sync only when on wifi

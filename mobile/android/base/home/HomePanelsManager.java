@@ -85,11 +85,14 @@ public class HomePanelsManager implements GeckoEventListener {
         mContext = context;
         mHomeConfig = HomeConfig.getDefault(context);
 
+        /*
+        * Privafox : removed Sync Key : EVENT_HOMEPANELS_REFRESH
+        *
+         */
         EventDispatcher.getInstance().registerGeckoThreadListener(this,
             EVENT_HOMEPANELS_INSTALL,
             EVENT_HOMEPANELS_UNINSTALL,
-            EVENT_HOMEPANELS_UPDATE,
-            EVENT_HOMEPANELS_REFRESH);
+            EVENT_HOMEPANELS_UPDATE);
     }
 
     public void onLocaleReady(final String locale) {

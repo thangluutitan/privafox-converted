@@ -615,6 +615,8 @@ var BrowserApp = {
     Services.obs.addObserver(this, "Webapps:Load", false);
     Services.obs.addObserver(this, "Webapps:AutoUninstall", false);
     Services.obs.addObserver(this, "sessionstore-state-purge-complete", false);
+    Services.obs.addObserver(this, "BookmarksPanel:EventLoginRequest", false);
+    Services.obs.addObserver(this, "BookmarksPanel:EventSecurityBookmark", false);
     Messaging.addListener(this.getHistory.bind(this), "Session:GetHistory");
 
     function showFullScreenWarning() {
@@ -695,10 +697,21 @@ var BrowserApp = {
     let event = document.createEvent("Events");
     event.initEvent("UIReady", true, false);
     window.dispatchEvent(event);
-
+    // clear security bookmark when start app
+    Services.prefs.setBoolPref("security.additionalSecurity.protectBookmark.isAlreadyLogin", false);
     if (this._startupStatus) {
       this.onAppUpdated();
     }
+    let isProtectBookmark = false;
+    if (this._startupStatus === "new") {
+    }else{
+            let additionalSecurity = Services.prefs.getBoolPref("security.additionalSecurity.protectBookmark");
+            isProtectBookmark =  (additionalSecurity)? true : false ;
+            if(isProtectBookmark){
+                isProtectBookmark =  (MasterPassword.enabled)? true : false ;
+            }
+    }
+    this.requestShowBookmark("" ,isProtectBookmark);
 
     if (!ParentalControls.isAllowed(ParentalControls.INSTALL_EXTENSION)) {
       // Disable extension installs
@@ -1684,20 +1697,37 @@ var BrowserApp = {
 
   setPreferences: function (aPref) {
     let json = JSON.parse(aPref);
-
+    let isProtectBookmark = false;
     switch (json.name) {
       // The plugin pref is actually two separate prefs, so
       // we need to handle it differently
       case "plugin.enable":
         PluginHelper.setPluginPreference(json.value);
         return;
-
+    // Additional security bookmarks
+      case "security.additionalSecurity.protectBookmark":
+        let isCheck = json.value;
+        isProtectBookmark = isCheck;
+        if(isCheck){
+            isProtectBookmark =  (MasterPassword.enabled)? true : false ;
+        }
+        Services.prefs.setBoolPref("security.additionalSecurity.protectBookmark.isAlreadyLogin", false);
+        this.requestShowBookmark("security.additionalSecurity.protectBookmark",isProtectBookmark);
+        break;
       // MasterPassword pref is not real, we just need take action and leave
       case "privacy.masterpassword.enabled":
-        if (MasterPassword.enabled)
-          MasterPassword.removePassword(json.value);
-        else
-          MasterPassword.setPassword(json.value);
+        let isCheckMP = json.value;
+        if (MasterPassword.enabled){
+            MasterPassword.removePassword(json.value);
+            isProtectBookmark = false;
+        }else{
+            MasterPassword.setPassword(json.value);
+            let additionalSecurity = Services.prefs.getBoolPref("security.additionalSecurity.protectBookmark");
+            isProtectBookmark =  (additionalSecurity)? true : false ;
+        }
+        Services.prefs.setBoolPref("security.additionalSecurity.protectBookmark.isAlreadyLogin", false);
+        this.requestShowBookmark("privacy.masterpassword.enabled" ,isProtectBookmark);
+
         return;
 
       // Enabling or disabling suggestions will prevent future prompts
@@ -1748,6 +1778,15 @@ var BrowserApp = {
     }
   },
 
+  //Privafox : send request showbookmark
+  requestShowBookmark: function  (pref , isEnable){
+    Messaging.sendRequest({
+      type: "BookmarksPanel:showBookmark",
+      name: pref,
+      isProtected: isEnable
+    });
+  },
+
   sanitize: function (aItems, callback) {
     let success = true;
 
@@ -1760,8 +1799,8 @@ var BrowserApp = {
       var promises = [];
       switch (key) {
         case "cookies_sessions":
-          promises.push(Sanitizer.clearItem("cookies"));
-          promises.push(Sanitizer.clearItem("sessions"));
+          //promises.push(Sanitizer.clearItem("cookies"));
+          //promises.push(Sanitizer.clearItem("sessions"));
           break;
         default:
           promises.push(Sanitizer.clearItem(key));
@@ -2199,7 +2238,24 @@ var BrowserApp = {
         let tab = this.getTabForId(data.tabId);
         tab.tilesData = data.payload;
         break;
+      case "BookmarksPanel:EventLoginRequest":
+        let isLogin = MasterPassword.requestLogin();
+        this.requestShowBookmark("" , (isLogin)? false : true);
+        break;
+      case "BookmarksPanel:EventSecurityBookmark":
+            let isSecurityBM = Services.prefs.getBoolPref("security.additionalSecurity.protectBookmark");
+            let protectBookmarkMP = false;
+            let vLogin = false;
+            if(isSecurityBM){
+                protectBookmarkMP = (MasterPassword.enabled)? true: false;
+                vLogin = Services.prefs.getBoolPref("security.additionalSecurity.protectBookmark.isAlreadyLogin");
+                if(protectBookmarkMP && vLogin){
+                    protectBookmarkMP = false;
+                }
+            }
+        this.requestShowBookmark("" ,protectBookmarkMP);
 
+        break;
       default:
         dump('BrowserApp.observe: unexpected topic "' + aTopic + '"\n');
         break;
@@ -7478,8 +7534,15 @@ var SearchEngines = {
     return Services.search.getEngineByName(data.engine);
   },
 
+  // Helper method to extract the Additional security bookmark from a JSON. Simplifies the observe function.
+  _extractSecurityBookmarkFromJSON: function _extractSecurityBookmarkFromJSON(aData){
+        let data = JSON.parse(aData);
+        return data;
+  },
+
   observe: function observe(aSubject, aTopic, aData) {
     let engine;
+    let securityBookmarkMP;
     switch(aTopic) {
       case "SearchEngines:Add":
         this.displaySearchEnginesList(aData);

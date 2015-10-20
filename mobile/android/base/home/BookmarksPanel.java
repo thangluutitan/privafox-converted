@@ -7,7 +7,10 @@ package org.mozilla.gecko.home;
 
 import java.util.List;
 
+import org.mozilla.gecko.GeckoAppShell;
+import org.mozilla.gecko.GeckoEvent;
 import org.mozilla.gecko.GeckoProfile;
+import org.mozilla.gecko.PrefsHelper;
 import org.mozilla.gecko.R;
 import org.mozilla.gecko.db.BrowserContract.Bookmarks;
 import org.mozilla.gecko.db.BrowserDB;
@@ -16,7 +19,6 @@ import org.mozilla.gecko.home.BookmarksListAdapter.OnRefreshFolderListener;
 import org.mozilla.gecko.home.BookmarksListAdapter.RefreshType;
 import org.mozilla.gecko.home.HomeContextMenuInfo.RemoveItemType;
 import org.mozilla.gecko.home.HomePager.OnUrlOpenListener;
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
@@ -29,11 +31,26 @@ import android.view.ViewGroup;
 import android.view.ViewStub;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Button;
+import android.view.View.OnClickListener;
+import android.util.Log;
+import org.mozilla.gecko.EventDispatcher;
+import org.mozilla.gecko.util.NativeEventListener;
+import org.mozilla.gecko.util.EventCallback;
+import org.mozilla.gecko.util.NativeJSObject;
+import org.mozilla.gecko.util.GeckoEventListener;
+import org.json.JSONException;
+import org.json.JSONObject;
+import android.content.SharedPreferences;
+import android.widget.Toast;
 
-/**
+/**s
  * A page in about:home that displays a ListView of bookmarks.
  */
-public class BookmarksPanel extends HomeFragment {
+public class BookmarksPanel extends HomeFragment
+        implements GeckoEventListener,
+        NativeEventListener
+{
     public static final String LOGTAG = "GeckoBookmarksPanel";
 
     // Cursor loader ID for list of bookmarks.
@@ -47,6 +64,7 @@ public class BookmarksPanel extends HomeFragment {
 
     // List of bookmarks.
     private BookmarksListView mList;
+    private Button mButtonMP;
 
     // Adapter for list of bookmarks.
     private BookmarksListAdapter mListAdapter;
@@ -60,11 +78,30 @@ public class BookmarksPanel extends HomeFragment {
     // Callback for cursor loaders.
     private CursorLoaderCallbacks mLoaderCallbacks;
 
+    private static final String PREFS_MP_ENABLED = "privacy.masterpassword.enabled";
+    private static final String PREFS_PROTECT_BOOKMARK = "security.additionalSecurity.protectBookmark";
+    private static final String PREFS_PROTECT_BOOKMARK_IS_LOGIN = "security.additionalSecurity.protectBookmark.isAlreadyLogin";
+
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.home_bookmarks_panel, container, false);
+        mButtonMP = (Button) view.findViewById(R.id.button_mp);
+        EventDispatcher.getInstance().registerGeckoThreadListener((NativeEventListener) this,
+                "BookmarksPanel:showBookmark");
 
+        mButtonMP.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Private request Login MP for show bookmark
+                GeckoEvent event = GeckoEvent.createBroadcastEvent("BookmarksPanel:EventLoginRequest", null);
+                GeckoAppShell.sendEventToGecko(event);
+            }
+        });
         mList = (BookmarksListView) view.findViewById(R.id.bookmarks_list);
+
+        mList.setVisibility(View.GONE);
+        mButtonMP.setVisibility(View.GONE);
 
         mList.setContextMenuInfoFactory(new HomeContextMenuInfo.Factory() {
             @Override
@@ -84,6 +121,44 @@ public class BookmarksPanel extends HomeFragment {
         });
 
         return view;
+    }
+    @Override
+    public void handleMessage(final String event, final NativeJSObject message, final EventCallback callback) {
+        Log.w(LOGTAG, "Titan BookmarkPanel handling message name: " + event );
+        try {
+            if (event.equals("BookmarksPanel:showBookmark")) {
+                final boolean isProtect = message.getBoolean("isProtected");
+                org.mozilla.gecko.util.ThreadUtils.postToUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        BookmarksPanel.this.showBookmark(isProtect);
+                    }
+                });
+                Log.w(LOGTAG, "Titan BookmarkPanel handling message name: " + event + " isProtect : " + isProtect);
+            }
+        } catch (Exception e) {
+            Log.e(LOGTAG, "Exception BookmarkPanel handling message \"" + event + "\":", e);
+        }
+    }
+
+    @Override
+    public void handleMessage(String event, JSONObject message) {
+        Log.w(LOGTAG, "Titan BookmarkPanel handling message name: " + event );
+        try{
+               //super.handleMessage(event, message);
+        } catch (Exception e) {
+            Log.e(LOGTAG, "Exception handling message \"" + event + "\":", e);
+        }
+    }
+
+    private void showBookmark(boolean enable){
+        if (enable) {
+            mList.setVisibility(View.GONE);
+            mButtonMP.setVisibility(View.VISIBLE);
+        } else {
+            mList.setVisibility(View.VISIBLE);
+            mButtonMP.setVisibility(View.GONE);
+        }
     }
 
     @Override
@@ -131,6 +206,8 @@ public class BookmarksPanel extends HomeFragment {
 
     @Override
     public void onDestroyView() {
+        EventDispatcher.getInstance().unregisterGeckoThreadListener((NativeEventListener)this,
+                "BookmarksPanel:showBookmark");
         mList = null;
         mListAdapter = null;
         mEmptyView = null;
@@ -216,6 +293,7 @@ public class BookmarksPanel extends HomeFragment {
      * Loader callbacks for the LoaderManager of this fragment.
      */
     private class CursorLoaderCallbacks extends TransitionAwareCursorLoaderCallbacks {
+        public boolean isProtectedBookmark = false;
         @Override
         public Loader<Cursor> onCreateLoader(int id, Bundle args) {
             if (args == null) {
@@ -237,7 +315,7 @@ public class BookmarksPanel extends HomeFragment {
         @Override
         public void onLoaderReset(Loader<Cursor> loader) {
             super.onLoaderReset(loader);
-
+            BookmarksLoader bl = (BookmarksLoader) loader;
             if (mList != null) {
                 mListAdapter.swapCursor(null);
             }

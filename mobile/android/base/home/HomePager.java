@@ -31,7 +31,7 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-
+import android.util.Log;
 public class HomePager extends ViewPager {
     private static final int LOADER_ID_CONFIG = 0;
 
@@ -296,6 +296,7 @@ public class HomePager extends ViewPager {
      * @param panelId of the home panel to be shown.
      */
     public void showPanel(String panelId) {
+        Log.d("TITAN" , "Titan show panel : " + panelId);
         if (!mVisible) {
             return;
         }

@@ -948,7 +948,7 @@ public class BrowserProvider extends SharedBrowserDatabaseProvider {
 
         // Compute matching IDs.
         final Cursor cursor = db.query(TABLE_BOOKMARKS, bookmarksProjection,
-                                       selection, selectionArgs, null, null, null);
+                selection, selectionArgs, null, null, null);
 
         // Now that we're done reading, open a transaction.
         final String inClause;

@@ -1847,7 +1847,8 @@ public class BrowserApp extends GeckoApp
             }
         } else if ("Updater:Launch".equals(event)) {
             handleUpdaterLaunch();
-        } else {
+        }
+        else {
             super.handleMessage(event, message, callback);
         }
     }
@@ -2617,6 +2618,7 @@ public class BrowserApp extends GeckoApp
                     BrowserApp.this.mFirstrunPane = null;
                 }
             });
+            //
         }
 
         mHomePagerContainer.setVisibility(View.VISIBLE);
