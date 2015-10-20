@@ -147,7 +147,6 @@ class BookmarksListAdapter extends MultiTypeCursorAdapter {
 
         return true;
     }
-
     /**
      * Moves to child folder, given a folderId.
      *

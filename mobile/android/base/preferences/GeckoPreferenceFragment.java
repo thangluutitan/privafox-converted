@@ -72,6 +72,8 @@ public class GeckoPreferenceFragment extends PreferenceFragment {
         // Display a menu for Search preferences.
         if (res == R.xml.preferences_search) {
             setHasOptionsMenu(true);
+        }else if(res == R.xml.preferences_privacy){
+            Log.d(LOGTAG, "Titan init Master Password");
         }
 
         addPreferencesFromResource(res);

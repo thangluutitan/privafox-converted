@@ -378,6 +378,7 @@
   <string name="bookmark_edit_keyword">&bookmark_edit_keyword;</string>
 
   <string name="pref_use_master_password">&pref_use_master_password;</string>
+  <string name="pref_protect_additional_security">&pref_protect_additional_security;</string>
   <string name="pref_protect_bookmark_master_password">&pref_protect_bookmark_master_password;</string>
   <string name="masterpassword_create_title">&masterpassword_create_title;</string>
   <string name="masterpassword_remove_title">&masterpassword_remove_title;</string>
@@ -392,6 +393,7 @@
   <string name="button_yes">&button_yes;</string>
   <string name="button_no">&button_no;</string>
   <string name="button_copy">&button_copy;</string>
+  <string name="button_bookmark_mp">&button_bookmark_mp;</string>
 
   <string name="firstrun_panel_title_welcome">&firstrun_panel_title_welcome;</string>
 

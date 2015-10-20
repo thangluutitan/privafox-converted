@@ -52,7 +52,9 @@
                             android:persistent="false" />
 
         <CheckBoxPreference android:key="security.additionalSecurity.protectBookmark"
-            android:title="@string/pref_protect_bookmark_master_password"
+            android:title="@string/pref_protect_additional_security"
+            android:summary="@string/pref_protect_bookmark_master_password"
+            android:enabled="false"
             android:persistent="false" />
     </PreferenceCategory>
 

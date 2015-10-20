@@ -32,8 +32,9 @@ public class ClearOnShutdownPref implements GeckoPreferences.PrefHandler {
             editor.putInt(PREF_DEFAULT_ENABLE, 1);
             editor.commit();
             Set<String> dataPut = new HashSet<String>();
-            dataPut.add("private.data.siteSettings");
+            dataPut.add("private.data.cookies_sessions");
             dataPut.add("private.data.offlineApps");
+            dataPut.add("private.data.siteSettings");
             final SharedPreferences.Editor editorStartup = prefs.edit();
             PrefUtils.putStringSet(editorStartup, PREF, dataPut);
             editorStartup.apply();

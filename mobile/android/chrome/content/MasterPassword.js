@@ -26,6 +26,18 @@ var MasterPassword = {
     return false;
   },
 
+  requestLogin: function(){
+    try {
+        let token = this._pk11DB.getInternalKeyToken();
+        token.login(true);
+        let vLogin = token.isLoggedIn();
+        return vLogin;
+    } catch(e) {
+        dump("MasterPassword.requestLogin: " + e + "\n");
+    }
+    return false;
+  },
+
   setPassword: function setPassword(aPassword) {
     try {
       let status;

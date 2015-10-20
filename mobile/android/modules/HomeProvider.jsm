@@ -35,7 +35,8 @@ XPCOMUtils.defineLazyGetter(this, "DB_PATH", function() {
 const PREF_STORAGE_LAST_SYNC_TIME_PREFIX = "home.storage.lastSyncTime.";
 const PREF_SYNC_UPDATE_MODE = "home.sync.updateMode";
 const PREF_SYNC_CHECK_INTERVAL_SECS = "home.sync.checkIntervalSecs";
-
+//Privafox : reomve sync
+const PREF_SYNC_REMOVED = "home.sync.removed";
 XPCOMUtils.defineLazyGetter(this, "gSyncCheckIntervalSecs", function() {
   return Services.prefs.getIntPref(PREF_SYNC_CHECK_INTERVAL_SECS);
 });
@@ -306,6 +307,10 @@ var gRefreshTimers = {};
  * messages to avoid successive refreshes, which can result in flashing views.
  */
 function refreshDataset(datasetId) {
+  let kSyncRemoved = Services.prefs.getBoolPref(PREF_SYNC_REMOVED);
+  if(kSyncRemoved)
+    return;
+
   // Bail if there's already a refresh timer waiting to fire
   if (gRefreshTimers[datasetId]) {
     return;

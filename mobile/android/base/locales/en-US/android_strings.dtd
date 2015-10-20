@@ -259,6 +259,7 @@ size. -->
 
 <!ENTITY pref_use_master_password "Use master password">
 <!ENTITY pref_protect_bookmark_master_password "Protect bookmarks with master password">
+<!ENTITY pref_protect_additional_security "Additional Security">
 <!ENTITY pref_sync "Sync">
 <!ENTITY pref_sync_summary2 "Sync your tabs, bookmarks, logins, history">
 <!ENTITY pref_search_suggestions "Show search suggestions">
@@ -460,7 +461,7 @@ size. -->
 <!ENTITY button_set "Set">
 <!ENTITY button_clear "Clear">
 <!ENTITY button_copy "Copy">
-
+<!ENTITY button_bookmark_mp "Enter Master Password">
 <!ENTITY firstrun_panel_title_welcome "Welcome">
 
 <!ENTITY home_top_sites_title "Top Sites">
