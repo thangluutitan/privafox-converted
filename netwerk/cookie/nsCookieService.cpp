@@ -1945,7 +1945,7 @@ nsCookieService::RemoveAll()
     }
   }
 
-  NotifyChanged(nullptr, MOZ_UTF16("cleared"));
+  //NotifyChanged(nullptr, MOZ_UTF16("cleared"));
   return NS_OK;
 }
 NS_IMETHODIMP
@@ -1979,7 +1979,7 @@ nsCookieService::RemoveAllNotInSavePassword()
 		}
 	}
 
-	NotifyChanged(nullptr, MOZ_UTF16("cleared"));
+	//NotifyChanged(nullptr, MOZ_UTF16("cleared"));
 	return NS_OK;
 }
 
