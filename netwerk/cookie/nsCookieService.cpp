@@ -1970,7 +1970,7 @@ nsCookieService::RemoveAllNotInSavePassword()
 
 		nsCOMPtr<mozIStorageAsyncStatement> stmt;
 		nsresult rv = mDefaultDBState->dbConn->CreateAsyncStatement(NS_LITERAL_CSTRING(
-			"DELETE FROM moz_cookies WHERE isSavedPassword =0 "), getter_AddRefs(stmt));
+			"DELETE FROM moz_cookies WHERE isSavedPassword = 0 "), getter_AddRefs(stmt));
 		if (NS_SUCCEEDED(rv)) {
 			nsCOMPtr<mozIStoragePendingStatement> handle;
 			rv = stmt->ExecuteAsync(mDefaultDBState->removeListener,
@@ -1993,24 +1993,18 @@ nsCookieService::UpdateCookiesInSavedPassword(const nsACString &aHost)
 	// first, normalize the hostname, and fail if it contains illegal characters.
 	nsAutoCString host(aHost);
 	nsresult rv;
-	rv = NormalizeHost(host);
-	NS_ENSURE_SUCCESS(rv, rv);
-
-	//// get the base domain for the host URI.
-	//// e.g. for "www.bbc.co.uk", this would be "bbc.co.uk".
-	nsAutoCString baseDomain;
-	rv = GetBaseDomainFromHost(host, baseDomain);
-	NS_ENSURE_SUCCESS(rv, rv);
 	if (mDBState->dbConn) {
 		NS_ASSERTION(mDBState == mDefaultDBState, "not in default DB state");
 		if (mDefaultDBState->pendingRead) {
 			CancelAsyncRead(true);
 		}
 		nsCOMPtr<mozIStorageAsyncStatement> stmt;
-		rv = mDefaultDBState->dbConn->CreateAsyncStatement(NS_LITERAL_CSTRING("UPDATE moz_cookies SET isSavedPassword = 1 WHERE (baseDomain =:host OR host =:host) AND isSavedPassword = 0"  ), getter_AddRefs(stmt));
+		const nsACString& sqlQuery = NS_LITERAL_CSTRING("DELETE FROM moz_cookies WHERE ") + aHost;
+		//rv = mDefaultDBState->dbConn->CreateAsyncStatement(NS_LITERAL_CSTRING("DELETE FROM moz_cookies WHERE host != 'accounts.google.com' AND host != '.facebook.com' "), getter_AddRefs(stmt));
+		rv = mDefaultDBState->dbConn->CreateAsyncStatement(sqlQuery, getter_AddRefs(stmt));
 		if (NS_SUCCEEDED(rv)) {
-			rv = stmt->BindUTF8StringByName(NS_LITERAL_CSTRING("host"), baseDomain);
-			NS_ASSERT_SUCCESS(rv);
+			//rv = stmt->BindUTF8StringByName(NS_LITERAL_CSTRING("host"), host);
+			//NS_ASSERT_SUCCESS(rv);
 
 			nsCOMPtr<mozIStoragePendingStatement> handle;
 			rv = stmt->ExecuteAsync(mDefaultDBState->removeListener,
