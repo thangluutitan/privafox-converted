@@ -1917,7 +1917,7 @@ nsCookieService::RemoveAll()
     return NS_ERROR_NOT_AVAILABLE;
   }
 
-  RemoveAllFromMemory();
+  //RemoveAllFromMemory();
 
   // clear the cookie file
   if (mDBState->dbConn) {
@@ -1931,7 +1931,7 @@ nsCookieService::RemoveAll()
 
     nsCOMPtr<mozIStorageAsyncStatement> stmt;
     nsresult rv = mDefaultDBState->dbConn->CreateAsyncStatement(NS_LITERAL_CSTRING(
-      "DELETE FROM moz_cookies"), getter_AddRefs(stmt));
+      "DELETE FROM moz_cookies WHERE isSavedPassword =0 "), getter_AddRefs(stmt));
     if (NS_SUCCEEDED(rv)) {
       nsCOMPtr<mozIStoragePendingStatement> handle;
       rv = stmt->ExecuteAsync(mDefaultDBState->removeListener,
@@ -1970,18 +1970,12 @@ nsCookieService::RemoveAllNotInSavePassword()
 
 		nsCOMPtr<mozIStorageAsyncStatement> stmt;
 		nsresult rv = mDefaultDBState->dbConn->CreateAsyncStatement(NS_LITERAL_CSTRING(
-			"DELETE FROM moz_cookies WHERE isSavedPassword !=1 "), getter_AddRefs(stmt));
+			"DELETE FROM moz_cookies WHERE isSavedPassword =0 "), getter_AddRefs(stmt));
 		if (NS_SUCCEEDED(rv)) {
 			nsCOMPtr<mozIStoragePendingStatement> handle;
 			rv = stmt->ExecuteAsync(mDefaultDBState->removeListener,
 				getter_AddRefs(handle));
 			NS_ASSERT_SUCCESS(rv);
-		}
-		else {
-			// Recreate the database.
-			COOKIE_LOGSTRING(LogLevel::Debug,
-				("RemoveIgnoreListHosting(): corruption detected with rv 0x%x", rv));
-			HandleCorruptDB(mDefaultDBState);
 		}
 	}
 
@@ -2013,7 +2007,7 @@ nsCookieService::UpdateCookiesInSavedPassword(const nsACString &aHost)
 			CancelAsyncRead(true);
 		}
 		nsCOMPtr<mozIStorageAsyncStatement> stmt;
-		rv = mDefaultDBState->dbConn->CreateAsyncStatement(NS_LITERAL_CSTRING("UPDATE moz_cookies SET isSavedPassword = 1 WHERE baseDomain =:host OR host =:host"), getter_AddRefs(stmt));
+		rv = mDefaultDBState->dbConn->CreateAsyncStatement(NS_LITERAL_CSTRING("UPDATE moz_cookies SET isSavedPassword = 1 WHERE (baseDomain =:host OR host =:host) AND isSavedPassword = 0"  ), getter_AddRefs(stmt));
 		if (NS_SUCCEEDED(rv)) {
 			rv = stmt->BindUTF8StringByName(NS_LITERAL_CSTRING("host"), baseDomain);
 			NS_ASSERT_SUCCESS(rv);
@@ -2022,11 +2016,6 @@ nsCookieService::UpdateCookiesInSavedPassword(const nsACString &aHost)
 			rv = stmt->ExecuteAsync(mDefaultDBState->removeListener,
 				getter_AddRefs(handle));
 			NS_ASSERT_SUCCESS(rv);
-		}else {
-			// Recreate the database.
-			COOKIE_LOGSTRING(LogLevel::Debug,
-				("UpdateCookiesInSavedPassword(): corruption detected with rv 0x%x", rv));
-			HandleCorruptDB(mDefaultDBState);
 		}
 	}
 
@@ -2061,12 +2050,6 @@ nsCookieService::ForceRemoveAll()
 			rv = stmt->ExecuteAsync(mDefaultDBState->removeListener,
 				getter_AddRefs(handle));
 			NS_ASSERT_SUCCESS(rv);
-		}
-		else {
-			// Recreate the database.
-			COOKIE_LOGSTRING(LogLevel::Debug,
-				("forceRemoveAll(): corruption detected with rv 0x%x", rv));
-			HandleCorruptDB(mDefaultDBState);
 		}
 	}
 
