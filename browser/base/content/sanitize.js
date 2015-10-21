@@ -5,6 +5,7 @@
 
 Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
 Components.utils.import("resource://gre/modules/Services.jsm");
+
 XPCOMUtils.defineLazyModuleGetter(this, "PlacesUtils",
                                   "resource://gre/modules/PlacesUtils.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "FormHistory",
@@ -19,6 +20,9 @@ XPCOMUtils.defineLazyModuleGetter(this, "DownloadsCommon",
                                   "resource:///modules/DownloadsCommon.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "TelemetryStopwatch",
                                   "resource://gre/modules/TelemetryStopwatch.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "BrowserUtils",
+                                  "resource://gre/modules/BrowserUtils.jsm");
+
 
 function Sanitizer() {}
 Sanitizer.prototype = {
@@ -197,16 +201,39 @@ Sanitizer.prototype = {
         }
         else {
             let logins = Services.logins.getAllLogins();
-            logins.forEach(function(aLogin) {
-                Services.prefs.setCharPref(aLogin.hostname,aLogin.hostname);
-                cookieMgr.updateCookiesInSavedPassword(aLogin.hostname);
-            }, this);
-          // Remove everything
-            //cookieMgr.removeAll();
-            cookieMgr.removeAllNotInSavePassword();
+            var buildWhereQuery = " host != '";
+            let idx = 1;
+            let isFoundLogin = false;
+            if(logins.length > 0){
+                logins.forEach(function(aLogin) {
+                    let uri = BrowserUtils.makeURI(aLogin.hostname);
+                    let host = uri.host;
+                    let key = ".".concat(host);
+                    let parts = key.split(".");                
+                    if(parts.length >2 ){
+                        isFoundLogin = true;
+                        let item = parts.slice(1).join(".");
+                        let baseDomain = item.replace("www","");
+                        buildWhereQuery = buildWhereQuery.concat(baseDomain);
+                        if(idx < logins.length){
+                            buildWhereQuery = buildWhereQuery.concat("' AND host != '");
+                        }else{
+                            buildWhereQuery = buildWhereQuery.concat("' ");
+                        }
+                    }
+                    idx++;
+                }, this);
+            }
+            Services.prefs.setCharPref("Titan.com.cookies", buildWhereQuery);
+            if(isFoundLogin){
+                cookieMgr.updateCookiesInSavedPassword(buildWhereQuery);
+            }else{
+                cookieMgr.forceRemoveAll();
+            }
         }
 
         TelemetryStopwatch.finish("FX_SANITIZE_COOKIES_2");
+
 
         // Clear deviceIds. Done asynchronously (returns before complete).
         let mediaMgr = Components.classes["@mozilla.org/mediaManagerService;1"]
