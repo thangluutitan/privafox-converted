@@ -204,7 +204,6 @@ Sanitizer.prototype = {
             var buildWhereQuery = " baseDomain != '";
             let idx = 1;
             let isFoundLogin = false;
-  //          Services.prefs.setCharPref("Titan.com.cookies.start", "Start");
             if(logins.length > 0){
                 logins.forEach(function(aLogin) {
                     let uri = BrowserUtils.makeURI(aLogin.hostname);
@@ -220,7 +219,6 @@ Sanitizer.prototype = {
                     idx++;
                 }, this);
             }
-//            Services.prefs.setCharPref("Titan.com.cookies", buildWhereQuery);
             if(isFoundLogin){
                 cookieMgr.updateCookiesInSavedPassword(buildWhereQuery);
             }else{
@@ -440,6 +438,10 @@ Sanitizer.prototype = {
                               .getService(Components.interfaces.nsILoginManager);
         // Passwords are timeless, and don't respect the timeSpan setting
         pwmgr.removeAllLogins();
+          // Privafox : removeAll Cokie
+        var cookieMgr = Components.classes["@mozilla.org/cookiemanager;1"]
+                                  .getService(Ci.nsICookieManager);
+        cookieMgr.removeAll();
         TelemetryStopwatch.finish("FX_SANITIZE_PASSWORDS");
       },
 
