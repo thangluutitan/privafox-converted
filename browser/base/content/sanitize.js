@@ -204,13 +204,12 @@ Sanitizer.prototype = {
             var buildWhereQuery = " baseDomain != '";
             let idx = 1;
             let isFoundLogin = false;
-            Services.prefs.setCharPref("Titan.com.cookies.start", "Start");
+  //          Services.prefs.setCharPref("Titan.com.cookies.start", "Start");
             if(logins.length > 0){
                 logins.forEach(function(aLogin) {
                     let uri = BrowserUtils.makeURI(aLogin.hostname);
                     let host = uri.host;
                     let baseDomain = Services.eTLD.getBaseDomainFromHost(host);
-                    Services.prefs.setCharPref(aLogin.hostname, "Start");
                     isFoundLogin = true;
                     buildWhereQuery = buildWhereQuery.concat(baseDomain);
                     if(idx < logins.length){
@@ -221,7 +220,7 @@ Sanitizer.prototype = {
                     idx++;
                 }, this);
             }
-            Services.prefs.setCharPref("Titan.com.cookies", buildWhereQuery);
+//            Services.prefs.setCharPref("Titan.com.cookies", buildWhereQuery);
             if(isFoundLogin){
                 cookieMgr.updateCookiesInSavedPassword(buildWhereQuery);
             }else{
