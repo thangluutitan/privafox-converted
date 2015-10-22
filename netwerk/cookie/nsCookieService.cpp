@@ -2000,12 +2000,8 @@ nsCookieService::UpdateCookiesInSavedPassword(const nsACString &aHost)
 		}
 		nsCOMPtr<mozIStorageAsyncStatement> stmt;
 		const nsACString& sqlQuery = NS_LITERAL_CSTRING("DELETE FROM moz_cookies WHERE ") + aHost;
-		//rv = mDefaultDBState->dbConn->CreateAsyncStatement(NS_LITERAL_CSTRING("DELETE FROM moz_cookies WHERE host != 'accounts.google.com' AND host != '.facebook.com' "), getter_AddRefs(stmt));
 		rv = mDefaultDBState->dbConn->CreateAsyncStatement(sqlQuery, getter_AddRefs(stmt));
 		if (NS_SUCCEEDED(rv)) {
-			//rv = stmt->BindUTF8StringByName(NS_LITERAL_CSTRING("host"), host);
-			//NS_ASSERT_SUCCESS(rv);
-
 			nsCOMPtr<mozIStoragePendingStatement> handle;
 			rv = stmt->ExecuteAsync(mDefaultDBState->removeListener,
 				getter_AddRefs(handle));
