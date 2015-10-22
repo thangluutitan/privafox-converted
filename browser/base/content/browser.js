@@ -56,6 +56,8 @@ XPCOMUtils.defineLazyModuleGetter(this, "Pocket",
                                   "resource:///modules/Pocket.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "NewTabURL",
                                   "resource:///modules/NewTabURL.jsm");
+								  
+//XPCOMUtils.defineLazyServiceGetter(this, 'proxyService', '@mozilla.org/system-proxy-settings;1', "nsISystemProxySettings");
 
 // Can't use XPCOMUtils for these because the scripts try to define the variables
 // on window, and so the defineProperty inside defineLazyGetter fails.
@@ -1087,9 +1089,6 @@ var lastProxyInfo = [];
 var currentProxy = [];
 var proxyTypeName = ["No proxy","Manual proxy configuration","Automatic proxy configuration URL","No proxy","Auto-detect proxy settings for this network","Use system proxy settings"];
 function showProxyChangeNotification() {
-	
-	//if(gBrowser.tabContainer.selectedIndex>0) return;
-	//Services.prompt.alert(null, "onRefreshAttempted - TabIndex: ", gBrowser.tabContainer.selectedIndex);
 	// network.proxy.type == 1 (Manual)
 	// network.proxy.http , network.proxy.http_port, 
 	// network.proxy.ftp , network.proxy.ftp_port
@@ -1216,7 +1215,8 @@ function showProxyChangeNotification() {
 		}
 	}
 	
-	if(currentProxy.type ===2 && currentProxy.autoconfig_url != lastProxyInfo.autoconfig_url){
+	if(currentProxy.type ==2 && currentProxy.autoconfig_url != lastProxyInfo.autoconfig_url){
+		//Services.prompt.alert(null, "currentProxy.autoconfig_url:" + currentProxy.autoconfig_url ,"\nlastProxyInfo.autoconfig_url:"+lastProxyInfo.autoconfig_url);
 		prefName = "Automatic proxy configuration URL: ";
 		//prefName = autoFixLenForPref(prefName,spacer.length);
 		proxyChangeContent  = proxyChangeContent + prefName + currentProxy.autoconfig_url + spacer + lastProxyInfo.autoconfig_url + "\n";
@@ -1429,12 +1429,19 @@ function RedirectLoad({ target: browser, data }) {
                              false);
   }
 }
+//var myService = {};
+//XPCOMUtils.defineLazyServiceGetter(myServices, 'proxyService', '"@mozilla.org/system-proxy-settings;1"', Ci.nsISystemProxySettings);
 
 var gBrowserInit = {
   delayedStartupFinished: false,
 
   onLoad: function() {
-	
+	  
+	//var myResultService = myService.proxyService.nsWindowsSystemProxySettings().GetProxyForURI();
+	//let proxyProvider = Cc["@mozilla.org/system-proxy-settings;1"]
+    //                .createInstance(Ci.nsISystemProxySettings);
+	//if(gBrowser.tabContainer.selectedIndex>0) return;
+	//Services.prompt.alert(null, "onRefreshAttempted - TabIndex: ", "Win:"+myResultService);
 	//Services.ww.getNewPrompter(null).alert("onLoad", "onLoad Called");
 	//showAutoUpdateNotification();
 
@@ -2916,8 +2923,18 @@ function BrowserPageInfo(doc, initialTab, imageElement) {
 function URLBarSetURI(aURI) {
   var value = gBrowser.userTypedValue;
   var valid = false;
+  //@mozilla.org/network/protocol-proxy-service
+  //Privafax SystemProxy
+  var proxyProtocolService = Cc["@mozilla.org/network/protocol-proxy-service;1"].getService(Ci.nsIProtocolProxyService)
+  var proxyService = Cc["@mozilla.org/system-proxy-settings;1"].getService(Ci.nsISystemProxySettings);
+  //var proxyService = Cc["@mozilla.org/network/protocol-proxy-service;1"].getService(Ci.nsIProtocolProxyService);
   _actionTakenProxyChangce = false;
   _actionTakenAuttoUpdate = false;
+  //var getProxyForURISetting = proxyService.getProxyForURI("test","http://","google.com",80);
+  var getProxyForURISetting = proxyService.getSystemProxyServer("test","http://","google.com",80);
+  //var getCurrentProxy = proxyService.getProxyServerInfo();
+  //var proxyString = proxyService.PACURI;//nsWindowsSystemProxySettings()
+  //Services.prompt.alert(null, "Try read Proxy ","OBJ1:" +  JSON.stringify(proxyService) + "OBJ2:" + JSON.stringify(getProxyForURISetting));
   showAutoUpdateNotification();
   if (value == null) {
     let uri = aURI || gBrowser.currentURI;

@@ -3114,7 +3114,7 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
             this._promolink.setAttribute("href", this._notificationLink);
             this._promolink.value = gNavigatorBundle.getString("syncPromoNotification.learnMoreLinkText");
 
-            this.hidden = false;
+            this.hidden = true;
 
             // HACK: The description element doesn't wrap correctly in panels,
             // thus set a width on it, based on the available space, before
