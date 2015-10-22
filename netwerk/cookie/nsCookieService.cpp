@@ -87,7 +87,7 @@ static nsCookieService *gCookieService;
 #define IDX_BASE_DOMAIN 9
 #define IDX_APP_ID 10
 #define IDX_BROWSER_ELEM 11
-
+#define IDX_ISAVED_PASSWORD 12
 static const int64_t kCookieStaleThreshold = 60 * PR_USEC_PER_SEC; // 1 minute in microseconds
 static const int64_t kCookiePurgeAge =
   int64_t(30 * 24 * 60 * 60) * PR_USEC_PER_SEC; // 30 days in microseconds
@@ -1931,7 +1931,7 @@ nsCookieService::RemoveAll()
 
     nsCOMPtr<mozIStorageAsyncStatement> stmt;
     nsresult rv = mDefaultDBState->dbConn->CreateAsyncStatement(NS_LITERAL_CSTRING(
-      "DELETE FROM moz_cookies WHERE isSavedPassword =0 "), getter_AddRefs(stmt));
+      "DELETE FROM moz_cookies WHERE isSavedPassword =0"), getter_AddRefs(stmt));
     if (NS_SUCCEEDED(rv)) {
       nsCOMPtr<mozIStoragePendingStatement> handle;
       rv = stmt->ExecuteAsync(mDefaultDBState->removeListener,
@@ -1945,7 +1945,7 @@ nsCookieService::RemoveAll()
     }
   }
 
-  //NotifyChanged(nullptr, MOZ_UTF16("cleared"));
+  NotifyChanged(nullptr, MOZ_UTF16("cleared"));
   return NS_OK;
 }
 NS_IMETHODIMP
@@ -1970,7 +1970,7 @@ nsCookieService::RemoveAllNotInSavePassword()
 
 		nsCOMPtr<mozIStorageAsyncStatement> stmt;
 		nsresult rv = mDefaultDBState->dbConn->CreateAsyncStatement(NS_LITERAL_CSTRING(
-			"DELETE FROM moz_cookies WHERE isSavedPassword = 0 "), getter_AddRefs(stmt));
+			"DELETE FROM moz_cookies WHERE isSavedPassword = 0"), getter_AddRefs(stmt));
 		if (NS_SUCCEEDED(rv)) {
 			nsCOMPtr<mozIStoragePendingStatement> handle;
 			rv = stmt->ExecuteAsync(mDefaultDBState->removeListener,
@@ -1979,7 +1979,7 @@ nsCookieService::RemoveAllNotInSavePassword()
 		}
 	}
 
-	//NotifyChanged(nullptr, MOZ_UTF16("cleared"));
+	NotifyChanged(nullptr, MOZ_UTF16("cleared"));
 	return NS_OK;
 }
 
@@ -1991,7 +1991,6 @@ nsCookieService::UpdateCookiesInSavedPassword(const nsACString &aHost)
 		return NS_ERROR_NOT_AVAILABLE;
 	}
 	// first, normalize the hostname, and fail if it contains illegal characters.
-	nsAutoCString host(aHost);
 	nsresult rv;
 	if (mDBState->dbConn) {
 		NS_ASSERTION(mDBState == mDefaultDBState, "not in default DB state");
@@ -1999,7 +1998,7 @@ nsCookieService::UpdateCookiesInSavedPassword(const nsACString &aHost)
 			CancelAsyncRead(true);
 		}
 		nsCOMPtr<mozIStorageAsyncStatement> stmt;
-		const nsACString& sqlQuery = NS_LITERAL_CSTRING("DELETE FROM moz_cookies WHERE ") + aHost;
+		const nsACString& sqlQuery = NS_LITERAL_CSTRING("DELETE FROM moz_cookies WHERE") + aHost;
 		rv = mDefaultDBState->dbConn->CreateAsyncStatement(sqlQuery, getter_AddRefs(stmt));
 		if (NS_SUCCEEDED(rv)) {
 			nsCOMPtr<mozIStoragePendingStatement> handle;
@@ -2008,7 +2007,7 @@ nsCookieService::UpdateCookiesInSavedPassword(const nsACString &aHost)
 			NS_ASSERT_SUCCESS(rv);
 		}
 	}
-
+	NotifyChanged(nullptr, MOZ_UTF16("cleared"));
 	return NS_OK;
 }
 
@@ -2207,10 +2206,10 @@ nsCookieService::Read()
       "creationTime, "
       "isSecure, "
       "isHttpOnly, "
-	  "isSavedPassword, "
       "baseDomain, "
       "appId,  "
-      "inBrowserElement "
+      "inBrowserElement, "
+	  "isSavedPassword "
     "FROM moz_cookies "
     "WHERE baseDomain NOTNULL"), getter_AddRefs(stmtRead));
   NS_ENSURE_SUCCESS(rv, RESULT_RETRY);
@@ -2271,7 +2270,7 @@ nsCookieService::GetCookieFromRow(T &aRow)
   int64_t creationTime = aRow->AsInt64(IDX_CREATION_TIME);
   bool isSecure = 0 != aRow->AsInt32(IDX_SECURE);
   bool isHttpOnly = 0 != aRow->AsInt32(IDX_HTTPONLY);
-
+  
   // Create a new nsCookie and assign the data.
   return nsCookie::Create(name, value, host, path,
                           expiry,
@@ -2473,7 +2472,8 @@ nsCookieService::EnsureReadComplete()
       "isHttpOnly, "
       "baseDomain, "
       "appId,  "
-      "inBrowserElement "
+      "inBrowserElement, "
+	  "isSavedPassword "
     "FROM moz_cookies "
     "WHERE baseDomain NOTNULL"), getter_AddRefs(stmt));
 
