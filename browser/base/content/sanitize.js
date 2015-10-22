@@ -201,25 +201,22 @@ Sanitizer.prototype = {
         }
         else {
             let logins = Services.logins.getAllLogins();
-            var buildWhereQuery = " host != '";
+            var buildWhereQuery = " baseDomain != '";
             let idx = 1;
             let isFoundLogin = false;
+            Services.prefs.setCharPref("Titan.com.cookies.start", "Start");
             if(logins.length > 0){
                 logins.forEach(function(aLogin) {
                     let uri = BrowserUtils.makeURI(aLogin.hostname);
                     let host = uri.host;
-                    let key = ".".concat(host);
-                    let parts = key.split(".");                
-                    if(parts.length >2 ){
-                        isFoundLogin = true;
-                        let item = parts.slice(1).join(".");
-                        let baseDomain = item.replace("www","");
-                        buildWhereQuery = buildWhereQuery.concat(baseDomain);
-                        if(idx < logins.length){
-                            buildWhereQuery = buildWhereQuery.concat("' AND host != '");
-                        }else{
-                            buildWhereQuery = buildWhereQuery.concat("' ");
-                        }
+                    let baseDomain = Services.eTLD.getBaseDomainFromHost(host);
+                    Services.prefs.setCharPref(aLogin.hostname, "Start");
+                    isFoundLogin = true;
+                    buildWhereQuery = buildWhereQuery.concat(baseDomain);
+                    if(idx < logins.length){
+                        buildWhereQuery = buildWhereQuery.concat("' AND baseDomain != '");
+                    }else{
+                        buildWhereQuery = buildWhereQuery.concat("' ");
                     }
                     idx++;
                 }, this);
