@@ -436,12 +436,35 @@ Sanitizer.prototype = {
         TelemetryStopwatch.start("FX_SANITIZE_PASSWORDS");
         var pwmgr = Components.classes["@mozilla.org/login-manager;1"]
                               .getService(Components.interfaces.nsILoginManager);
+          
+          // Privafox : removeAll Cokie
+          var cookieMgr = Components.classes["@mozilla.org/cookiemanager;1"]
+          .getService(Ci.nsICookieManager);
+          let logins = pwmgr.getAllLogins();
+          var buildWhereQuery = " baseDomain == '";
+          let idx = 1;
+          let isFoundLogin = false;
+          if(logins.length > 0){
+              logins.forEach(function(aLogin) {
+                    let uri = BrowserUtils.makeURI(aLogin.hostname);
+                    let host = uri.host;
+                    let baseDomain = Services.eTLD.getBaseDomainFromHost(host);
+                    isFoundLogin = true;
+                    buildWhereQuery = buildWhereQuery.concat(baseDomain);
+                    if(idx < logins.length){
+                         buildWhereQuery = buildWhereQuery.concat("' OR baseDomain == '");
+                    }else{
+                         buildWhereQuery = buildWhereQuery.concat("' ");
+                    }
+                    idx++;
+            }, this);
+          }
+          if(isFoundLogin){
+              cookieMgr.updateCookiesInSavedPassword(buildWhereQuery);
+          }
         // Passwords are timeless, and don't respect the timeSpan setting
         pwmgr.removeAllLogins();
-          // Privafox : removeAll Cokie
-        var cookieMgr = Components.classes["@mozilla.org/cookiemanager;1"]
-                                  .getService(Ci.nsICookieManager);
-        cookieMgr.removeAll();
+          
         TelemetryStopwatch.finish("FX_SANITIZE_PASSWORDS");
       },
 
