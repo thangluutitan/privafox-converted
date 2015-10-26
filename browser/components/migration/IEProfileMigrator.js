@@ -215,7 +215,7 @@ Bookmarks.prototype = {
 
           if (entry.isReadable()) {
             // Recursively import the folder.
-            yield this._migrateFolder(entry, folderGuid);
+            //yield this._migrateFolder(entry, folderGuid);
           }
         }
         else {

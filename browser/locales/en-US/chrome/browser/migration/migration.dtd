@@ -17,11 +17,12 @@
 <!ENTITY importFromSafari.accesskey     "S">
 <!ENTITY importFromChrome.label         "Chrome">
 <!ENTITY importFromChrome.accesskey     "C">
-<!ENTITY importFromFirefox.label        "Privafox">
+<!ENTITY importFromFirefox.label        "Firefox">
 <!ENTITY importFromFirefox.accesskey    "X">
 <!ENTITY importFrom360se.label          "360 Secure Browser">
 <!ENTITY importFrom360se.accesskey      "3">
-
+<!ENTITY importFromPrivafox.label        "Privafox">
+<!ENTITY importFromPrivafox.accesskey    "P">
 <!ENTITY noMigrationSources.label       "No programs that contain bookmarks, history or password data could be found.">
 
 <!ENTITY importSource.title             "Import Settings and Data">

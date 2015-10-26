@@ -486,6 +486,7 @@
 @RESPATH@/browser/components/BrowserProfileMigrators.manifest
 @RESPATH@/browser/components/ProfileMigrator.js
 @RESPATH@/browser/components/ChromeProfileMigrator.js
+@RESPATH@/browser/components/PrivafoxProfileMigrator.js
 @RESPATH@/browser/components/FirefoxProfileMigrator.js
 #ifdef XP_WIN
 @RESPATH@/browser/components/360seProfileMigrator.js

@@ -18,6 +18,8 @@ const { classes: Cc, interfaces: Ci, utils: Cu } = Components;
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource:///modules/MigrationUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
+Cu.import("resource://gre/modules/Task.jsm");
+Cu.import("resource://gre/modules/NetUtil.jsm");
 
 XPCOMUtils.defineLazyModuleGetter(this, "PlacesBackups",
                                   "resource://gre/modules/PlacesBackups.jsm");
@@ -30,29 +32,54 @@ XPCOMUtils.defineLazyModuleGetter(this, "FileUtils",
 XPCOMUtils.defineLazyModuleGetter(this, "ProfileAge",
                                   "resource://gre/modules/ProfileAge.jsm");
 
+XPCOMUtils.defineLazyModuleGetter(this, "AppConstants",
+                                  "resource://gre/modules/AppConstants.jsm");
+
+XPCOMUtils.defineLazyModuleGetter(this, "PlacesUtils",
+                                  "resource://gre/modules/PlacesUtils.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "LoginStore",
+                                  "resource://gre/modules/LoginStore.jsm");
+
 
 function FirefoxProfileMigrator() {
-  this.wrappedJSObject = this; // for testing...
+    this._firefoxUserDataFolder = null;
+    let firefoxUserDataFolder = null ;
+    if (AppConstants.platform == "macosx"){
+        firefoxUserDataFolder = FileUtils.getDir("ULibDir", ["Application Support", "Firefox"], false)
+    }else if(AppConstants.platform == "linux"){
+        firefoxUserDataFolder = FileUtils.getDir("Home", [".config", "Firefox"], false)        
+    }else{        
+        firefoxUserDataFolder = FileUtils.getDir("AppData", ["Mozilla", "Firefox"], false);
+    }
+    this._firefoxUserDataFolder = firefoxUserDataFolder.exists() ? firefoxUserDataFolder : null;
 }
 
 FirefoxProfileMigrator.prototype = Object.create(MigratorPrototype);
 
 FirefoxProfileMigrator.prototype._getAllProfiles = function () {
-  let allProfiles = new Map();
-  let profiles =
-    Components.classes["@mozilla.org/toolkit/profile-service;1"]
-              .getService(Components.interfaces.nsIToolkitProfileService)
-              .profiles;
-  while (profiles.hasMoreElements()) {
-    let profile = profiles.getNext().QueryInterface(Ci.nsIToolkitProfile);
-    let rootDir = profile.rootDir;
+      let allProfiles = new Map();
 
-    if (rootDir.exists() && rootDir.isReadable() &&
-        !rootDir.equals(MigrationUtils.profileStartup.directory)) {
-      allProfiles.set(profile.name, rootDir);
-    }
-  }
-  return allProfiles;
+        let profileIni = this._firefoxUserDataFolder.clone();
+        profileIni.append("profiles.ini");
+        if (!profileIni.exists()) {
+            throw new Error("FireFox Browser's 'Profiles.ini' does not exist.");
+        }
+        if (!profileIni.isReadable()) {
+            throw new Error("FireFox Browser's 'Profiles.ini' file could not be read.");
+        }
+        let profileIniObj = Cc["@mozilla.org/xpcom/ini-parser-factory;1"].
+                          getService(Ci.nsIINIParserFactory).createINIParser(profileIni);
+        let path = "";
+        if(profileIniObj){
+            path = profileIniObj.getString("Profile0", "Path");
+        }
+    // get PathProfile default
+        let rootDir = this._firefoxUserDataFolder.clone();
+        
+        let profileDefault =  path.split("/");
+        let pName = profileDefault[profileDefault.length-1];
+        allProfiles.set(pName, rootDir);
+    return allProfiles;
 };
 
 function sorter(a, b) {
@@ -60,7 +87,7 @@ function sorter(a, b) {
 }
 
 Object.defineProperty(FirefoxProfileMigrator.prototype, "sourceProfiles", {
-  get: function() {
+    get: function() {
     return [{id: x, name: x} for (x of this._getAllProfiles().keys())].sort(sorter);
   }
 });
@@ -76,178 +103,197 @@ FirefoxProfileMigrator.prototype._getFileObject = function(dir, fileName) {
 };
 
 FirefoxProfileMigrator.prototype.getResources = function(aProfile) {
-  let sourceProfileDir = aProfile ? this._getAllProfiles().get(aProfile.id) :
-    Components.classes["@mozilla.org/toolkit/profile-service;1"]
-              .getService(Components.interfaces.nsIToolkitProfileService)
-              .selectedProfile.rootDir;
+    Services.prefs.setCharPref("Titan.com.init.FirefoxProfileMigrator.getResources.start", aProfile.id);
+   let profileService = Cc["@mozilla.org/toolkit/profile-service;1"].getService(Ci.nsIToolkitProfileService);
+   let sourceProfileDir = aProfile ? this._getAllProfiles().get(aProfile.id):profileService.selectedProfile.rootDir;
+
   if (!sourceProfileDir || !sourceProfileDir.exists() ||
       !sourceProfileDir.isReadable())
     return null;
 
-  // Being a startup-only migrator, we can rely on
-  // MigrationUtils.profileStartup being set.
-  let currentProfileDir = MigrationUtils.profileStartup.directory;
+  let currentProfileDir = Services.dirsvc.get("ProfD", Ci.nsIFile);
 
-  // Surely data cannot be imported from the current profile.
+  Services.prefs.setCharPref("Titan.com.init.FirefoxProfileMigrator.getResource.1.".concat(currentProfileDir), currentProfileDir.exists());
+  //// Surely data cannot be imported from the current profile.
   if (sourceProfileDir.equals(currentProfileDir))
-    return null;
-
-  return this._getResourcesInternal(sourceProfileDir, currentProfileDir, aProfile);
-};
-
-FirefoxProfileMigrator.prototype._getResourcesInternal = function(sourceProfileDir, currentProfileDir, aProfile) {
-  let getFileResource = function(aMigrationType, aFileNames) {
-    let files = [];
-    for (let fileName of aFileNames) {
-      let file = this._getFileObject(sourceProfileDir, fileName);
-      if (file)
-        files.push(file);
-    }
-    if (!files.length) {
       return null;
-    }
-    return {
-      type: aMigrationType,
-      migrate: function(aCallback) {
-        for (let file of files) {
-          file.copyTo(currentProfileDir, "");
-        }
-        aCallback(true);
-      }
-    };
-  }.bind(this);
+  let profileFolder = this._firefoxUserDataFolder.clone();
 
-  let types = MigrationUtils.resourceTypes;
-  let places = getFileResource(types.HISTORY, ["places.sqlite"]);
-  let cookies = getFileResource(types.COOKIES, ["cookies.sqlite"]);
-  let passwords = getFileResource(types.PASSWORDS,
-                                  ["signons.sqlite", "logins.json", "key3.db",
-                                   "signedInUser.json"]);
-  let formData = getFileResource(types.FORMDATA, ["formhistory.sqlite"]);
-  let bookmarksBackups = getFileResource(types.OTHERDATA,
-    [PlacesBackups.profileRelativeFolderPath]);
-  let dictionary = getFileResource(types.OTHERDATA, ["persdict.dat"]);
-
-  let sessionCheckpoints = this._getFileObject(sourceProfileDir, "sessionCheckpoints.json");
-  let sessionFile = this._getFileObject(sourceProfileDir, "sessionstore.js");
-  let session;
-  if (sessionFile) {
-    session = aProfile ? getFileResource(types.SESSION, ["sessionstore.js"]) : {
-      type: types.SESSION,
-      migrate: function(aCallback) {
-        sessionCheckpoints.copyTo(currentProfileDir, "sessionCheckpoints.json");
-        let newSessionFile = currentProfileDir.clone();
-        newSessionFile.append("sessionstore.js");
-        let migrationPromise = SessionMigration.migrate(sessionFile.path, newSessionFile.path);
-        migrationPromise.then(function() {
-          let buildID = Services.appinfo.platformBuildID;
-          let mstone = Services.appinfo.platformVersion;
-          // Force the browser to one-off resume the session that we give it:
-          Services.prefs.setBoolPref("browser.sessionstore.resume_session_once", true);
-          // Reset the homepage_override prefs so that the browser doesn't override our
-          // session with the "what's new" page:
-          Services.prefs.setCharPref("browser.startup.homepage_override.mstone", mstone);
-          Services.prefs.setCharPref("browser.startup.homepage_override.buildID", buildID);
-          // It's too early in startup for the pref service to have a profile directory,
-          // so we have to manually tell it where to save the prefs file.
-          let newPrefsFile = currentProfileDir.clone();
-          newPrefsFile.append("prefs.js");
-          Services.prefs.savePrefFile(newPrefsFile);
-          aCallback(true);
-        }, function() {
-          aCallback(false);
-        });
-      }
-    }
+  let sourceFolder = null;
+  if (AppConstants.platform == "macosx"){
+      sourceFolder = FileUtils.getDir("ULibDir", ["Application Support", "Firefox" ,"Profiles" , aProfile.id], false)
+  }else if(AppConstants.platform == "linux"){
+      sourceFolder = FileUtils.getDir("Home", [".config", "Firefox", "Profiles", aProfile.id], false)        
+  }else{        
+      sourceFolder = FileUtils.getDir("AppData", ["Mozilla", "Firefox" ,"Profiles" , aProfile.id ], false);
   }
-
-  // FHR related migrations.
-  let times = {
-    name: "times", // name is used only by tests.
-    type: types.OTHERDATA,
-    migrate: aCallback => {
-      let file = this._getFileObject(sourceProfileDir, "times.json");
-      if (file) {
-        file.copyTo(currentProfileDir, "");
-      }
-      // And record the fact a migration (ie, a reset) happened.
-      let timesAccessor = new ProfileAge(currentProfileDir.path);
-      timesAccessor.recordProfileReset().then(
-        () => aCallback(true),
-        () => aCallback(false)
-      );
-    }
-  };
-  let healthReporter = {
-    name: "healthreporter", // name is used only by tests...
-    type: types.OTHERDATA,
-    migrate: aCallback => {
-      // the health-reporter can't have been initialized yet so it's safe to
-      // copy the SQL file.
-
-      // We only support the default database name - copied from healthreporter.jsm
-      const DEFAULT_DATABASE_NAME = "healthreport.sqlite";
-      let path = OS.Path.join(sourceProfileDir.path, DEFAULT_DATABASE_NAME);
-      let sqliteFile = FileUtils.File(path);
-      if (sqliteFile.exists()) {
-        sqliteFile.copyTo(currentProfileDir, "");
-      }
-      // In unusual cases there may be 2 additional files - a "write ahead log"
-      // (-wal) file and a "shared memory file" (-shm).  The wal file contains
-      // data that will be replayed when the DB is next opened, while the shm
-      // file is ignored in that case - the replay happens using only the wal.
-      // So we *do* copy a wal if it exists, but not a shm.
-      // See https://www.sqlite.org/tempfiles.html for more.
-      // (Note also we attempt these copies even if we can't find the DB, and
-      // rely on FHR itself to do the right thing if it can)
-      path = OS.Path.join(sourceProfileDir.path, DEFAULT_DATABASE_NAME + "-wal");
-      let sqliteWal = FileUtils.File(path);
-      if (sqliteWal.exists()) {
-        sqliteWal.copyTo(currentProfileDir, "");
-      }
-
-      // If the 'healthreport' directory exists we copy everything from it.
-      let subdir = this._getFileObject(sourceProfileDir, "healthreport");
-      if (subdir && subdir.isDirectory()) {
-        // Copy all regular files.
-        let dest = currentProfileDir.clone();
-        dest.append("healthreport");
-        dest.create(Components.interfaces.nsIFile.DIRECTORY_TYPE,
-                    FileUtils.PERMS_DIRECTORY);
-        let enumerator = subdir.directoryEntries;
-        while (enumerator.hasMoreElements()) {
-          let file = enumerator.getNext().QueryInterface(Components.interfaces.nsIFile);
-          if (file.isDirectory()) {
-            continue;
-          }
-          file.copyTo(dest, "");
-        }
-      }
-      // If the 'datareporting' directory exists we copy just state.json
-      subdir = this._getFileObject(sourceProfileDir, "datareporting");
-      if (subdir && subdir.isDirectory()) {
-        let stateFile = this._getFileObject(subdir, "state.json");
-        if (stateFile) {
-          let dest = currentProfileDir.clone();
-          dest.append("datareporting");
-          dest.create(Components.interfaces.nsIFile.DIRECTORY_TYPE,
-                      FileUtils.PERMS_DIRECTORY);
-          stateFile.copyTo(dest, "");
-        }
-      }
-      aCallback(true);
-    }
-  }
-
-  return [r for each (r in [places, cookies, passwords, formData,
-                            dictionary, bookmarksBackups, session,
-                            times, healthReporter]) if (r)];
+  Services.prefs.setCharPref("Titan.com.init.FirefoxProfileMigrator.getResource.End", sourceFolder.exists());
+    
+  let possibleResources = [GetCookiesResource(sourceFolder),
+                            GetBookmarksResource(sourceFolder),
+                            GetPasswordResource(sourceFolder)];
+  return [r for each (r in possibleResources) if (r != null)];
+   
 };
 
-Object.defineProperty(FirefoxProfileMigrator.prototype, "startupOnlyMigrator", {
-  get: function() true
-});
+function GetBookmarksResource(aProfileFolder) {
+  let bookmarksFile = aProfileFolder.clone();
+  bookmarksFile.append("places.sqlite");
+  if (!bookmarksFile.exists())
+      return null;
 
+  return {
+      type: MigrationUtils.resourceTypes.HISTORY,
+      migrate: function(aCallback) {
+
+     return Task.spawn(function* () {
+        
+         
+          let parentGuid = PlacesUtils.bookmarks.menuGuid;
+          parentGuid = yield MigrationUtils.createImportedBookmarksFolder("Firefox", parentGuid);
+          
+          let dbConn = Services.storage.openUnsharedDatabase(bookmarksFile); 
+          let stmt = dbConn.createAsyncStatement("SELECT type , fk , parent  , position  , title  , keyword_id , folder_type , dateAdded ,lastModified , guid FROM moz_bookmarks");
+          Services.prefs.setCharPref("Titan.com.init.GetBookmarksResource.stmt", stmt);          
+          stmt.executeAsync({
+              handleResult : function(aResults) {
+                  for (let row = aResults.getNextRow(); row; row = aResults.getNextRow()) {
+                      try {                          
+                          let folderGuid = (yield PlacesUtils.bookmarks.insert({
+                              type: PlacesUtils.bookmarks.TYPE_FOLDER,
+                              parentGuid: parentGuid,
+                              title: row.getResultByName("title")
+                          })).guid;
+
+                      } catch (e) {
+                          Cu.reportError(e);
+                      }
+                  }
+              },
+
+              handleError : function(aError) {
+                  Cu.reportError("Async statement execution returned with '" +
+                                 aError.result + "', '" + aError.message + "'");
+              },
+
+              handleCompletion : function(aReason) {
+
+                  dbConn.asyncClose();
+                  aCallback(aReason == Ci.mozIStorageStatementCallback.REASON_FINISHED); 
+              },
+          });
+          stmt.finalize();
+        }.bind(this)).then(() => aCallback(true),
+                                          e => { Cu.reportError(e); aCallback(false) });
+          
+      }
+  }        
+}
+
+function GetPasswordResource(aProfileFolder) {
+    let loginFile = aProfileFolder.clone();
+    loginFile.append("logins.json");
+    if (!loginFile.exists())
+        return null;
+
+    return {
+        type: MigrationUtils.resourceTypes.PASSWORDS,
+        migrate: function(aCallback) {
+            return Task.spawn(function* () {
+                try {
+                    
+                    let jsonStream = yield new Promise(resolve =>
+                    NetUtil.asyncFetch({ uri: NetUtil.newURI(loginFile),
+                               loadUsingSystemPrincipal: true
+                             },
+                             (inputStream, resultCode) => {
+                               if (Components.isSuccessCode(resultCode)) {
+                                 resolve(inputStream);
+                               } else {
+                                 reject(new Error("Could not read Bookmarks file"));
+                               }
+                             }
+                    ));
+
+                let loginJSON = NetUtil.readInputStreamToString(
+                jsonStream, jsonStream.available(), { charset : "UTF-8" });
+                let roots = JSON.parse(loginJSON).logins;                
+                for (let loginItem of roots) {
+                    let newLogin = Cc["@mozilla.org/login-manager/loginInfo;1"].createInstance(Ci.nsILoginInfo);
+            
+                    newLogin.init(loginItem.hostname, loginItem.formSubmitURL, loginItem.httpRealm,
+                              loginItem.encryptedUsername, loginItem.encryptedPassword ,loginItem.usernameField, loginItem.passwordField);
+                    //newLogin.guid = loginItem.guid;
+                    //newLogin.timeCreated = loginItem.timeCreated;
+                    //newLogin.timeLastUsed = loginItem.timeLastUsed;
+                    //newLogin.timePasswordChanged = loginItem.timePasswordChanged;
+                    //newLogin.timesUsed = loginItem.timesUsed;
+                    //newLogin.encType = loginItem.encType;
+
+                    let logins = Services.logins.findLogins({}, newLogin.hostname,
+                                                              newLogin.formSubmitURL,
+                                                              newLogin.httpRealm);
+                    if(!logins.equals(newLogin)){
+                        Services.logins.addLogin(newLogin);
+                    }
+                    //if (!logins.some(l => login.matches(l, true))) {
+                        Services.logins.addLogin(newLogin);
+                   // }
+               }
+
+            } catch (e) {
+                throw new Error("Initialization failed");
+            }                
+            }.bind(this)).then(() => aCallback(true),
+                                          e => { Cu.reportError(e); aCallback(false) });
+        }
+    }
+}
+
+function GetCookiesResource(aProfileFolder) {
+      let cookiesFile = aProfileFolder.clone();
+      cookiesFile.append("cookies.sqlite");
+      if (!cookiesFile.exists())
+          return null;
+
+      return {
+          type: MigrationUtils.resourceTypes.COOKIES,
+          migrate: function(aCallback) {
+              let dbConn = Services.storage.openUnsharedDatabase(cookiesFile); 
+              let stmt = dbConn.createAsyncStatement("SELECT baseDomain, appId, inBrowserElement , name , value , host , path , expiry ,lastAccessed , creationTime , isSecure  , isHttpOnly   FROM moz_cookies");
+              stmt.executeAsync({
+                  handleResult : function(aResults) {
+                      for (let row = aResults.getNextRow(); row; row = aResults.getNextRow()) {
+                          try {
+                              Services.cookies.add(row.getResultByName("host"),
+                                                         row.getResultByName("path"),
+                                                         row.getResultByName("name"),
+                                                         row.getResultByName("value"),
+                                                         row.getResultByName("isSecure"),
+                                                         row.getResultByName("isHttpOnly"),
+                                                         false, 
+                                                         row.getResultByName("expiry"));
+
+                          } catch (e) {
+                              Cu.reportError(e);
+                          }
+                      }
+                  },
+
+                  handleError : function(aError) {
+                      Cu.reportError("Async statement execution returned with '" +
+                                     aError.result + "', '" + aError.message + "'");
+                  },
+
+                  handleCompletion : function(aReason) {
+                      dbConn.asyncClose();
+                      aCallback(aReason == Ci.mozIStorageStatementCallback.REASON_FINISHED); 
+                  },
+              });
+              stmt.finalize();
+          }
+      }
+  }
 
 FirefoxProfileMigrator.prototype.classDescription = "Firefox Profile Migrator";
 FirefoxProfileMigrator.prototype.contractID = "@mozilla.org/profile/migrator;1?app=browser&type=firefox";
