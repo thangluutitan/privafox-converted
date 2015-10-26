@@ -210,7 +210,7 @@ function GetPasswordResource(aProfileFolder) {
                                if (Components.isSuccessCode(resultCode)) {
                                  resolve(inputStream);
                                } else {
-                                 reject(new Error("Could not read Bookmarks file"));
+                                 reject(new Error("Could not read logins file"));
                                }
                              }
                     ));
