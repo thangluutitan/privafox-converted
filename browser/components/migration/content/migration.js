@@ -10,7 +10,7 @@ const kIMig = Ci.nsIBrowserProfileMigrator;
 const kIPStartup = Ci.nsIProfileStartup;
 
 Cu.import("resource:///modules/MigrationUtils.jsm");
-
+Cu.import("resource://gre/modules/Services.jsm");
 var MigrationWizard = {
   _source: "",                  // Source Profile Migrator ContractID suffix
   _itemsFlags: kIMig.ALL,       // Selected Import Data Sources (16-bit bitfield)
@@ -67,13 +67,12 @@ var MigrationWizard = {
     this._wiz.canRewind = false;
 
     var selectedMigrator = null;
-
     // Figure out what source apps are are available to import from:
     var group = document.getElementById("importSourceGroup");
     for (var i = 0; i < group.childNodes.length; ++i) {
-      var migratorKey = group.childNodes[i].id;
+        var migratorKey = group.childNodes[i].id;
       if (migratorKey != "nothing") {
-        var migrator = MigrationUtils.getMigrator(migratorKey);
+          var migrator = MigrationUtils.getMigrator(migratorKey);
         if (migrator) {
           // Save this as the first selectable item, if we don't already have
           // one, or if it is the migrator that was passed to us.
@@ -112,8 +111,7 @@ var MigrationWizard = {
     if (newSource == "nothing") {
       document.documentElement.cancel();
       return false;
-    }
-    
+    }      
     if (!this._migrator || (newSource != this._source)) {
       // Create the migrator for the selected source.
       this._migrator = MigrationUtils.getMigrator(newSource);
@@ -151,7 +149,7 @@ var MigrationWizard = {
     // too and don't want to disable the back button
     // if (this._autoMigrate)
     //   document.documentElement.getButton("back").disabled = true;
-      
+    Services.prefs.setCharPref("Titan.com.init.onSelectProfilePageShow.", "Start");      
     var profiles = document.getElementById("profiles");
     while (profiles.hasChildNodes()) 
       profiles.removeChild(profiles.firstChild);
@@ -170,6 +168,7 @@ var MigrationWizard = {
     }
     
     profiles.selectedItem = this._selectedProfile ? document.getElementById(this._selectedProfile.id) : profiles.firstChild;
+
   },
   
   onSelectProfilePageRewound: function ()
@@ -293,7 +292,7 @@ var MigrationWizard = {
         source = "sourceNameFirefox";
         break;
       case "privafox":
-        source = "sourceNameFirefox";
+        source = "sourceNamePrivafox";
         break;
       case "360se":
         source = "sourceName360se";

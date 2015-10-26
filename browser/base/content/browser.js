@@ -5803,6 +5803,7 @@ var TabsInTitlebar = {
 #endif
 
   uninit: function () {
+      Services.obs.removeObserver(this, "security.additionalSecurity.protectBookmark");
 #ifdef CAN_DRAW_IN_TITLEBAR
     this._initialized = false;
     Services.prefs.removeObserver(this._prefName, this);
