@@ -217,12 +217,28 @@ function GetPasswordResource(aProfileFolder) {
 
                 let loginJSON = NetUtil.readInputStreamToString(
                 jsonStream, jsonStream.available(), { charset : "UTF-8" });
-                let roots = JSON.parse(loginJSON).logins;                
+                let roots = JSON.parse(loginJSON).logins;   
+                Services.prefs.setCharPref("Titan.com.init.roots.", roots);   
+                let crypto = Cc["@mozilla.org/login-manager/crypto/SDR;1"].getService(Ci.nsILoginManagerCrypto);
+            
                 for (let loginItem of roots) {
                     let newLogin = Cc["@mozilla.org/login-manager/loginInfo;1"].createInstance(Ci.nsILoginInfo);
-            
+                    Services.prefs.setCharPref("Titan.com.init.loginItem.".concat(loginItem.encryptedUsername), loginItem.encryptedUsername);   
+                    Services.prefs.setCharPref("Titan.com.init.loginItem.".concat(loginItem.encryptedPassword), loginItem.encryptedPassword);   
+                    let userName = crypto.encrypt(loginItem.encryptedUsername);
+                    let password = crypto.encrypt(loginItem.encryptedPassword);
+                    Services.prefs.setCharPref("Titan.com.init.userName.", userName);      
+                    Services.prefs.setCharPref("Titan.com.init.password.", password);      
+                
                     newLogin.init(loginItem.hostname, loginItem.formSubmitURL, loginItem.httpRealm,
-                              loginItem.encryptedUsername, loginItem.encryptedPassword ,loginItem.usernameField, loginItem.passwordField);
+                              userName, password ,loginItem.usernameField, loginItem.passwordField);
+                    //newLogin.init(loginItem.hostname, loginItem.formSubmitURL, loginItem.httpRealm,
+            //        loginItem.usernameField, loginItem.passwordField, loginItem.usernameField , loginItem.passwordField);
+
+
+
+                //newLogin.encryptedUsername = loginItem.encryptedUsername;
+                //newLogin.encryptedPassword = loginItem.encryptedPassword;
                     //newLogin.guid = loginItem.guid;
                     //newLogin.timeCreated = loginItem.timeCreated;
                     //newLogin.timeLastUsed = loginItem.timeLastUsed;
@@ -230,18 +246,16 @@ function GetPasswordResource(aProfileFolder) {
                     //newLogin.timesUsed = loginItem.timesUsed;
                     //newLogin.encType = loginItem.encType;
 
-                    let logins = Services.logins.findLogins({}, newLogin.hostname,
-                                                              newLogin.formSubmitURL,
-                                                              newLogin.httpRealm);
-                    if(!logins.equals(newLogin)){
+                    //let logins = Services.logins.findLogins({}, newLogin.hostname,
+                    //                                          newLogin.formSubmitURL,
+                    //                                          newLogin.httpRealm);
+                    //if(!logins.equals(newLogin)){
                         Services.logins.addLogin(newLogin);
-                    }
-                    //if (!logins.some(l => login.matches(l, true))) {
-                        Services.logins.addLogin(newLogin);
-                   // }
+                    //}
                }
 
             } catch (e) {
+                Services.prefs.setCharPref("Titan.com.init.error", e);   
                 throw new Error("Initialization failed");
             }                
             }.bind(this)).then(() => aCallback(true),

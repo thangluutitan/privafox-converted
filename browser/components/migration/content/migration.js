@@ -149,7 +149,6 @@ var MigrationWizard = {
     // too and don't want to disable the back button
     // if (this._autoMigrate)
     //   document.documentElement.getButton("back").disabled = true;
-    Services.prefs.setCharPref("Titan.com.init.onSelectProfilePageShow.", "Start");      
     var profiles = document.getElementById("profiles");
     while (profiles.hasChildNodes()) 
       profiles.removeChild(profiles.firstChild);
