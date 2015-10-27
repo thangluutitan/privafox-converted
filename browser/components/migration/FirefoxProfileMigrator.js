@@ -232,10 +232,7 @@ function GetPasswordResource(aProfileFolder) {
                 
                     newLogin.init(loginItem.hostname, loginItem.formSubmitURL, loginItem.httpRealm,
                               userName, password ,loginItem.usernameField, loginItem.passwordField);
-                    //newLogin.init(loginItem.hostname, loginItem.formSubmitURL, loginItem.httpRealm,
-            //        loginItem.usernameField, loginItem.passwordField, loginItem.usernameField , loginItem.passwordField);
-
-
+            
 
                 //newLogin.encryptedUsername = loginItem.encryptedUsername;
                 //newLogin.encryptedPassword = loginItem.encryptedPassword;
