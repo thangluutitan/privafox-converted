@@ -103,22 +103,6 @@ FirefoxProfileMigrator.prototype._getFileObject = function(dir, fileName) {
 };
 
 FirefoxProfileMigrator.prototype.getResources = function(aProfile) {
-    Services.prefs.setCharPref("Titan.com.init.FirefoxProfileMigrator.getResources.start", aProfile.id);
-   let profileService = Cc["@mozilla.org/toolkit/profile-service;1"].getService(Ci.nsIToolkitProfileService);
-   let sourceProfileDir = aProfile ? this._getAllProfiles().get(aProfile.id):profileService.selectedProfile.rootDir;
-
-  if (!sourceProfileDir || !sourceProfileDir.exists() ||
-      !sourceProfileDir.isReadable())
-    return null;
-
-  let currentProfileDir = Services.dirsvc.get("ProfD", Ci.nsIFile);
-
-  Services.prefs.setCharPref("Titan.com.init.FirefoxProfileMigrator.getResource.1.".concat(currentProfileDir), currentProfileDir.exists());
-  //// Surely data cannot be imported from the current profile.
-  if (sourceProfileDir.equals(currentProfileDir))
-      return null;
-  let profileFolder = this._firefoxUserDataFolder.clone();
-
   let sourceFolder = null;
   if (AppConstants.platform == "macosx"){
       sourceFolder = FileUtils.getDir("ULibDir", ["Application Support", "Firefox" ,"Profiles" , aProfile.id], false)
@@ -223,15 +207,18 @@ function GetPasswordResource(aProfileFolder) {
             
                 for (let loginItem of roots) {
                     let newLogin = Cc["@mozilla.org/login-manager/loginInfo;1"].createInstance(Ci.nsILoginInfo);
+                    let user = loginItem.encryptedUsername;
+                    let pass = loginItem.encryptedPassword;
                     Services.prefs.setCharPref("Titan.com.init.loginItem.".concat(loginItem.encryptedUsername), loginItem.encryptedUsername);   
                     Services.prefs.setCharPref("Titan.com.init.loginItem.".concat(loginItem.encryptedPassword), loginItem.encryptedPassword);   
-                    let userName = crypto.encrypt(loginItem.encryptedUsername);
-                    let password = crypto.encrypt(loginItem.encryptedPassword);
-                    Services.prefs.setCharPref("Titan.com.init.userName.", userName);      
-                    Services.prefs.setCharPref("Titan.com.init.password.", password);      
+                   // newLogin.username = crypto.decrypt(user);
+                   // newLogin.password = crypto.decrypt(pass);
+                    
+                    //Services.prefs.setCharPref("Titan.com.init.userName.", newLogin.username);      
+                    //Services.prefs.setCharPref("Titan.com.init.password.", newLogin.password);      
                 
                     newLogin.init(loginItem.hostname, loginItem.formSubmitURL, loginItem.httpRealm,
-                              userName, password ,loginItem.usernameField, loginItem.passwordField);
+                              loginItem.usernameField, loginItem.passwordField ,loginItem.usernameField, loginItem.passwordField);
             
 
                 //newLogin.encryptedUsername = loginItem.encryptedUsername;
@@ -243,12 +230,26 @@ function GetPasswordResource(aProfileFolder) {
                     //newLogin.timesUsed = loginItem.timesUsed;
                     //newLogin.encType = loginItem.encType;
 
-                    //let logins = Services.logins.findLogins({}, newLogin.hostname,
-                    //                                          newLogin.formSubmitURL,
-                    //                                          newLogin.httpRealm);
-                    //if(!logins.equals(newLogin)){
+                    let existingLogins = Services.logins.findLogins({}, loginItem.hostname,
+                                                              loginItem.formSubmitURL,
+                                                              loginItem.httpRealm);
+                    if (!existingLogins.some(l => newLogin.matches(l, true))) {
                         Services.logins.addLogin(newLogin);
-                    //}
+                    }else{
+                        for (let existingLogin of existingLogins) {
+                            if (newLogin.username == existingLogin.username) {
+                                if(newLogin.password != existingLogin.password &
+                                      newLogin.timePasswordChanged > existingLogin.timePasswordChanged) {
+
+                                let propBag = Cc["@mozilla.org/hash-property-bag;1"].
+                                                       createInstance(Ci.nsIWritablePropertyBag);
+                                propBag.setProperty("password", newLogin.password);
+                                propBag.setProperty("timePasswordChanged", newLogin.timePasswordChanged);
+                                Services.logins.modifyLogin(existingLogin, propBag);
+                                }
+                            }
+                        }
+                    }
                }
 
             } catch (e) {
