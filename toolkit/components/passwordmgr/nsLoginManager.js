@@ -305,6 +305,48 @@ LoginManager.prototype = {
     return this._storage.addLogin(login);
   },
 
+   /*
+   * ImportLogin
+   *
+   * Import login to login storage.
+   */
+   importLogin : function (login, encryptedUser, encryptedPass) {
+    // Sanity check the login
+    if (login.hostname == null || login.hostname.length == 0)
+      throw new Error("Can't add a login with a null or empty hostname.");
+
+    // For logins w/o a username, set to "", not null.
+    if (login.username == null)
+      throw new Error("Can't add a login with a null username.");
+
+    if (login.password == null || login.password.length == 0)
+      throw new Error("Can't add a login with a null or empty password.");
+
+    if (login.formSubmitURL || login.formSubmitURL == "") {
+      // We have a form submit URL. Can't have a HTTP realm.
+      if (login.httpRealm != null)
+        throw new Error("Can't add a login with both a httpRealm and formSubmitURL.");
+    } else if (login.httpRealm) {
+      // We have a HTTP realm. Can't have a form submit URL.
+      if (login.formSubmitURL != null)
+        throw new Error("Can't add a login with both a httpRealm and formSubmitURL.");
+    } else {
+      // Need one or the other!
+      throw new Error("Can't add a login without a httpRealm or formSubmitURL.");
+    }
+
+    // Look for an existing entry.
+    var logins = this.findLogins({}, login.hostname, login.formSubmitURL,
+                                 login.httpRealm);
+
+    if (logins.some(function(l) login.matches(l, true))){
+        throw new Error("This login already exists.");
+    }
+
+    log("Import new login");
+    return this._storage.importLogin(login,encryptedUser,encryptedPass);
+  },
+
   /*
    * removeLogin
    *

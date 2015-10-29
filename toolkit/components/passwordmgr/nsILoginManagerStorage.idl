@@ -57,7 +57,14 @@ interface nsILoginManagerStorage : nsISupports {
    */
   void addLogin(in nsILoginInfo aLogin);
 
-
+  /**
+  * Store importlogin in the storage module.
+  *
+  * @param aLogin
+  *        The login to be added.
+  *
+  */
+  void importLogin(in nsILoginInfo aLogin, in AString aEncryptedUsername, in AString aEncryptedPassword);
   /**
    * Remove a login from the storage module.
    *

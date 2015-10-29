@@ -39,6 +39,7 @@ interface nsILoginManager : nsISupports {
   void addLogin(in nsILoginInfo aLogin);
 
 
+  void importLogin(in nsILoginInfo aLogin, in AString aEncryptedUsername, in AString aEncryptedPassword);
   /**
    * Remove a login from the login manager.
    *
