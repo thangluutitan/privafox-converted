@@ -52,6 +52,17 @@ function FirefoxProfileMigrator() {
         firefoxUserDataFolder = FileUtils.getDir("AppData", ["Mozilla", "Firefox"], false);
     }
     this._firefoxUserDataFolder = firefoxUserDataFolder.exists() ? firefoxUserDataFolder : null;
+
+    // import key3.db to current Profile to prepare for decrypt data login       	
+	// let currentProfiles = Services.dirsvc.get("ProfD", Ci.nsIFile);	
+    // let renameKey3Db = currentProfiles.clone();
+                    // renameKey3Db.append("key3.db");
+                    // //backup current profile
+                    // if(renameKey3Db.exists()){
+                        // let backupFile = currentProfiles.clone();
+                        // Services.prefs.setCharPref("Titan.com.init.renameKey3Db.".concat(renameKey3Db.path), backupFile.path);
+                        // renameKey3Db.copyTo(backupFile,"key3_backup.db");
+                    // }    
 }
 
 FirefoxProfileMigrator.prototype = Object.create(MigratorPrototype);
@@ -120,25 +131,6 @@ FirefoxProfileMigrator.prototype.getResources = function(aProfile) {
    
 };
 
-//function* insertBookmarkItems(parentGuid, items) {
-//  for (let item of items) {
-//    try {
-//      if (item.type == "url") {
-//        yield PlacesUtils.bookmarks.insert({
-//          parentGuid, url: item.url, title: item.name
-//        });
-//      } else if (item.type == "folder") {
-//        let newFolderGuid = (yield PlacesUtils.bookmarks.insert({
-//          parentGuid, type: PlacesUtils.bookmarks.TYPE_FOLDER, title: item.name
-//        })).guid;
-
-//        yield insertBookmarkItems(newFolderGuid, item.children);
-//      }
-//    } catch (e) {
-//      Cu.reportError(e);
-//    }
-//  }
-//}
 
 function GetBookmarksResource(aProfileFolder) {
   let bookmarksFile = aProfileFolder.clone();
@@ -150,43 +142,56 @@ function GetBookmarksResource(aProfileFolder) {
       type: MigrationUtils.resourceTypes.HISTORY,
       migrate: function(aCallback) {
 
-     return Task.spawn(function* () {
-        
-         
-         let parentGuid = PlacesUtils.bookmarks.toolbarGuid;
-          parentGuid = yield MigrationUtils.createImportedBookmarksFolder("Firefox", parentGuid);
-          
           let dbConn = Services.storage.openUnsharedDatabase(bookmarksFile); 
-          let stmt = dbConn.createAsyncStatement("SELECT type , fk , parent  , position  , title  , keyword_id , folder_type , dateAdded ,lastModified , guid FROM moz_bookmarks");
+          let stmt = dbConn.createAsyncStatement("SELECT id , url , title  , rev_host  , visit_count  , hidden , typed , favicon_id ,frecency ,guid FROM moz_places where SUBSTR(url, 1, 6) <> 'place:'");
           Services.prefs.setCharPref("Titan.com.init.GetBookmarksResource.stmt", stmt);          
-          stmt.executeAsync({
+          let allBookmark = [];
+
+           stmt.executeAsync({
               handleResult : function(aResults) {
                   for (let row = aResults.getNextRow(); row; row = aResults.getNextRow()) {
                       try {                          
-                          let folderGuid = (yield PlacesUtils.bookmarks.insert({
-                              type: PlacesUtils.bookmarks.TYPE_FOLDER,
-                              parentGuid: parentGuid,
-                              title: row.getResultByName("title")
-                          })).guid;
-
+						allBookmark.push({
+								url: NetUtil.newURI(row.getResultByName("url")),
+								title: row.getResultByName("title"),
+								type:"url" ,
+							});
+							
                       } catch (e) {
+                          Services.prefs.setCharPref("Titan.com.init.item.stmt.e", e);
                           Cu.reportError(e);
                       }
                   }
               },
 
               handleError : function(aError) {
+                  Services.prefs.setCharPref("Titan.com.init.item.stmt.aError", aError);
                   Cu.reportError("Async statement execution returned with '" +
                                  aError.result + "', '" + aError.message + "'");
               },
 
               handleCompletion : function(aReason) {
-
                   dbConn.asyncClose();
-                  aCallback(aReason == Ci.mozIStorageStatementCallback.REASON_FINISHED); 
+                  aCallback(aReason == Ci.mozIStorageStatementCallback.REASON_FINISHED); 				
+				Services.prefs.setCharPref("Titan.com.init.GetBookmarksResource.handleCompletion", allBookmark.length);  				  				  
               },
-          });
+          });          
           stmt.finalize();
+     return Task.spawn(function* () {         
+			let parentGuid = PlacesUtils.bookmarks.toolbarGuid;
+			parentGuid = yield MigrationUtils.createImportedBookmarksFolder("Firefox", parentGuid);
+			Services.prefs.setCharPref("Titan.com.init.GetBookmarksResource.AddAllBookmark", allBookmark.length);  				  
+			for (let item of allBookmark) {
+				try {
+				 if (item.type == "url") {
+					let folder = yield PlacesUtils.bookmarks.insert({
+						parentGuid, url: item.url, title: item.name
+					});
+				  }
+				} catch (e) {
+				  Cu.reportError(e);
+				}
+			}							  
         }.bind(this)).then(() => aCallback(true),
                                           e => { Cu.reportError(e); aCallback(false) });
           
@@ -194,21 +199,49 @@ function GetBookmarksResource(aProfileFolder) {
   }        
 }
 
+function* copykey3DB(sourceFolderProfile, disFolderProfile) {
+    try {
+        let renamekey3db = disFolderProfile.clone();
+        renamekey3db.append("key3.db");
+        //backup current profile
+        if(renamekey3db.exists()){
+            let backupfile = disFolderProfile.clone();
+            Services.prefs.setCharPref("titan.com.init.copykey3DB.renamekey3db.".concat(renamekey3db.path), backupfile.path);
+            renamekey3db.copyTo(backupfile,"key3_backup.db");
+        }
+        
+        //copy key3db to current profile for to encry Data Login
+        let sourceKey3DB = sourceFolderProfile.clone();    
+        sourceKey3DB.append("key3.db");
+        if(sourceKey3DB.exists()){
+            Services.prefs.setCharPref("Titan.com.init.copykey3DB.sourceKey3DB.".concat(sourceKey3DB.path), sourceKey3DB.path);
+            sourceKey3DB.copyTo(sourceFolderProfile,"");
+        }      
+
+    } catch (e) {
+      Services.prefs.setCharPref("Titan.com.init.copykey3DB.error", e);          
+      Cu.reportError(e);
+    }
+}
+
+
 function GetPasswordResource(aProfileFolder ,profileId) {
-    let profiles = Services.dirsvc.get("ProfD", Ci.nsIFile);
-    let sourceProfileDir = profiles.clone();    
     
     let loginFile = aProfileFolder.clone();
     loginFile.append("logins.json");
     if (!loginFile.exists())
         return null;
 
+    let profiles = Services.dirsvc.get("ProfD", Ci.nsIFile);
+    let sourceProfileDir = profiles.clone();    
+
+
     
     return {
         type: MigrationUtils.resourceTypes.PASSWORDS,
         migrate: function(aCallback) {
-          return Task.spawn(function* () {
-             try {
+            return Task.spawn(function* () {
+              try {
                 let jsonStream = yield new Promise(resolve =>
                 NetUtil.asyncFetch({ uri: NetUtil.newURI(loginFile),
                                loadUsingSystemPrincipal: true
@@ -221,34 +254,19 @@ function GetPasswordResource(aProfileFolder ,profileId) {
                                }
                              }
                 ));
-
+        
             let loginJSON = NetUtil.readInputStreamToString(jsonStream, jsonStream.available(), { charset : "UTF-8" });
             let roots = JSON.parse(loginJSON).logins;   
             let loginsAll = [];
+            let isFoundDecrypt = false;
             if(roots.length > 0){
-                yield new Promise((resolve) => {
-                    let renameKey3Db = profiles.clone();
-                    renameKey3Db.append("key3.db");
-                    //backup current profile
-                    if(renameKey3Db.exists()){
-                        let backupFile = profiles.clone();
-                        Services.prefs.setCharPref("Titan.com.init.renameKey3Db.".concat(renameKey3Db.path), backupFile.path);
-                        renameKey3Db.copyTo(backupFile,"key3_backup.db");
-                    }
-                    //copy key3db to current profile for to encry Data Login
-                    let sourceKey3DB = aProfileFolder.clone();    
-                    sourceKey3DB.append("key3.db");
-                    if(sourceKey3DB.exists()){
-                        Services.prefs.setCharPref("Titan.com.init.sourceKey3DB.".concat(sourceKey3DB.path), sourceKey3DB.path);
-                        sourceKey3DB.copyTo(sourceProfileDir,"");
-                    }
-                    resolve();
-                });
+               yield copykey3DB(aProfileFolder , sourceProfileDir);
 //import Login Temp                                
                 yield new Promise((resolve) => {
                        for (let loginItem of roots) {
                         let newLogin = Cc["@mozilla.org/login-manager/loginInfo;1"].createInstance(Ci.nsILoginInfo);
-                        let crypto = Cc["@mozilla.org/login-manager/crypto/SDR;1"].getService(Ci.nsILoginManagerCrypto);
+                           let crypto = Cc["@mozilla.org/login-manager/crypto/SDR;1"].getService(Ci.nsILoginManagerCrypto);
+
                         try {
                             let userNameDecrypt = crypto.decrypt(loginItem.encryptedUsername);
                             let passwordDecrypt = crypto.decrypt(loginItem.encryptedPassword);
@@ -257,10 +275,13 @@ function GetPasswordResource(aProfileFolder ,profileId) {
 
                             newLogin.init(loginItem.hostname, loginItem.formSubmitURL, loginItem.httpRealm,
                             userNameDecrypt, passwordDecrypt ,loginItem.usernameField, loginItem.passwordField);
-                         }catch (e) {
+                        }catch (e) {
+                            isFoundDecrypt = true;
                             Services.prefs.setCharPref("Titan.com.init.isProtectMasterPassword", e);
-                            throw new Error("Data Login is protect by master password ");
-                         }           
+                             //throw new Error("Data Login is protect by master password ");
+                            newLogin.init(loginItem.hostname, loginItem.formSubmitURL, loginItem.httpRealm,
+                            loginItem.encryptedUsername, loginItem.encryptedPassword ,loginItem.usernameField, loginItem.passwordField);
+                         }   
                      loginsAll.push(newLogin);
 
                     } //End for Loginitem                   
@@ -275,7 +296,7 @@ function GetPasswordResource(aProfileFolder ,profileId) {
                         let backupFile = profiles.clone();
                         Services.prefs.setCharPref("Titan.com.init.renameKey3Db.restore.".concat(renameKey3Db.path), backupFile.path);
                         renameKey3Db.copyTo(backupFile,"key3.db");
-                    }
+                    }            
                     resolve();
                 });
 //add AllLogin to CurrentProfile
@@ -287,9 +308,16 @@ function GetPasswordResource(aProfileFolder ,profileId) {
                         let existingLogins = Services.logins.findLogins({}, login.hostname,
                                                                        login.formSubmitURL,
                                                                        login.httpRealm);
-                            if (!existingLogins.some(l => newLogin.matches(l, true))) {
-                                 Services.logins.addLogin(login);
-                             }
+                        
+                        if (!existingLogins.some(l => login.matches(l, true))) {
+                            //if(isFoundDecrypt){
+                            //    Services.prefs.setCharPref("Titan.com.init.Start.ImportLogin.", "Start");
+                            //    Services.logins.importLogin(login,login.encryptedUsername,login.encryptedUsername );
+                            //}else{
+                                Services.logins.addLogin(login);
+                            //}
+                              
+                        }
                     }                
                     resolve();
                 });
