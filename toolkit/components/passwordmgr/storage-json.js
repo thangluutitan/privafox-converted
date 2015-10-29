@@ -167,6 +167,57 @@ this.LoginManagerStorage_json.prototype = {
     this._sendNotification("addLogin", loginClone);
   },
 
+    /*
+     * ImportLogin
+     *
+     */
+  importLogin : function(login, encryptedUser, encryptedPass){
+      this._store.ensureDataReady();
+      // Throws if there are bogus values.
+      LoginHelper.checkLoginValues(login);
+      // Clone the login, so we don't modify the caller's object.
+      let loginClone = login.clone();
+      // Initialize the nsILoginMetaInfo fields, unless the caller gave us values
+      loginClone.QueryInterface(Ci.nsILoginMetaInfo);
+
+      if (loginClone.guid) {
+          if (!this._isGuidUnique(loginClone.guid))
+              throw new Error("specified GUID already exists");
+      } else {
+          loginClone.guid = gUUIDGenerator.generateUUID().toString();
+      }
+
+      // Set timestamps
+      let currentTime = Date.now();
+      if (!loginClone.timeCreated)
+          loginClone.timeCreated = currentTime;
+      if (!loginClone.timeLastUsed)
+          loginClone.timeLastUsed = currentTime;
+      if (!loginClone.timePasswordChanged)
+          loginClone.timePasswordChanged = currentTime;
+      if (!loginClone.timesUsed)
+          loginClone.timesUsed = 1;
+
+      this._store.data.logins.push({
+          id:                  this._store.data.nextId++,
+          hostname:            loginClone.hostname,
+          httpRealm:           loginClone.httpRealm,
+          formSubmitURL:       loginClone.formSubmitURL,
+          usernameField:       loginClone.usernameField,
+          passwordField:       loginClone.passwordField,
+          encryptedUsername:   encryptedUser,
+          encryptedPassword:   encryptedPass,
+          guid:                loginClone.guid,
+          encType:             this._crypto.defaultEncType,
+          timeCreated:         loginClone.timeCreated,
+          timeLastUsed:        loginClone.timeLastUsed,
+          timePasswordChanged: loginClone.timePasswordChanged,
+          timesUsed:           loginClone.timesUsed
+      });
+      this._store.saveSoon();
+      // Send a notification that a login was Import.
+      this._sendNotification("addLogin", loginClone);
+  },
 
   /*
    * removeLogin

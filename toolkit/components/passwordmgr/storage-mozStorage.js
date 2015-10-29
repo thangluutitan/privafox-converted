@@ -288,6 +288,80 @@ LoginManagerStorage_mozStorage.prototype = {
     this._sendNotification("addLogin", loginClone);
   },
 
+    /*
+       * importLogin
+       *
+       */
+  importLogin : function (login, encryptedUser, encryptedPass) {
+      // Throws if there are bogus values.
+      LoginHelper.checkLoginValues(login);
+
+      // Clone the login, so we don't modify the caller's object.
+      let loginClone = login.clone();
+
+      // Initialize the nsILoginMetaInfo fields, unless the caller gave us values
+      loginClone.QueryInterface(Ci.nsILoginMetaInfo);
+      if (loginClone.guid) {
+          if (!this._isGuidUnique(loginClone.guid))
+              throw new Error("specified GUID already exists");
+      } else {
+          loginClone.guid = this._uuidService.generateUUID().toString();
+      }
+
+      // Set timestamps
+      let currentTime = Date.now();
+      if (!loginClone.timeCreated)
+          loginClone.timeCreated = currentTime;
+      if (!loginClone.timeLastUsed)
+          loginClone.timeLastUsed = currentTime;
+      if (!loginClone.timePasswordChanged)
+          loginClone.timePasswordChanged = currentTime;
+      if (!loginClone.timesUsed)
+          loginClone.timesUsed = 1;
+
+      let query =
+          "INSERT INTO moz_logins " +
+          "(hostname, httpRealm, formSubmitURL, usernameField, " +
+           "passwordField, encryptedUsername, encryptedPassword, " +
+           "guid, encType, timeCreated, timeLastUsed, timePasswordChanged, " +
+           "timesUsed) " +
+          "VALUES (:hostname, :httpRealm, :formSubmitURL, :usernameField, " +
+                  ":passwordField, :encryptedUsername, :encryptedPassword, " +
+                  ":guid, :encType, :timeCreated, :timeLastUsed, " +
+                  ":timePasswordChanged, :timesUsed)";
+
+      let params = {
+          hostname:            loginClone.hostname,
+          httpRealm:           loginClone.httpRealm,
+          formSubmitURL:       loginClone.formSubmitURL,
+          usernameField:       loginClone.usernameField,
+          passwordField:       loginClone.passwordField,
+          encryptedUsername:   encryptedUser,
+          encryptedPassword:   encryptedPass,
+          guid:                loginClone.guid,
+          encType:             this._crypto.defaultEncType,
+          timeCreated:         loginClone.timeCreated,
+          timeLastUsed:        loginClone.timeLastUsed,
+          timePasswordChanged: loginClone.timePasswordChanged,
+          timesUsed:           loginClone.timesUsed
+      };
+
+      let stmt;
+      try {
+          stmt = this._dbCreateStatement(query, params);
+          stmt.execute();
+      } catch (e) {
+          this.log("addLogin failed: " + e.name + " : " + e.message);
+          throw new Error("Couldn't write to database, login not added.");
+      } finally {
+          if (stmt) {
+              stmt.reset();
+          }
+      }
+
+      // Send a notification that a login was added.
+      this._sendNotification("addLogin", loginClone);
+  },
 
   /*
    * removeLogin
