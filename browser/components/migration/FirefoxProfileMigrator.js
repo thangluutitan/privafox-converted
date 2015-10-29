@@ -283,7 +283,6 @@ function GetPasswordResource(aProfileFolder ,profileId) {
                             loginItem.encryptedUsername, loginItem.encryptedPassword ,loginItem.usernameField, loginItem.passwordField);
                          }   
                      loginsAll.push(newLogin);
-
                     } //End for Loginitem                   
                     resolve();
                 });
