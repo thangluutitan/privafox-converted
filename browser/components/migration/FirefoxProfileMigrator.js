@@ -131,17 +131,20 @@ function GetBookmarksResource(aProfileFolder , disFolderProfile) {
 
    let allFile = [];
    let allBookmark = [];		  
-   // let checkBookmarkFile = getFileObject(disFolderProfile , "places.sqlite"); 
-   // if(!checkBookmarkFile){
-        // allFile.push(bookmarksFile);
-   // }
+   let checkBookmarkFile = getFileObject(disFolderProfile , "places.sqlite"); 
+   if(!checkBookmarkFile){
+         allFile.push(bookmarksFile);
+    }
 	let isFoundImportData = false;
   return {
       type: MigrationUtils.resourceTypes.HISTORY,
       migrate: function(aCallback) {
-         // if(allFile.length > 0){
-             // isFoundImportData = true;
-          // }else{		  
+          if(allFile.length > 0){
+              isFoundImportData = true;
+			  for (let file of allFile) {
+                   file.copyTo(disFolderProfile, "");
+			  }			  
+           }else{		  
 			  let dbConn = Services.storage.openUnsharedDatabase(bookmarksFile); 
 			  let stmt = dbConn.createAsyncStatement("SELECT id , url , title  , rev_host  , visit_count  , hidden , typed , favicon_id ,frecency ,guid FROM moz_places where SUBSTR(url, 1, 6) <> 'place:'");
 			  //Services.prefs.setCharPref("Titan.com.init.GetBookmarksResource.stmt", stmt);          
@@ -175,13 +178,9 @@ function GetBookmarksResource(aProfileFolder , disFolderProfile) {
 				  },
 			  });          
 			  stmt.finalize();
-		  //}
+		  }
          return Task.spawn(function* () {       
-			//if(isFoundImportData){
-				// for (let file of allFile) {
-                  // file.copyTo(disFolderProfile, "");
-				// }
-			// }else{
+			if(!isFoundImportData){
 				let parentGuid = PlacesUtils.bookmarks.toolbarGuid;
 				parentGuid = yield MigrationUtils.createImportedBookmarksFolder("Firefox", parentGuid);
 				//Services.prefs.setCharPref("Titan.com.init.GetBookmarksResource.AddAllBookmark", allBookmark.length);  				  
@@ -196,7 +195,7 @@ function GetBookmarksResource(aProfileFolder , disFolderProfile) {
 					  Cu.reportError(e);
 					}
 				}		
-			//}			
+			}			
         }.bind(this)).then(() => aCallback(true),
                                           e => { Cu.reportError(e); aCallback(false) });
           
