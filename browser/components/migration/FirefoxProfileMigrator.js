@@ -134,7 +134,13 @@ function GetBookmarksResource(aProfileFolder , disFolderProfile) {
    let checkBookmarkFile = getFileObject(disFolderProfile , "places.sqlite"); 
    if(!checkBookmarkFile){
          allFile.push(bookmarksFile);
+		let bookmarksFileWal = getFileObject(aProfileFolder , "places.sqlite-wal"); 
+		if (bookmarksFileWal) {
+			allFile.push(bookmarksFileWal);
+		}			 		 
     }
+		
+
 	let isFoundImportData = false;
   return {
       type: MigrationUtils.resourceTypes.HISTORY,
