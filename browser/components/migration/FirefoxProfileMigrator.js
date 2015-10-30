@@ -130,7 +130,7 @@ function GetBookmarksResource(aProfileFolder , disFolderProfile) {
       return null;
 
    let allFile = [];
-   // let allBookmark = [];		  
+   let allBookmark = [];		  
    // let checkBookmarkFile = getFileObject(disFolderProfile , "places.sqlite"); 
    // if(!checkBookmarkFile){
         // allFile.push(bookmarksFile);
