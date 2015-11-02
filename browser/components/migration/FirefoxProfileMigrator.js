@@ -126,8 +126,7 @@ FirefoxProfileMigrator.prototype.getResources = function(aProfile) {
 		  folderProfile = ["Mozilla", "Firefox" ,rootFolder , aProfile.id ];
 	  }    
 	  sourceFolder = FileUtils.getDir("AppData", folderProfile, false);	  
-    }  
-Services.prefs.setCharPref("Titan.com.init.getResourcesRoort", rootFolder);          	
+    }         	
 
   let disSourceProfileDir = MigrationUtils.profileStartup ? MigrationUtils.profileStartup.directory : null ;
   if(!disSourceProfileDir){
