@@ -1084,8 +1084,176 @@ function autoFixLenForPref(prefTitle, len) {//Ajust ProxyChangesDialog UI
 let proxyChangeNotifyBarID = "browser-proxy-changce-notification";
 var _actionTakenProxyChangce = false;
 var lastProxyInfo = [];
+var lastSystemProxyInfo = [];
 var currentProxy = [];
+var currentSystemProxy = [];
 var proxyTypeName = ["No proxy","Manual proxy configuration","Automatic proxy configuration URL","No proxy","Auto-detect proxy settings for this network","Use system proxy settings"];
+
+
+function getWindowSystemProxy(){
+	var systemProxySetting = [];
+	var proxyService = Components.classes["@mozilla.org/system-proxy-settings;1"].getService(Components.interfaces.nsISystemProxySettings);
+	//Services.prompt.alert(null, "systemProxySetting","2");
+	var getProxyForURISetting = proxyService.getProxyForURI("http","all","google.com",80);
+	var PACURI = "";
+	var systemProxyString = JSON.stringify(getProxyForURISetting).replace("\"","");
+	systemProxyString = systemProxyString.replace("\"","").replace("\"","");
+	var flagString = "";
+	if (systemProxyString.indexOf("PROXY ")>-1 && systemProxyString.indexOf("PROXY_TYPE_DIRECT")>-1){
+		flagString = systemProxyString.substr(systemProxyString.indexOf("PROXY_TYPE_DIRECT"));
+		systemProxyString = systemProxyString.substr(0,systemProxyString.indexOf("PROXY_TYPE_DIRECT"));
+	}else{ //No Proxy (DIRECT)
+		flagString = systemProxyString.substr(systemProxyString.indexOf("PROXY_TYPE_DIRECT"));
+		systemProxyString = "DIRECT";
+	}
+	var PROXY_TYPE_PROXY = false;
+	var PROXY_TYPE_AUTO_PROXY_URL = false;
+	var PROXY_TYPE_AUTO_DETECT = false;
+	if (flagString){
+		if (flagString.indexOf("PROXY_TYPE_PROXY")>-1)
+			PROXY_TYPE_PROXY = true;
+		if (flagString.indexOf("PROXY_TYPE_AUTO_PROXY_URL")>-1){
+			PROXY_TYPE_AUTO_PROXY_URL = true;
+			PACURI = proxyService.PACURI;//AutoProxyURL
+			if(typeof(PACURI) !== "undefined" && PACURI !== null){
+				//Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.autoconfig_url",PACURI);
+				systemProxySetting.autoconfig_url = PACURI;
+			}else{
+				//Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.autoconfig_url","");
+				systemProxySetting.autoconfig_url = "";
+			}
+		}else{
+			systemProxySetting.autoconfig_url = "";
+			PROXY_TYPE_AUTO_PROXY_URL = false;
+		}
+		//Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.autoconfig",PROXY_TYPE_AUTO_PROXY_URL);	
+		systemProxySetting.autoconfig = PROXY_TYPE_AUTO_PROXY_URL;
+		if (flagString.indexOf("PROXY_TYPE_AUTO_DETECT")>-1)
+			PROXY_TYPE_AUTO_DETECT = true;
+		else
+			PROXY_TYPE_AUTO_DETECT = false;
+		
+		//Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.autoDetect",PROXY_TYPE_AUTO_DETECT);
+		systemProxySetting.autoDetect = PROXY_TYPE_AUTO_DETECT;	
+	}
+	//if (systemProxyString.length>5) systemProxyString +=";"//PROXY
+	var isUseSameProxyServer = false;
+	//Services.prompt.alert(null, "SysProxy:",systemProxyString + "Flags:" + flagString);
+	//if (typeof(systemProxyString) !== "undefined" && systemProxyString !== null){
+	if (systemProxyString && systemProxyString.indexOf("PROXY")>-1 && systemProxyString !="DIRECT"){
+		//Detect use sameProxyServer
+		
+		if (systemProxyString.indexOf("PROXY ")>-1 && systemProxyString.split(";").length>1 
+			&& systemProxyString.indexOf("http=") == -1 && systemProxyString.indexOf(";")>-1){
+			isUseSameProxyServer = true;	
+		}
+		//Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.sameProxyServer",isUseSameProxyServer);
+		
+		systemProxySetting.sameProxyServer = isUseSameProxyServer;
+		
+		if(!isUseSameProxyServer){
+			//Get http info
+			if (systemProxyString.indexOf("http=")>-1){
+				if(systemProxyString.indexOf(";")>-1)
+					systemProxySetting.http = systemProxyString.substr(systemProxyString.indexOf("http=")+5,systemProxyString.indexOf(";") - systemProxyString.indexOf("http=") - 5);
+				
+				
+				if(systemProxySetting.http.indexOf(":")>-1) {
+					systemProxySetting.http_port = systemProxySetting.http.substr(systemProxySetting.http.indexOf(":")+1);
+					systemProxySetting.http = systemProxySetting.http.substr(0,systemProxySetting.http.indexOf(":"));
+				}
+					
+					
+			}else{
+				systemProxySetting.http = "";
+				systemProxySetting.http_port = 0;
+			}
+			//Get https info
+			if (systemProxyString.indexOf("https=")>-1){
+				if(systemProxyString.indexOf(";",systemProxyString.indexOf("https="))>-1)
+					systemProxySetting.ssl = systemProxyString.substr(systemProxyString.indexOf("https=")+6,systemProxyString.indexOf(";",systemProxyString.indexOf("https=")) - systemProxyString.indexOf("https=") - 6);
+				
+				
+				if(systemProxySetting.ssl.indexOf(":")>-1) {
+					systemProxySetting.ssl_port = systemProxySetting.ssl.substr(systemProxySetting.ssl.indexOf(":")+1);
+					systemProxySetting.ssl = systemProxySetting.ssl.substr(0,systemProxySetting.ssl.indexOf(":"));
+				}
+			}else{
+				systemProxySetting.ssl = "";
+				systemProxySetting.ssl_port = 0;
+			}
+			
+			//Get ftp info
+			if (systemProxyString.indexOf("ftp=")>-1){
+				if(systemProxyString.indexOf(";",systemProxyString.indexOf("ftp="))>-1)
+					systemProxySetting.ftp = systemProxyString.substr(systemProxyString.indexOf("ftp=")+4,systemProxyString.indexOf(";",systemProxyString.indexOf("ftp=")) - systemProxyString.indexOf("ftp=") - 4);
+				
+				
+				if(systemProxySetting.ftp.indexOf(":")>-1) {
+					systemProxySetting.ftp_port = systemProxySetting.ftp.substr(systemProxySetting.ftp.indexOf(":")+1);
+					systemProxySetting.ftp = systemProxySetting.ftp.substr(0,systemProxySetting.ftp.indexOf(":"));
+				}
+			}else{
+				systemProxySetting.ftp = "";
+				systemProxySetting.ftp_port = 0;
+			}
+			
+			//Get https socks
+			if (systemProxyString.indexOf("socks=")>-1){
+				if(systemProxyString.indexOf(";",systemProxyString.indexOf("socks="))>-1)
+					systemProxySetting.socks = systemProxyString.substr(systemProxyString.indexOf("socks=")+6,systemProxyString.indexOf(";",systemProxyString.indexOf("socks=")) - systemProxyString.indexOf("socks=") - 6);
+				
+				
+				if(systemProxySetting.socks.indexOf(":")>-1) {
+					systemProxySetting.socks_port = systemProxySetting.socks.substr(systemProxySetting.socks.indexOf(":")+1);
+					systemProxySetting.socks = systemProxySetting.socks.substr(0,systemProxySetting.socks.indexOf(":"));
+				}
+			}else{
+				systemProxySetting.socks = "";
+				systemProxySetting.socks_port = 0;
+			}
+			
+		}else{
+			
+			systemProxyString = systemProxyString.replace(";","");
+			if (systemProxyString.indexOf("PROXY ")>-1)
+				systemProxySetting.http  = systemProxyString.substr(systemProxyString.indexOf("PROXY ")+6, systemProxyString.indexOf(":") -6);
+			else
+				systemProxySetting.http = "";
+
+			if(systemProxyString.indexOf(":")>-1) 
+				systemProxySetting.http_port = systemProxyString.substr(systemProxyString.indexOf(":")+1);
+			else
+				systemProxySetting.http_port = 0;
+			
+			
+			systemProxySetting.ssl = systemProxySetting.http;
+			systemProxySetting.ssl_port = systemProxySetting.http_port;
+			
+			systemProxySetting.ftp = systemProxySetting.http;
+			systemProxySetting.ftp_port = systemProxySetting.http_port;
+			
+			systemProxySetting.socks = "";
+			systemProxySetting.socks_port = 0;
+
+		}
+	}else{//Direct Connection
+		
+		systemProxySetting.http = "";
+		systemProxySetting.http_port = 0;
+		systemProxySetting.ssl = systemProxySetting.http;
+		systemProxySetting.ssl_port = systemProxySetting.http_port;
+		
+		systemProxySetting.ftp = systemProxySetting.http;
+		systemProxySetting.ftp_port = systemProxySetting.http_port;
+		
+		systemProxySetting.socks = "";
+		systemProxySetting.socks_port = 0;
+		systemProxySetting.sameProxyServer = false;
+		
+	}
+	return systemProxySetting;
+}
 function showProxyChangeNotification() {
 	// network.proxy.type == 1 (Manual)
 	// network.proxy.http , network.proxy.http_port, 
@@ -1093,6 +1261,7 @@ function showProxyChangeNotification() {
 	// network.proxy.ssl , network.proxy.ssl_port
 	// network.proxy.socks_version , network.proxy.socks_remote_dns
 	// share_proxy_settings, network.proxy.no_proxies_on
+	var isWindow = Services.prefs.getBoolPref("browser.isWindow");
 	currentProxy.type = Services.prefs.getIntPref("network.proxy.type");
 	currentProxy.http = Services.prefs.getCharPref("network.proxy.http");
 	currentProxy.http_port = Services.prefs.getIntPref("network.proxy.http_port");
@@ -1128,12 +1297,15 @@ function showProxyChangeNotification() {
 	var proxyChangeContent = "Proxy Settings: New || Old\n\n";
 	var prefName = "";
 	var isProxyChange = false;
+	var isProxyTypeChange = false;
 	// && currentProxy.type != 0 && currentProxy.type != 3
 	if (currentProxy.type != lastProxyInfo.type){
 		prefName = "ProxyType: ";
 		//prefName = autoFixLenForPref(prefName,spacer.length);
 		proxyChangeContent  = proxyChangeContent + prefName + proxyTypeName[currentProxy.type] + spacer + proxyTypeName[lastProxyInfo.type] + "\n";
 		isProxyChange = true;
+		isProxyTypeChange = true;
+		//Services.prompt.alert(null, "isProxyTypeChange","currentProxy.Type:"+currentProxy.type+"-LastProxyType:"+lastProxyInfo.type);
 	}
 	
 	if(currentProxy.type ===1){
@@ -1220,6 +1392,124 @@ function showProxyChangeNotification() {
 		proxyChangeContent  = proxyChangeContent + prefName + currentProxy.autoconfig_url + spacer + lastProxyInfo.autoconfig_url + "\n";
 		isProxyChange = true;
 	}
+	var proxyChangeDialogTitle = "Proxy changes";
+	var isSystemProxyChage = false;
+	var isSystemProxyInit = Services.prefs.getBoolPref("browser.proxyChange.lastSystemProxyInfo.isChange");
+	if (currentProxy.type === 5){
+		
+		if (isWindow && isSystemProxyInit){
+			//Process for Window Proxy Change
+			lastSystemProxyInfo.autoconfig = Services.prefs.getBoolPref("browser.proxyChange.lastSystemProxyInfo.autoconfig");
+			lastSystemProxyInfo.autoDetect = Services.prefs.getBoolPref("browser.proxyChange.lastSystemProxyInfo.autoDetect");
+			lastSystemProxyInfo.sameProxyServer = Services.prefs.getBoolPref("browser.proxyChange.lastSystemProxyInfo.sameProxyServer");
+			//lastSystemProxyInfo.share_proxy_settings = Services.prefs.getBoolPref("browser.proxyChange.lastSystemProxyInfo.share_proxy_settings");
+			
+			lastSystemProxyInfo.http = Services.prefs.getCharPref("browser.proxyChange.lastSystemProxyInfo.http");
+			lastSystemProxyInfo.http_port = Services.prefs.getIntPref("browser.proxyChange.lastSystemProxyInfo.http_port");
+			lastSystemProxyInfo.ftp = Services.prefs.getCharPref("browser.proxyChange.lastSystemProxyInfo.ftp");
+			lastSystemProxyInfo.ftp_port = Services.prefs.getIntPref("browser.proxyChange.lastSystemProxyInfo.ftp_port");
+			lastSystemProxyInfo.ssl = Services.prefs.getCharPref("browser.proxyChange.lastSystemProxyInfo.ssl");
+			lastSystemProxyInfo.ssl_port = Services.prefs.getIntPref("browser.proxyChange.lastSystemProxyInfo.ssl_port");
+			lastSystemProxyInfo.socks = Services.prefs.getCharPref("browser.proxyChange.lastSystemProxyInfo.socks");
+			lastSystemProxyInfo.socks_port = Services.prefs.getIntPref("browser.proxyChange.lastSystemProxyInfo.socks_port");
+			lastSystemProxyInfo.autoconfig_url = Services.prefs.getCharPref("browser.proxyChange.lastSystemProxyInfo.autoconfig_url");
+			
+			//Get Current System Proxy add to currentSystemProxy
+			currentSystemProxy = getWindowSystemProxy();
+			
+			if (currentSystemProxy.http != lastSystemProxyInfo.http){
+				prefName = "http: ";
+				//prefName = autoFixLenForPref(prefName,spacer.length);
+				proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.http + spacer + lastSystemProxyInfo.http + "\n";
+			
+			} 
+			if (currentSystemProxy.http_port != lastSystemProxyInfo.http_port){
+				isProxyChange = true;
+				prefName = "http_port: ";
+				//prefName = autoFixLenForPref(prefName,spacer.length);
+				proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.http_port + spacer + lastSystemProxyInfo.http_port + "\n";
+			} 
+			
+			if (currentSystemProxy.ftp != lastSystemProxyInfo.ftp){
+				isProxyChange = true;
+				prefName = "ftp: ";
+				//prefName = autoFixLenForPref(prefName,spacer.length);
+				proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.ftp + spacer + lastSystemProxyInfo.ftp + "\n";
+			}
+			
+			if (currentSystemProxy.ftp_port != lastSystemProxyInfo.ftp_port){
+				isProxyChange = true;
+				prefName = "ftp_port: ";
+				//prefName = autoFixLenForPref(prefName,spacer.length);
+				proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.ftp_port + spacer + lastSystemProxyInfo.ftp_port + "\n";
+			}
+			
+			if (currentSystemProxy.ssl != lastSystemProxyInfo.ssl){
+				isProxyChange = true;
+				prefName = "ssl: ";
+				//prefName = autoFixLenForPref(prefName,spacer.length);
+				proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.ssl + spacer + lastSystemProxyInfo.ssl + "\n";
+			}
+			
+			if (currentSystemProxy.ssl_port != lastSystemProxyInfo.ssl_port){
+				isProxyChange = true;
+				prefName = "ssl_port: ";
+				//prefName = autoFixLenForPref(prefName,spacer.length);
+				proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.ssl_port + spacer + lastSystemProxyInfo.ssl_port + "\n";
+			}
+			
+			if (currentSystemProxy.socks != lastSystemProxyInfo.socks){
+				isProxyChange = true;
+				prefName = "socks: ";
+				//prefName = autoFixLenForPref(prefName,spacer.length);
+				proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.socks + spacer + lastSystemProxyInfo.socks + "\n";
+			}
+			
+			if (currentSystemProxy.socks_port != lastSystemProxyInfo.socks_port){
+				isProxyChange = true;
+				prefName = "socks_port: ";
+				//prefName = autoFixLenForPref(prefName,spacer.length);
+				proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.socks_port + spacer + lastSystemProxyInfo.socks_port + "\n";
+			}
+
+			if (currentSystemProxy.autoconfig_url != lastSystemProxyInfo.autoconfig_url){
+				isProxyChange = true;
+				prefName = "autoconfig_url: ";
+				//prefName = autoFixLenForPref(prefName,spacer.length);
+				proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.autoconfig_url + spacer + lastSystemProxyInfo.autoconfig_url + "\n";
+			}
+			
+			if (currentSystemProxy.autoconfig != lastSystemProxyInfo.autoconfig){
+				isProxyChange = true;
+				prefName = "autoconfig: ";
+				//prefName = autoFixLenForPref(prefName,spacer.length);
+				proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.autoconfig + spacer + lastSystemProxyInfo.autoconfig + "\n";
+			}
+			
+			if (currentSystemProxy.autoDetect != lastSystemProxyInfo.autoDetect){
+				isProxyChange = true;
+				prefName = "autoDetect: ";
+				//prefName = autoFixLenForPref(prefName,spacer.length);
+				proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.autoDetect + spacer + lastSystemProxyInfo.autoDetect + "\n";
+			}
+			
+			if (currentSystemProxy.sameProxyServer != lastSystemProxyInfo.sameProxyServer){
+				isProxyChange = true;
+				prefName = "sameProxyServer: ";
+				//prefName = autoFixLenForPref(prefName,spacer.length);
+				proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.sameProxyServer + spacer + lastSystemProxyInfo.sameProxyServer + "\n";
+			}
+			
+			
+			if (isProxyChange){
+				proxyChangeDialogTitle = "System Proxy changes";
+				proxyChangeContent = proxyChangeContent.replace("Proxy Settings","System Proxy Settings");
+				isSystemProxyChage = true;
+			}
+		}
+		
+		
+	}
 	//lastProxyInfo = JSON.parse(Services.prefs.getCharPref("browser.proxyChange.lastProxyInfo"));
 	//showProxyChangedDialog("LastProxy:",JSON.stringify(lastProxyInfo));		
 			
@@ -1269,7 +1559,7 @@ function showProxyChangeNotification() {
       //notificationBox.removeNotification(previousNotification);
 	  return true;
     }
-	var proxyChangeDialogTitle = "Proxy changes";
+	
 	let buttons = [
 	  {
         label: "Show Changes",
@@ -1287,20 +1577,56 @@ function showProxyChangeNotification() {
         accessKey: "A",
         callback: function() {
 			_actionTakenProxyChangce = true;
-			Services.prefs.setIntPref("browser.proxyChange.lastProxyInfo.type",currentProxy.type);
-			Services.prefs.setCharPref("browser.proxyChange.lastProxyInfo.http",currentProxy.http);
-			Services.prefs.setIntPref("browser.proxyChange.lastProxyInfo.http_port",currentProxy.http_port);
-			Services.prefs.setCharPref("browser.proxyChange.lastProxyInfo.ftp",currentProxy.ftp);
-			Services.prefs.setIntPref("browser.proxyChange.lastProxyInfo.ftp_port",currentProxy.ftp_port);
-			Services.prefs.setCharPref("browser.proxyChange.lastProxyInfo.ssl",currentProxy.ssl);
-			Services.prefs.setIntPref("browser.proxyChange.lastProxyInfo.ssl_port",currentProxy.ssl_port);
-			Services.prefs.setCharPref("browser.proxyChange.lastProxyInfo.socks",currentProxy.socks);
-			Services.prefs.setIntPref("browser.proxyChange.lastProxyInfo.socks_port",currentProxy.socks_port);
-			Services.prefs.setIntPref("browser.proxyChange.lastProxyInfo.socks_version",currentProxy.socks_version);
-			Services.prefs.setBoolPref("browser.proxyChange.lastProxyInfo.socks_remote_dns",currentProxy.socks_remote_dns);
-			Services.prefs.setBoolPref("browser.proxyChange.lastProxyInfo.share_proxy_settings",currentProxy.share_proxy_settings);
-			Services.prefs.setCharPref("browser.proxyChange.lastProxyInfo.no_proxies_on",currentProxy.no_proxies_on);
-			Services.prefs.setCharPref("browser.proxyChange.lastProxyInfo.autoconfig_url",currentProxy.autoconfig_url);
+			if (!isSystemProxyChage){
+				Services.prefs.setIntPref("browser.proxyChange.lastProxyInfo.type",currentProxy.type);
+				Services.prefs.setCharPref("browser.proxyChange.lastProxyInfo.http",currentProxy.http);
+				Services.prefs.setIntPref("browser.proxyChange.lastProxyInfo.http_port",currentProxy.http_port);
+				Services.prefs.setCharPref("browser.proxyChange.lastProxyInfo.ftp",currentProxy.ftp);
+				Services.prefs.setIntPref("browser.proxyChange.lastProxyInfo.ftp_port",currentProxy.ftp_port);
+				Services.prefs.setCharPref("browser.proxyChange.lastProxyInfo.ssl",currentProxy.ssl);
+				Services.prefs.setIntPref("browser.proxyChange.lastProxyInfo.ssl_port",currentProxy.ssl_port);
+				Services.prefs.setCharPref("browser.proxyChange.lastProxyInfo.socks",currentProxy.socks);
+				Services.prefs.setIntPref("browser.proxyChange.lastProxyInfo.socks_port",currentProxy.socks_port);
+				Services.prefs.setIntPref("browser.proxyChange.lastProxyInfo.socks_version",currentProxy.socks_version);
+				Services.prefs.setBoolPref("browser.proxyChange.lastProxyInfo.socks_remote_dns",currentProxy.socks_remote_dns);
+				Services.prefs.setBoolPref("browser.proxyChange.lastProxyInfo.share_proxy_settings",currentProxy.share_proxy_settings);
+				Services.prefs.setCharPref("browser.proxyChange.lastProxyInfo.no_proxies_on",currentProxy.no_proxies_on);
+				Services.prefs.setCharPref("browser.proxyChange.lastProxyInfo.autoconfig_url",currentProxy.autoconfig_url);
+				
+				//if (currentProxy.type === 5)
+				if (isProxyTypeChange && currentProxy.type === 5){//User accept change to use System Proxy, store for last-change
+					currentSystemProxy = getWindowSystemProxy();
+					Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.isChange",true);
+					Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.autoDetect",currentSystemProxy.autoDetect);
+					Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.autoconfig",currentSystemProxy.autoconfig);
+					Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.sameProxyServer",currentSystemProxy.sameProxyServer);
+					Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.http",currentSystemProxy.http);
+					Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.http_port",currentSystemProxy.http_port);
+					Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.ftp",currentSystemProxy.ftp);
+					Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.ftp_port",currentSystemProxy.ftp_port);
+					Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.ssl",currentSystemProxy.ssl);
+					Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.ssl_port",currentSystemProxy.ssl_port);
+					Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.socks",currentSystemProxy.socks);
+					Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.socks_port",currentSystemProxy.socks_port);
+					Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.autoconfig_url",currentSystemProxy.autoconfig_url);
+				}
+			}else if(isWindow){ //now, only support for window
+				//Services.prompt.alert(null, "MainSystem ","MainSystem");
+				Services.prefs.setIntPref("browser.proxyChange.lastProxyInfo.type",currentProxy.type);
+				Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.autoDetect",currentSystemProxy.autoDetect);
+				Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.autoconfig",currentSystemProxy.autoconfig);
+				Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.sameProxyServer",currentSystemProxy.sameProxyServer);
+				
+				Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.http",currentSystemProxy.http);
+				Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.http_port",currentSystemProxy.http_port);
+				Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.ftp",currentSystemProxy.ftp);
+				Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.ftp_port",currentSystemProxy.ftp_port);
+				Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.ssl",currentSystemProxy.ssl);
+				Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.ssl_port",currentSystemProxy.ssl_port);
+				Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.socks",currentSystemProxy.socks);
+				Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.socks_port",currentSystemProxy.socks_port);
+				Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.autoconfig_url",currentSystemProxy.autoconfig_url);
+			}
         }
       },
 	  {
@@ -1439,7 +1765,7 @@ var gBrowserInit = {
 	//if(gBrowser.tabContainer.selectedIndex>0) return;
 	//Services.prompt.alert(null, "onRefreshAttempted - TabIndex: ", "Win:"+myResultService);
 	//Services.ww.getNewPrompter(null).alert("onLoad", "onLoad Called");
-	showAutoUpdateNotification();
+	//showAutoUpdateNotification();
 
     gBrowser.addEventListener("DOMUpdatePageReport", gPopupBlockerObserver, false);
     Services.obs.addObserver(gPluginHandler.NPAPIPluginCrashed, "plugin-crashed", false);

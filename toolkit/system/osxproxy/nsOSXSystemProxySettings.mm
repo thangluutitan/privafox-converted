@@ -336,6 +336,17 @@ nsOSXSystemProxySettings::GetProxyForURI(const nsACString & aSpec,
   NS_OBJC_END_TRY_ABORT_BLOCK_NSRESULT;
 }
 
+nsresult
+nsWindowsSystemProxySettings::SetSystemProxyServer(const nsACString & proxyInfo,
+                                             const nsACString & flagsInfo,
+                                             const nsACString & pacUri,
+											 nsACString & aResult)
+{
+	NS_OBJC_BEGIN_TRY_ABORT_BLOCK_NSRESULT
+	return NS_OK;
+	NS_OBJC_END_TRY_ABORT_BLOCK_NSRESULT
+}
+
 #define NS_OSXSYSTEMPROXYSERVICE_CID  /* 9afcd4b8-2e0f-41f4-8f1f-3bf0d3cf67de */\
     { 0x9afcd4b8, 0x2e0f, 0x41f4, \
       { 0x8f, 0x1f, 0x3b, 0xf0, 0xd3, 0xcf, 0x67, 0xde } }
