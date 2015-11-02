@@ -722,6 +722,27 @@ pref("browser.proxyChange.lastProxyInfo.share_proxy_settings",false);
 pref("browser.proxyChange.lastProxyInfo.no_proxies_on","localhost, 127.0.0.1");
 pref("browser.proxyChange.lastProxyInfo.autoconfig_url","");
 
+//Privafox: SystemProxyChange Notification
+pref("browser.proxyChange.lastSystemProxyInfo.isChange",false);
+pref("browser.proxyChange.lastSystemProxyInfo.http","");
+pref("browser.proxyChange.lastSystemProxyInfo.http_port",0);
+pref("browser.proxyChange.lastSystemProxyInfo.ftp","");
+pref("browser.proxyChange.lastSystemProxyInfo.ftp_port",0);
+pref("browser.proxyChange.lastSystemProxyInfo.ssl","");
+pref("browser.proxyChange.lastSystemProxyInfo.ssl_port",0);
+pref("browser.proxyChange.lastSystemProxyInfo.socks","");
+pref("browser.proxyChange.lastSystemProxyInfo.socks_port",0);
+pref("browser.proxyChange.lastSystemProxyInfo.share_proxy_settings",false);
+pref("browser.proxyChange.lastSystemProxyInfo.autoconfig",false);
+pref("browser.proxyChange.lastSystemProxyInfo.autoconfig_url","");
+pref("browser.proxyChange.lastSystemProxyInfo.autoDetect",false);
+pref("browser.proxyChange.lastSystemProxyInfo.sameProxyServer",false);
+
+#ifdef XP_WIN
+pref("browser.isWindow", true);
+#else
+pref("browser.isWindow", false);
+#endif
  
 pref("browser.proxyChange.isChange", false);
 pref("browser.proxyChange.message", "Warning: Your proxy settings have changed since last run.");
@@ -743,6 +764,9 @@ pref("plugin.state.npciscowebcommunicator", 2);
 #endif
 #ifdef XP_MACOSX
 pref("plugin.state.ciscowebcommunicator", 2);
+pref("browser.isMac", true);
+#else
+pref("browser.isMac", false);
 #endif
 
 // McAfee Security Scanner detection plugin, bug 980772
@@ -778,6 +802,9 @@ pref("plugin.state.esteidfirefoxplugin", 2);
 #endif
 #ifdef UNIX_BUT_NOT_MAC
 pref("plugin.state.npesteid-firefox-plugin", 2);
+pref("browser.isLinux", true);
+#else
+pref("browser.isLinux", false);
 #endif
 
 // coupons.com, bug 984441
