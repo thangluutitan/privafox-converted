@@ -80,7 +80,7 @@ FirefoxProfileMigrator.prototype._getAllProfiles = function () {
 		let pName = path;
 		let rootFoler = "";
 Services.prefs.setCharPref("Titan.com.init.length", path.split("/").length);   		
-        if(path.split("/").length > 0){			
+        if(path.split("/").length > 1){			
 			profileDefault =  path.split("/") ;
 			pName = profileDefault[profileDefault.length-1];
 			rootFoler = profileDefault[0];
