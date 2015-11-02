@@ -47,7 +47,7 @@ function FirefoxProfileMigrator() {
     if (AppConstants.platform == "macosx"){
         firefoxUserDataFolder = FileUtils.getDir("ULibDir", ["Application Support", "Firefox"], false)
     }else if(AppConstants.platform == "linux"){
-        firefoxUserDataFolder = FileUtils.getDir("Home", [".config", "Firefox"], false)        
+        firefoxUserDataFolder = FileUtils.getDir("Home", [".mozilla", "firefox"], false)        
     }else{        
         firefoxUserDataFolder = FileUtils.getDir("AppData", ["Mozilla", "Firefox"], false);
     }
@@ -103,7 +103,7 @@ FirefoxProfileMigrator.prototype.getResources = function(aProfile) {
   if (AppConstants.platform == "macosx"){
       sourceFolder = FileUtils.getDir("ULibDir", ["Application Support", "Firefox" ,rootFolder , aProfile.id], false)
   }else if(AppConstants.platform == "linux"){
-      sourceFolder = FileUtils.getDir("Home", [".config", "Firefox", rootFolder, aProfile.id], false)        
+      sourceFolder = FileUtils.getDir("Home", [".mozilla", "firefox", rootFolder, aProfile.id], false)        
   }else{        
       sourceFolder = FileUtils.getDir("AppData", ["Mozilla", "Firefox" ,rootFolder , aProfile.id ], false);
     }  
