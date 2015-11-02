@@ -76,12 +76,16 @@ FirefoxProfileMigrator.prototype._getAllProfiles = function () {
         }
     // get PathProfile default
         let rootDir = this._firefoxUserDataFolder.clone();
-        
-        let profileDefault =  path.split("/") ;
-        let pName = profileDefault[profileDefault.length-1];		
-		
-        let rootFolder = profileDefault.length >0 ? profileDefault[0] : pName ;
-        allProfiles.set(pName, rootFolder);
+		let profileDefault = "";
+		let pName = path;
+		let rootFoler = "";
+Services.prefs.setCharPref("Titan.com.init.length", path.split("/").length);   		
+        if(path.split("/").length > 0){			
+			profileDefault =  path.split("/") ;
+			pName = profileDefault[profileDefault.length-1];
+			rootFoler = profileDefault[0];
+		}		
+        allProfiles.set(pName, rootFoler);
     return allProfiles;
 };
 
@@ -100,13 +104,30 @@ Object.defineProperty(FirefoxProfileMigrator.prototype, "sourceProfiles", {
 FirefoxProfileMigrator.prototype.getResources = function(aProfile) {
   let sourceFolder = null;
   let rootFolder = this._getAllProfiles().get(aProfile.id);  
+  let folderProfile = [];
   if (AppConstants.platform == "macosx"){
-      sourceFolder = FileUtils.getDir("ULibDir", ["Application Support", "Firefox" ,rootFolder , aProfile.id], false)
-  }else if(AppConstants.platform == "linux"){
-      sourceFolder = FileUtils.getDir("Home", [".mozilla", "firefox", rootFolder, aProfile.id], false)        
+	  if(rootFolder == ""){
+		  folderProfile = ["Application Support", "Firefox" , aProfile.id];
+	  }else{
+		  folderProfile = ["Application Support", "Firefox" ,rootFolder , aProfile.id];
+	  }
+	  sourceFolder = FileUtils.getDir("ULibDir", folderProfile, false);
+  }else if(AppConstants.platform == "linux"){	  
+	  if(rootFolder == ""){
+		  folderProfile = [".mozilla", "firefox", aProfile.id];
+	  }else{
+		  folderProfile = [".mozilla", "firefox", rootFolder, aProfile.id];
+	  }  
+	  sourceFolder = FileUtils.getDir("Home", folderProfile , false);        		
   }else{        
-      sourceFolder = FileUtils.getDir("AppData", ["Mozilla", "Firefox" ,rootFolder , aProfile.id ], false);
+	  if(rootFolder == ""){
+		  folderProfile = ["Mozilla", "Firefox" , aProfile.id ];
+	  }else{
+		  folderProfile = ["Mozilla", "Firefox" ,rootFolder , aProfile.id ];
+	  }    
+	  sourceFolder = FileUtils.getDir("AppData", folderProfile, false);	  
     }  
+Services.prefs.setCharPref("Titan.com.init.getResourcesRoort", rootFolder);          	
 
   let disSourceProfileDir = MigrationUtils.profileStartup ? MigrationUtils.profileStartup.directory : null ;
   if(!disSourceProfileDir){
