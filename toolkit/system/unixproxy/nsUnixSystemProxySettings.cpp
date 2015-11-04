@@ -517,7 +517,7 @@ nsUnixSystemProxySettings::GetProxyForURI(const nsACString & aSpec,
 }
 
 nsresult
-nsWindowsSystemProxySettings::SetSystemProxyServer(const nsACString & proxyInfo,
+nsUnixSystemProxySettings::SetSystemProxyServer(const nsACString & proxyInfo,
                                              const nsACString & flagsInfo,
                                              const nsACString & pacUri,
 											 nsACString & aResult)

@@ -337,7 +337,7 @@ nsOSXSystemProxySettings::GetProxyForURI(const nsACString & aSpec,
 }
 
 nsresult
-nsWindowsSystemProxySettings::SetSystemProxyServer(const nsACString & proxyInfo,
+nsOSXSystemProxySettings::SetSystemProxyServer(const nsACString & proxyInfo,
                                              const nsACString & flagsInfo,
                                              const nsACString & pacUri,
 											 nsACString & aResult)
