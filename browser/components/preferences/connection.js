@@ -96,8 +96,8 @@ var gConnectionsDialog = {
 				if(!isUseSameProxyServer){
 					//Get http info
 					if (systemProxyString.indexOf("http=")>-1){
-						if(systemProxyString.indexOf(";")>-1)
-							systemProxySetting.http = systemProxyString.substr(systemProxyString.indexOf("http=")+5,systemProxyString.indexOf(";") - systemProxyString.indexOf("http=") - 5);
+						if(systemProxyString.indexOf(";",systemProxyString.indexOf("http="))>-1)
+							systemProxySetting.http = systemProxyString.substr(systemProxyString.indexOf("http=")+5,systemProxyString.indexOf(";",systemProxyString.indexOf("http=")) - systemProxyString.indexOf("http=") - 5);
 						
 						
 						if(systemProxySetting.http.indexOf(":")>-1) {

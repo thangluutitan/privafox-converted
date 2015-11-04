@@ -331,68 +331,6 @@ nsWindowsSystemProxySettings::GetProxyForURI(const nsACString & aSpec,
     return NS_OK;
 }
 
-/*
-nsresult
-nsWindowsSystemProxySettings::GetSystemProxyServer(const nsACString & aSpec,
-                                             const nsACString & aScheme,
-                                             const nsACString & aHost,
-                                             const int32_t      aPort,
-											 nsACString & aResult)
-{
-    nsresult rv;
-    uint32_t flags = 0;
-    nsAutoString buf;
-
-    rv = ReadInternetOption(INTERNET_PER_CONN_PROXY_SERVER, flags, buf);
-    if (NS_FAILED(rv) || !(flags & PROXY_TYPE_PROXY)) {
-        SetProxyResultDirect(aResult);
-        return NS_OK;
-    }
-    NS_ConvertUTF16toUTF8 cbuf(buf);
-    nsAutoCString prefix;
-    ToLowerCase(aScheme, prefix);
-    prefix.Append('=');
-    nsAutoCString specificProxy;
-    nsAutoCString defaultProxy;
-    nsAutoCString socksProxy;
-    int32_t start = 0;
-    int32_t end = cbuf.Length();
-    while (true) {
-        int32_t delimiter = cbuf.FindCharInSet(" ;", start);
-        if (delimiter == -1)
-            delimiter = end;
-
-        if (delimiter != start) {
-            const nsAutoCString proxy(Substring(cbuf, start,
-                                                delimiter - start));
-            if (proxy.FindChar('=') == -1) {
-                defaultProxy = proxy;
-            } else if (proxy.Find(prefix) == 0) {
-                specificProxy = Substring(proxy, prefix.Length());
-                break;
-            } else if (proxy.Find("socks=") == 0) {
-                // SOCKS proxy.
-                socksProxy = Substring(proxy, 5); // "socks=" length.
-            }
-        }
-
-        if (delimiter == end)
-            break;
-        start = ++delimiter;
-    }
-
-    if (!specificProxy.IsEmpty())
-        SetProxyResultPrivafox("", specificProxy, aResult); // Protocol-specific proxy.
-    else if (!defaultProxy.IsEmpty())
-        SetProxyResultPrivafox("", defaultProxy, aResult); // Default proxy.
-    else if (!socksProxy.IsEmpty())
-        SetProxyResultPrivafox("", socksProxy, aResult); // SOCKS proxy.
-    else
-        SetProxyResultDirect(aResult); // Direct connection.
-
-    return NS_OK;
-}
-*/
 nsresult
 nsWindowsSystemProxySettings::SetSystemProxyServer(const nsACString & proxyInfo,
                                              const nsACString & flagsInfo,
@@ -406,10 +344,17 @@ nsWindowsSystemProxySettings::SetSystemProxyServer(const nsACString & proxyInfo,
     DWORD   dwBufSize = sizeof(list);
 	
 	nsAutoCString mPacUri;
-    ToLowerCase(pacUri, mPacUri);
-	
 	nsAutoCString mFlagInfo;
-    ToUpperCase(flagsInfo, mFlagInfo);
+	nsAutoCString mProxyInfo;
+    
+	ToLowerCase(pacUri, mPacUri);
+	ToUpperCase(flagsInfo, mFlagInfo);
+	ToLowerCase(proxyInfo, mProxyInfo);
+	
+	LPTSTR strUri = const_cast<LPSTR>(mPacUri.get());
+	LPTSTR strProxyInfo = const_cast<LPSTR>(mProxyInfo.get());
+	
+    
 	
     // Fill the list structure.
     list.dwSize = sizeof(list);
@@ -454,13 +399,13 @@ nsWindowsSystemProxySettings::SetSystemProxyServer(const nsACString & proxyInfo,
 	
 	if (mFlagInfo.Find("PROXY_TYPE_AUTO_PROXY_URL")>0 && mPacUri.Length()>0){
 		list.pOptions[optionIndex].dwOption = INTERNET_PER_CONN_AUTOCONFIG_URL;
-		list.pOptions[optionIndex++].Value.pszValue = TEXT("google.com");
+		list.pOptions[optionIndex++].Value.pszValue = strUri;//TEXT("google.com");
 	}
 	
 	if (mFlagInfo.Find("PROXY_TYPE_PROXY")>0){	
     // Set proxy server setting. PROXY_TYPE_PROXY
 		list.pOptions[optionIndex].dwOption = INTERNET_PER_CONN_PROXY_SERVER;
-		list.pOptions[optionIndex++].Value.pszValue = TEXT("http=1.1.1.1:80;https=2.2.2.2:90;ftp=3.3.3.3:40");
+		list.pOptions[optionIndex++].Value.pszValue = strProxyInfo;
     }
 	
 
