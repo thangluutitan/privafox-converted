@@ -264,22 +264,26 @@ _bookmarkIsProtectMasterPassword: function PO__bookmarkIsProtectMasterPassword()
 _showPromptProtectBookmark: function PO__showPromptProtectBookmark() {
     let isHassProtectBookmark = this._bookmarkIsProtectMasterPassword();
     var vLogin = false;
-    if(isHassProtectBookmark){
-        var tokendb = Components.classes["@mozilla.org/security/pk11tokendb;1"].createInstance(Components.interfaces.nsIPK11TokenDB);
-        var token = tokendb.getInternalKeyToken();        
-        // so there's a master password. but since checkpassword didn't succeed, we're logged out (per nsipk11token.idl).
-        try {
-            // relogin and ask for the master password.
-            token.login(true);  // 'true' means always prompt for token password. user will be prompted until
-            // clicking 'cancel' or entering the correct password.
-        } catch (e) {
-        }
-        vLogin =  token.isLoggedIn();
-        if(vLogin){
-            Services.prefs.setBoolPref(PREF_PROTECT_BOOKMARK_ALREADYLOGIN,true);
-            Services.obs.notifyObservers(null, PREF_PROTECT_BOOKMARK, true);
-        }
-    }
+	if(!this._showPromptMP){	
+		this._showPromptMP = true;
+		if(isHassProtectBookmark){
+			var tokendb = Components.classes["@mozilla.org/security/pk11tokendb;1"].createInstance(Components.interfaces.nsIPK11TokenDB);
+			var token = tokendb.getInternalKeyToken();        
+			// so there's a master password. but since checkpassword didn't succeed, we're logged out (per nsipk11token.idl).
+			try {
+				// relogin and ask for the master password.
+				token.login(true);  // 'true' means always prompt for token password. user will be prompted until
+				// clicking 'cancel' or entering the correct password.
+			} catch (e) {
+			}
+			vLogin =  token.isLoggedIn();
+			if(vLogin){
+				Services.prefs.setBoolPref(PREF_PROTECT_BOOKMARK_ALREADYLOGIN,true);
+				Services.obs.notifyObservers(null, PREF_PROTECT_BOOKMARK, true);
+			}
+		}
+		this._showPromptMP = false;
+	}
     return vLogin;
 },
 
