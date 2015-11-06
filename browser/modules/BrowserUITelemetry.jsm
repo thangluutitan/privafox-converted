@@ -52,7 +52,6 @@ XPCOMUtils.defineLazyGetter(this, "DEFAULT_AREA_PLACEMENTS", function() {
       "pocket-button",
       "downloads-button",
       "home-button",
-      "social-share-button",
     ],
     // It's true that toolbar-menubar is not visible
     // on OS X, but the XUL node is definitely present

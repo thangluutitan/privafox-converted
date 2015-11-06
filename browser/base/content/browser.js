@@ -222,8 +222,8 @@ XPCOMUtils.defineLazyModuleGetter(this, "SitePermissions",
 XPCOMUtils.defineLazyModuleGetter(this, "SessionStore",
   "resource:///modules/sessionstore/SessionStore.jsm");
 
-XPCOMUtils.defineLazyModuleGetter(this, "fxAccounts",
-  "resource://gre/modules/FxAccounts.jsm");
+//XPCOMUtils.defineLazyModuleGetter(this, "fxAccounts",
+//  "resource://gre/modules/FxAccounts.jsm");
 
 XPCOMUtils.defineLazyModuleGetter(this, "gWebRTCUI",
   "resource:///modules/webrtcUI.jsm", "webrtcUI");
@@ -238,8 +238,8 @@ XPCOMUtils.defineLazyModuleGetter(this, "PluginCrashReporter",
 XPCOMUtils.defineLazyModuleGetter(this, "FormValidationHandler",
   "resource:///modules/FormValidationHandler.jsm");
 
-XPCOMUtils.defineLazyModuleGetter(this, "UITour",
-  "resource:///modules/UITour.jsm");
+// XPCOMUtils.defineLazyModuleGetter(this, "UITour",
+// "resource:///modules/UITour.jsm");
 
 XPCOMUtils.defineLazyModuleGetter(this, "CastingApps",
   "resource:///modules/CastingApps.jsm");
@@ -286,11 +286,11 @@ let gInitialPages = [
 #include browser-data-submission-info-bar.js
 #endif
 
-#ifdef MOZ_SERVICES_SYNC
-#include browser-syncui.js
-#endif
+// #ifdef MOZ_SERVICES_SYNC
+// #include browser-syncui.js
+// #endif
 
-#include browser-fxaccounts.js
+// #include browser-fxaccounts.js
 
 XPCOMUtils.defineLazyGetter(this, "Win7Features", function () {
 #ifdef XP_WIN
@@ -2291,8 +2291,8 @@ var gBrowserInit = {
 
 #ifdef MOZ_SERVICES_SYNC
     // initialize the sync UI
-    gSyncUI.init();
-    gFxAccounts.init();
+   // gSyncUI.init();
+   // gFxAccounts.init();
 #endif
 
 #ifdef MOZ_DATA_REPORTING
@@ -2427,7 +2427,7 @@ var gBrowserInit = {
     FullScreen.uninit();
 
 #ifdef MOZ_SERVICES_SYNC
-    gFxAccounts.uninit();
+   // gFxAccounts.uninit();
 #endif
 
     Services.obs.removeObserver(gPluginHandler.NPAPIPluginCrashed, "plugin-crashed");
@@ -2585,7 +2585,7 @@ var gBrowserInit = {
 
 #ifdef MOZ_SERVICES_SYNC
     // initialize the sync UI
-    gSyncUI.init();
+   // gSyncUI.init();
 #endif
 
 #ifdef E10S_TESTING_ONLY
@@ -5178,7 +5178,7 @@ var XULBrowserWindow = {
 
         BookmarkingUI.onLocationChange();
         SocialUI.updateState(location);
-        UITour.onLocationChange(location);
+        //UITour.onLocationChange(location);
       }
 
       // Utility functions for disabling find

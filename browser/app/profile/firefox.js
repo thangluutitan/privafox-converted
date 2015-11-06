@@ -1421,7 +1421,7 @@ pref("browser.taskbar.lists.refreshInSeconds", 120);
 *Privafox :CUS-T1 Additional Security
 */
 
-//#endif
+#endif
 //pref("services.sync.prefs.sync.security.additionalSecurity.protectBookmark", false);
 // The sync engines to use.
 pref("services.sync.registerEngines", "Bookmarks,Form,History,Password,Prefs,Tab,Addons");
