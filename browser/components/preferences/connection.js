@@ -241,8 +241,8 @@ var gConnectionsDialog = {
 			//Services.prompt.alert(null, "SysProxy:",systemProxyString);
 			if (systemProxyString && systemProxyString.indexOf(";auto")>0){//Auto Mode
 				PACURI = systemProxyString.substr(0,systemProxyString.indexOf(";auto"));
-				systemProxySetting.autoconfig_url = PACURI.replace("\"","");
-				Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.autoconfig_url",PACURI);
+				systemProxySetting.autoconfig_url = PACURI.replace(" ","").replace(" ","").replace("\"","").replace("\"","");;
+				Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.autoconfig_url",systemProxySetting.autoconfig_url);
 				Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.autoconfig",true);
 				Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.http","");
 				Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.http_port",0);
