@@ -1713,10 +1713,10 @@ function showProxyChangeNotification() {
 				prefName = "Mode: ";
 				//prefName = autoFixLenForPref(prefName,spacer.length);
 				proxyChangeContent  = proxyChangeContent + prefName + linuxProxyMode[currentSystemProxy.mode] + spacer + linuxProxyMode[lastSystemProxyInfo.mode] + "\n";
-				if (currentSystemProxy.mode == 1){
-					prefName = "Url: ";
-					proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.autoconfig_url + spacer + lastSystemProxyInfo.autoconfig_url + "\n";
-				}
+				//if (currentSystemProxy.mode == 1){
+				//	prefName = "Url: ";
+				//	proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.autoconfig_url + spacer + lastSystemProxyInfo.autoconfig_url + "\n";
+				//}
 			} 
 			if (currentSystemProxy.mode == 2){
 				if (currentSystemProxy.http != lastSystemProxyInfo.http){
