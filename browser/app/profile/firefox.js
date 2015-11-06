@@ -737,6 +737,7 @@ pref("browser.proxyChange.lastSystemProxyInfo.autoconfig",false);
 pref("browser.proxyChange.lastSystemProxyInfo.autoconfig_url","");
 pref("browser.proxyChange.lastSystemProxyInfo.autoDetect",false);
 pref("browser.proxyChange.lastSystemProxyInfo.sameProxyServer",false);
+pref("browser.proxyChange.lastSystemProxyInfo.mode",0);
 
 #ifdef XP_WIN
 pref("browser.isWindow", true);
