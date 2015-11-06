@@ -816,7 +816,7 @@ HistoryMenu.prototype = {
 
     this.toggleRecentlyClosedTabs();
     this.toggleRecentlyClosedWindows();
-    this.toggleTabsFromOtherComputers();
+    //this.toggleTabsFromOtherComputers();
   },
 
   _onCommand: function HM__onCommand(aEvent) {

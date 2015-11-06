@@ -50,7 +50,7 @@ function init_all() {
   register_module("paneAdvanced", gAdvancedPane);
   register_module("paneApplications", gApplicationsPane);
   register_module("paneContent", gContentPane);
-  register_module("paneSync", gSyncPane);
+  //register_module("paneSync", gSyncPane);
   register_module("paneSecurity", gSecurityPane);
 
   let categories = document.getElementById("categories");
@@ -147,8 +147,8 @@ function gotoPref(aCategory) {
     *Privafox MBT-35 : Forece display Dialog Input master password
     *
     */
-  if(aCategory){
-      if(aCategory == "paneSecurity"){
+  if(category){
+      if(category == "paneSecurity"){
           const kEnableUseMasterPasswordPref = "preferences.security.useMasterPassword.enable.startup";
           let kMasterPref = false;
           if(Services.prefs.prefHasUserValue(kEnableUseMasterPasswordPref)){

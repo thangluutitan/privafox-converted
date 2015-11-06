@@ -429,44 +429,44 @@
         <button id="ctrlTab-showAll" class="ctrlTab-preview" noicon="true"/>
       </hbox>
     </panel>
-
+#ifdef MOZ_SERVICES_SYNC
     <!-- Sync Panel -->
-    <panel id="sync-start-panel" class="sync-panel" type="arrow" hidden="true"
-           noautofocus="true" onclick="this.hidePopup();"
-           flip="slide">
-      <hbox class="sync-panel-outer">
-        <image class="sync-panel-icon"/>
-        <vbox class="sync-panel-inner">
-          <description id="sync-start-panel-title"
-                       value="&syncStartPanel2.heading;"/>
-          <description id="sync-start-panel-subtitle"
-                       value="&syncStartPanel2.subTitle;"/>
-        </vbox>
-      </hbox>
-    </panel>
+    <!--<panel id="sync-start-panel" class="sync-panel" type="arrow" hidden="true"-->
+           <!--noautofocus="true" onclick="this.hidePopup();"-->
+           <!--flip="slide">-->
+      <!--<hbox class="sync-panel-outer">-->
+        <!--<image class="sync-panel-icon"/>-->
+        <!--<vbox class="sync-panel-inner">-->
+          <!--<description id="sync-start-panel-title"-->
+                       <!--value="&syncStartPanel2.heading;"/>-->
+          <!--<description id="sync-start-panel-subtitle"-->
+                       <!--value="&syncStartPanel2.subTitle;"/>-->
+        <!--</vbox>-->
+      <!--</hbox>-->
+    <!--</panel>-->
 
-    <!-- Sync Error Panel -->
-    <panel id="sync-error-panel" class="sync-panel" type="arrow" hidden="true"
-           noautofocus="true" onclick="this.hidePopup();"
-           flip="slide">
-      <hbox class="sync-panel-outer">
-        <image class="sync-panel-icon"/>
-        <vbox class="sync-panel-inner">
-          <description id="sync-error-panel-title"
-                       value="&syncErrorPanel.heading;"/>
-          <description id="sync-error-panel-subtitle"
-                       value="&syncErrorPanel.subTitle;"/>
-          <hbox class="sync-panel-button-box">
-            <spacer flex="1"/>
-            <button class="sync-panel-button"
-                    label="&syncErrorPanel.signInButton.label;"
-                    accesskey="&syncErrorPanel.signInButton.accesskey;"
-                    onclick="gFxAccounts.openSignInAgainPage();"/>
-          </hbox>
-        </vbox>
-      </hbox>
-    </panel>
-
+    <!--&lt;!&ndash; Sync Error Panel &ndash;&gt;-->
+    <!--<panel id="sync-error-panel" class="sync-panel" type="arrow" hidden="true"-->
+           <!--noautofocus="true" onclick="this.hidePopup();"-->
+           <!--flip="slide">-->
+      <!--<hbox class="sync-panel-outer">-->
+        <!--<image class="sync-panel-icon"/>-->
+        <!--<vbox class="sync-panel-inner">-->
+          <!--<description id="sync-error-panel-title"-->
+                       <!--value="&syncErrorPanel.heading;"/>-->
+          <!--<description id="sync-error-panel-subtitle"-->
+                       <!--value="&syncErrorPanel.subTitle;"/>-->
+          <!--<hbox class="sync-panel-button-box">-->
+            <!--<spacer flex="1"/>-->
+            <!--<button class="sync-panel-button"-->
+                    <!--label="&syncErrorPanel.signInButton.label;"-->
+                    <!--accesskey="&syncErrorPanel.signInButton.accesskey;"-->
+                    <!--onclick="gFxAccounts.openSignInAgainPage();"/>-->
+          <!--</hbox>-->
+        <!--</vbox>-->
+      <!--</hbox>-->
+    <!--</panel>-->
+#endif
     <!-- Bookmarks and history tooltip -->
     <tooltip id="bhTooltip"/>
 
@@ -680,10 +680,10 @@
              aria-label="&navbarCmd.label;"
              fullscreentoolbar="true" mode="icons" customizable="true"
              iconsize="small"
-#ifdef MOZ_DEV_EDITION
-             defaultset="urlbar-container,search-container,bookmarks-menu-button,downloads-button,home-button,loop-button"
+#ifdef PRIVAFOX_DEV
+             defaultset="urlbar-container,search-container,bookmarks-menu-button,downloads-button,home-button"
 #else
-             defaultset="urlbar-container,search-container,bookmarks-menu-button,downloads-button,home-button,loop-button"
+             defaultset="urlbar-container,search-container,bookmarks-menu-button,downloads-button,home-button"
 #endif
              customizationtarget="nav-bar-customization-target"
              overflowable="true"
@@ -969,6 +969,7 @@
                        onclick="BrowserGoHome(event);"
                        cui-areatype="toolbar"
                        aboutHomeOverrideTooltip="&abouthome.pageTitle;"/>
+
       </hbox>
 
       <toolbarbutton id="nav-bar-overflow-button"

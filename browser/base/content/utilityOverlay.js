@@ -517,6 +517,7 @@ function openAboutDialog() {
 
 function openPreferences(paneID, extraArgs)
 {
+
   function switchToAdvancedSubPane(doc) {
     if (extraArgs && extraArgs["advancedTab"]) {
       let advancedPaneTabs = doc.getElementById("advancedPrefs");

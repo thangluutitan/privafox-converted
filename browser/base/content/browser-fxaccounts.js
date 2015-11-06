@@ -439,7 +439,7 @@ let gFxAccounts = {
   },
 
   openPreferences: function () {
-    openPreferences("paneSync");
+    //openPreferences("paneSync");
   },
 
   openAccountsPage: function (action, urlParams={}) {
