@@ -266,8 +266,8 @@ nsUnixSystemProxySettings::SetProxyResultFromGSettings(const char* aKeyBase, con
   nsAutoCString host;
   rv = proxy_settings->GetString(NS_LITERAL_CSTRING("host"), host);
   NS_ENSURE_SUCCESS(rv, rv);
-  if (host.IsEmpty())
-    return NS_ERROR_FAILURE;
+  //if (host.IsEmpty())
+  //  return NS_ERROR_FAILURE;
   
   int32_t port;
   rv = proxy_settings->GetInt(NS_LITERAL_CSTRING("port"), &port);
@@ -452,7 +452,17 @@ nsUnixSystemProxySettings::GetProxyFromGSettings(const nsACString& aScheme,
   
   // return NS_ERROR_FAILURE when no proxy is set
   if (!proxyMode.EqualsLiteral("manual")) {
-    return NS_ERROR_FAILURE;
+    if (aScheme.LowerCaseEqualsLiteral("all")){
+      if (proxyMode.EqualsLiteral("auto")){      
+        
+        mProxySettings->GetString(NS_LITERAL_CSTRING("autoconfig-url"), aResult);
+        aResult.AppendLiteral(";auto;");
+        
+      }else
+        aResult.AppendLiteral("none;");
+        //aResult.Append(proxyMode);        
+    }else 
+      return NS_ERROR_FAILURE;
   }
 
   nsCOMPtr<nsIArray> ignoreList;
@@ -483,7 +493,13 @@ nsUnixSystemProxySettings::GetProxyFromGSettings(const nsACString& aScheme,
       rv = SetProxyResultFromGSettings("org.gnome.system.proxy.http", "PROXY", aResult);
   } else if (aScheme.LowerCaseEqualsLiteral("ftp")) {
     rv = SetProxyResultFromGSettings("org.gnome.system.proxy.ftp", "PROXY", aResult);
-  } else {
+  } else  if (aScheme.LowerCaseEqualsLiteral("all")){
+    aResult.AppendLiteral("manual");
+    rv = SetProxyResultFromGSettings("org.gnome.system.proxy.http", ";http=", aResult);
+	  rv = SetProxyResultFromGSettings("org.gnome.system.proxy.https", ";https=", aResult);
+	  rv = SetProxyResultFromGSettings("org.gnome.system.proxy.ftp", ";ftp=", aResult);
+    rv = SetProxyResultFromGSettings("org.gnome.system.proxy.socks", ";socks=", aResult);
+  }else {
     rv = NS_ERROR_FAILURE;
   }
   if (rv != NS_OK) {
