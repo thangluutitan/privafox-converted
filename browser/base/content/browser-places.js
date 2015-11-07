@@ -570,7 +570,7 @@ var PlacesCommandHook = {
        }
        var hasProtectPassword = kCheckBookmarksIsMasterPassword;
        if(hasProtectPassword){
-        hasProtectPassword = kAlreadyLogin ? false : true;
+         hasProtectPassword = kAlreadyLogin ? false : true;
        }
        return hasProtectPassword;
    },
@@ -1351,6 +1351,7 @@ let BookmarkingUI = {
 
   onPopupShowing: function BUI_onPopupShowing(event , aNode) {
       // Don't handle events for submenus.
+
     if (event.target != event.currentTarget)
       return;
     // Ideally this code would never be reached, but if you click the outer
@@ -1365,6 +1366,9 @@ let BookmarkingUI = {
 
     let widget = CustomizableUI.getWidget(this.BOOKMARK_BUTTON_ID)
                                .forWindow(window);
+
+
+
     if (widget.overflowed) {
       // Don't open a popup in the overflow popup, rather just open the Library.
       event.preventDefault();
