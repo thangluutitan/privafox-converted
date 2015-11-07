@@ -391,6 +391,7 @@
                tooltip="bhTooltip" popupsinherittooltip="true">
 	<menuitem id="bookmarksProtecMasterPassword"
 					label="&showProtecMasterPassword.label;"
+					hidden="true"
 					command="Browser:RequiredEnterMasterPassword"/>
       <menuitem id="bookmarksShowAll"
                 label="&showAllBookmarks2.label;"
