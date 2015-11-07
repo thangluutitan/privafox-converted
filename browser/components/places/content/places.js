@@ -246,23 +246,15 @@ _bookmarkIsProtectMasterPassword: function PO__bookmarkIsProtectMasterPassword()
         kAlreadyLogin = Services.prefs.getBoolPref(PREF_PROTECT_BOOKMARK_ALREADYLOGIN);
     }
 
-    var hasProtectPassword = false;
-    if(kCheckBookmarksIsMasterPassword && kAlreadyLogin){
-        hasProtectPassword =  false;
-    }else if(kCheckBookmarksIsMasterPassword){
-        hasProtectPassword =  true;
-        var tokendb = Components.classes["@mozilla.org/security/pk11tokendb;1"].createInstance(Components.interfaces.nsIPK11TokenDB);
-        var token = tokendb.getInternalKeyToken();
-        // if there is no master password, still give the user a chance to opt-out of displaying passwords
-        if (token.checkPassword("")){
-            hasProtectPassword =  false;
-        }           
-    }
+    var hasProtectPassword = kCheckBookmarksIsMasterPassword;
+     if(hasProtectPassword){
+         hasProtectPassword = kAlreadyLogin ? false : true;
+     }
     return hasProtectPassword;
 
 },
 _showPromptProtectBookmark: function PO__showPromptProtectBookmark() {
-    let isHassProtectBookmark = this._bookmarkIsProtectMasterPassword();
+    let isHasProtectBookmark = this._bookmarkIsProtectMasterPassword();
     var vLogin = false;
 	if(!this._showPromptMP){	
 		this._showPromptMP = true;

@@ -569,17 +569,8 @@ var PlacesCommandHook = {
          kAlreadyLogin = Services.prefs.getBoolPref(PREF_PROTECT_BOOKMARK_ALREADYLOGIN);
        }
        var hasProtectPassword = kCheckBookmarksIsMasterPassword;
-       if(hasProtectPassword){        
-           if(!kAlreadyLogin){
-               var tokendb = Components.classes["@mozilla.org/security/pk11tokendb;1"].createInstance(Components.interfaces.nsIPK11TokenDB);
-               var token = tokendb.getInternalKeyToken();
-               // if there is no master password, still give the user a chance to opt-out of displaying passwords
-               if (token.checkPassword("")){
-                   hasProtectPassword =  false;
-               }           
-           }else{
-               hasProtectPassword = false;
-           }
+       if(hasProtectPassword){
+        hasProtectPassword = kAlreadyLogin ? false : true;
        }
        return hasProtectPassword;
    },

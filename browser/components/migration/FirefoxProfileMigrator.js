@@ -151,82 +151,73 @@ function GetBookmarksResource(aProfileFolder , disFolderProfile) {
 
    let allFile = [];
    let allBookmark = [];		  
-   let checkBookmarkFile = getFileObject(disFolderProfile , "places.sqlite"); 
-   if(!checkBookmarkFile){
-         allFile.push(bookmarksFile);
-		let bookmarksFileWal = getFileObject(aProfileFolder , "places.sqlite-wal"); 
-		if (bookmarksFileWal) {
-			allFile.push(bookmarksFileWal);
-		}			 		 
-    }
-		
-
-	let isFoundImportData = false;
   return {
       type: MigrationUtils.resourceTypes.HISTORY,
       migrate: function(aCallback) {
-          if(allFile.length > 0){
-              isFoundImportData = true;
-			  for (let file of allFile) {
-                   file.copyTo(disFolderProfile, "");
-			  }			  
-           }else{		  
-			  let dbConn = Services.storage.openUnsharedDatabase(bookmarksFile); 
+        let parentGuid = PlacesUtils.bookmarks.toolbarGuid;
+         return Task.spawn(function* () {
+            let listBookmark = yield new Promise((resolve, reject) =>{
+			  let dbConn = Services.storage.openUnsharedDatabase(bookmarksFile);
 			  let stmt = dbConn.createAsyncStatement("SELECT id , url , title  , rev_host  , visit_count  , hidden , typed , favicon_id ,frecency ,guid FROM moz_places where SUBSTR(url, 1, 6) <> 'place:'");
-			  //Services.prefs.setCharPref("Titan.com.init.GetBookmarksResource.stmt", stmt);          
+			  //Services.prefs.setCharPref("Titan.com.init.GetBookmarksResource.stmt", stmt);
 			   stmt.executeAsync({
 				  handleResult : function(aResults) {
 					  for (let row = aResults.getNextRow(); row; row = aResults.getNextRow()) {
-						  try {                          
+						  try {
 							allBookmark.push({
 									url: NetUtil.newURI(row.getResultByName("url")),
 									title: row.getResultByName("title"),
 									type:"url" ,
 								});
-								
+
 						  } catch (e) {
-							 // Services.prefs.setCharPref("Titan.com.init.item.stmt.e", e);
 							  Cu.reportError(e);
+							  reject("Query has failed: " + e);
 						  }
 					  }
 				  },
 
 				  handleError : function(aError) {
-					  //Services.prefs.setCharPref("Titan.com.init.item.stmt.aError", aError);
 					  Cu.reportError("Async statement execution returned with '" +
 									 aError.result + "', '" + aError.message + "'");
+                        reject("Query has failed: " + aError);
 				  },
 
 				  handleCompletion : function(aReason) {
 					  dbConn.asyncClose();
-					  aCallback(aReason == Ci.mozIStorageStatementCallback.REASON_FINISHED); 				
-					//Services.prefs.setCharPref("Titan.com.init.GetBookmarksResource.handleCompletion", allBookmark.length);  				  				  
+					  aCallback(aReason == Ci.mozIStorageStatementCallback.REASON_FINISHED);
+					  resolve(allBookmark);
 				  },
-			  });          
+			  });
 			  stmt.finalize();
-		  }
-         return Task.spawn(function* () {       
-			if(!isFoundImportData){
-				let parentGuid = PlacesUtils.bookmarks.toolbarGuid;
-				parentGuid = yield MigrationUtils.createImportedBookmarksFolder("Firefox", parentGuid);
-				//Services.prefs.setCharPref("Titan.com.init.GetBookmarksResource.AddAllBookmark", allBookmark.length);  				  
-				for (let item of allBookmark) {
-					try {
-					 if (item.type == "url") {
-						let folder = yield PlacesUtils.bookmarks.insert({
-							parentGuid, url: item.url, title: item.name
-						});
-					  }
-					} catch (e) {
-					  Cu.reportError(e);
-					}
-				}		
-			}			
+
+              });
+                if (!MigrationUtils.isStartupMigration) {
+                    parentGuid = yield MigrationUtils.createImportedBookmarksFolder("Firefox", parentGuid);
+                }else{
+                    parentGuid = PlacesUtils.bookmarks.menuGuid;
+                }
+                yield insertBookmarkItems(parentGuid , listBookmark);
+
         }.bind(this)).then(() => aCallback(true),
                                           e => { Cu.reportError(e); aCallback(false) });
           
       }
   }        
+}
+function* insertBookmarkItems(parentGuid, allBoookmark) {
+
+  for (let item of allBoookmark) {
+        try {
+         if (item.type == "url") {
+            yield PlacesUtils.bookmarks.insert({
+                    parentGuid, url: item.url, title: item.name
+            });
+          }
+        } catch (e) {
+            Cu.reportError(e);
+        }
+  	}
 }
 
 function* copykey3DB(sourceFolderProfile, disFolderProfile) {
