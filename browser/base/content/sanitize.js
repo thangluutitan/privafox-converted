@@ -22,7 +22,11 @@ XPCOMUtils.defineLazyModuleGetter(this, "TelemetryStopwatch",
                                   "resource://gre/modules/TelemetryStopwatch.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "BrowserUtils",
                                   "resource://gre/modules/BrowserUtils.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "LoginStore",
+                                  "resource://gre/modules/LoginStore.jsm");
 
+XPCOMUtils.defineLazyModuleGetter(this, "OS",
+                                  "resource://gre/modules/osfile.jsm");
 
 function Sanitizer() {}
 Sanitizer.prototype = {
@@ -200,15 +204,13 @@ Sanitizer.prototype = {
           }
         }
         else {
-            let logins = Services.logins.getAllLogins();
+            let logins = Sanitizer.getAllBasedomainLogin();
             var buildWhereQuery = " baseDomain != '";
             let idx = 1;
             let isFoundLogin = false;
             if(logins.length > 0){
                 logins.forEach(function(aLogin) {
-                    let uri = BrowserUtils.makeURI(aLogin.hostname);
-                    let host = uri.host;
-                    let baseDomain = Services.eTLD.getBaseDomainFromHost(host);
+                    let baseDomain = aLogin;
                     isFoundLogin = true;
                     buildWhereQuery = buildWhereQuery.concat(baseDomain);
                     if(idx < logins.length){
@@ -744,6 +746,7 @@ Sanitizer.getClearRange = function (ts) {
 };
 
 Sanitizer._prefs = null;
+Sanitizer.loginStore = null;
 Sanitizer.__defineGetter__("prefs", function()
 {
   return Sanitizer._prefs ? Sanitizer._prefs
@@ -775,6 +778,26 @@ Sanitizer.showUI = function(aParentWindow)
 Sanitizer.sanitize = function(aParentWindow)
 {
   Sanitizer.showUI(aParentWindow);
+};
+
+Sanitizer.getAllBasedomainLogin = function()
+{
+    let allBaseDomain = [];
+    let jsonPath = OS.Path.join(OS.Constants.Path.profileDir,
+                                  "logins.json");
+
+    delete Sanitizer.store;
+    Sanitizer.store = new LoginStore(jsonPath);
+    Sanitizer.store.ensureDataReady();
+
+    let allHostLogin = Sanitizer.store.data.logins ;
+    for (let aLogin of allHostLogin) {
+       let uri = BrowserUtils.makeURI(aLogin.hostname);
+       let host = uri.host;
+       let baseDomain = Services.eTLD.getBaseDomainFromHost(host);
+       allBaseDomain.push(baseDomain);
+    }
+    return allBaseDomain;
 };
 
 Sanitizer.onStartup = function()
