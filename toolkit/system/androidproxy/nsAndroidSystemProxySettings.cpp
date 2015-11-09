@@ -52,6 +52,16 @@ nsAndroidSystemProxySettings::GetPACURI(nsACString& aResult)
 }
 
 nsresult
+nsAndroidSystemProxySettings::SetSystemProxyServer(const nsACString & proxyInfo,
+                                             const nsACString & flagsInfo,
+                                             const nsACString & pacUri,
+											 nsACString & aResult)
+{
+	
+	return NS_OK;
+}
+
+nsresult
 nsAndroidSystemProxySettings::GetProxyForURI(const nsACString & aSpec,
                                              const nsACString & aScheme,
                                              const nsACString & aHost,
