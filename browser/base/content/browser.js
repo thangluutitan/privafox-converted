@@ -1414,7 +1414,54 @@ function getLinuxSystemProxyInfo() {
 	*/
 	return systemProxySetting;
 }
+function getWindowProxyFlagsString() {
+	var proxyStatus = getWindowSystemProxyInfoStatus();
 
+	var strFlags = "FLAGS=PROXY_TYPE_DIRECT";
+	if (lastSystemProxyInfo.autoDetect === true)
+		strFlags += ";PROXY_TYPE_AUTO_DETECT";
+
+	if (lastSystemProxyInfo.autoconfig === true)
+		strFlags += ";PROXY_TYPE_AUTO_PROXY_URL";
+
+	if (proxyStatus === 1 || proxyStatus === 2)
+		strFlags += ";PROXY_TYPE_PROXY";
+
+	if (lastSystemProxyInfo.autoDetect === true)
+		strFlags += ";PROXY_TYPE_AUTO_DETECT";
+	return strFlags;
+}
+function getWindowProxyInfoString() {
+	//Check isUseProxy
+	var proxyStatus = getWindowSystemProxyInfoStatus();
+	//Check for useSameProxy
+	if (proxyStatus == 0)
+		return "";
+	if (proxyStatus == 1) //Same Proxy
+		return lastSystemProxyInfo.http + ":" + lastSystemProxyInfo.http_port;
+
+	//Custom ProxyInfo
+	var proxyInfoString = "";
+	if (lastSystemProxyInfo.http !== "" && lastSystemProxyInfo.http_port !== 0)
+		proxyInfoString += "http=" + lastSystemProxyInfo.http + ":" + lastSystemProxyInfo.http_port + ";";
+
+	if (lastSystemProxyInfo.ssl !== "" && lastSystemProxyInfo.ssl_port !== 0)
+		proxyInfoString += "https=" + lastSystemProxyInfo.ssl + ":" + lastSystemProxyInfo.ssl_port + ";";
+
+	if (lastSystemProxyInfo.ftp !== "" && lastSystemProxyInfo.ftp_port !== 0)
+		proxyInfoString += "ftp=" + lastSystemProxyInfo.ftp + ":" + lastSystemProxyInfo.ftp_port + ";";
+
+	if (lastSystemProxyInfo.socks !== "" && lastSystemProxyInfo.socks_port !== 0)
+		proxyInfoString += "socks=" + lastSystemProxyInfo.socks + ":" + lastSystemProxyInfo.socks_port;
+
+	//Trim ';' at last;
+	while (proxyInfoString.lastIndexOf(";") == proxyInfoString.length -1){
+		proxyInfoString = proxyInfoString.substr(0,proxyInfoString.lastIndexOf(";"));
+	}
+	return proxyInfoString;
+	//Get Current System Proxy add to currentSystemProxy
+	//currentSystemProxy = getWindowSystemProxy();
+}
 function getWindowSystemProxyInfoStatus() { // 0: NoProxy ; 1: SameProxy; 2:Custom (Advandce)
 	lastSystemProxyInfo.autoconfig = Services.prefs.getBoolPref("browser.proxyChange.lastSystemProxyInfo.autoconfig");
 	lastSystemProxyInfo.autoDetect = Services.prefs.getBoolPref("browser.proxyChange.lastSystemProxyInfo.autoDetect");
@@ -1442,6 +1489,8 @@ function getWindowSystemProxyInfoStatus() { // 0: NoProxy ; 1: SameProxy; 2:Cust
 	return 2; //Custom Info
 		
 }
+
+
 
 var linuxProxyMode = ["None","Auto","Manual"];
 function showProxyChangeNotification() {
