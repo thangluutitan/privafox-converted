@@ -224,7 +224,7 @@ function GetBookmarksResource(aProfileFolder) {
           let parentGuid = PlacesUtils.bookmarks.menuGuid;
           if (!MigrationUtils.isStartupMigration) {
             parentGuid =
-              yield MigrationUtils.createImportedBookmarksFolder("Firefox", parentGuid);
+              yield MigrationUtils.createImportedBookmarksFolder("Chrome", parentGuid);
           }
           yield insertBookmarkItems(parentGuid, roots.other.children);
         }
