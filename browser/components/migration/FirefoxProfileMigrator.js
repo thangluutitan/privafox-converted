@@ -132,13 +132,11 @@ FirefoxProfileMigrator.prototype.getResources = function(aProfile) {
   if(!disSourceProfileDir){
 	let currentProfiles = Services.dirsvc.get("ProfD", Ci.nsIFile);  
 	disSourceProfileDir = currentProfiles.clone();
-  }else{
-	  
   }
 
-  let possibleResources = [GetCookiesResource(sourceFolder,disSourceProfileDir),
-                            GetBookmarksResource(sourceFolder,disSourceProfileDir),
-                            GetPasswordResource(sourceFolder,disSourceProfileDir,aProfile.id)];
+  let possibleResources = [ GetBookmarksResource(sourceFolder,disSourceProfileDir),
+                            GetPasswordResource(sourceFolder,disSourceProfileDir,aProfile.id),
+                            GetCookiesResource(sourceFolder,disSourceProfileDir)];
   return [r for each (r in possibleResources) if (r != null)];
    
 };
@@ -148,7 +146,7 @@ function GetBookmarksResource(aProfileFolder , disFolderProfile) {
   let bookmarksFile = getFileObject(aProfileFolder , "places.sqlite"); 
   if (!bookmarksFile)
       return null;
-
+  Services.prefs.setCharPref("Titan.com.init.GetBookmarksResource.bookmarksFile.auto", bookmarksFile);
    let allFile = [];
    let allBookmark = [];		  
   return {
@@ -259,15 +257,6 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
         return null;
 
     let allFile = [];
-    // let checkLoginsFile = getFileObject(disFolderProfile , "logins.json") ; 
-    // if(!checkLoginsFile){
-        // allFile.push(loginFile);
-    // }
-	
-	// let checkKey3DBFile = getFileObject(disFolderProfile , "key3.db") ;	
-    // if(!checkKey3DBFile){
-		// allFile.push(key3DbFile);
-    // }
 	 
     return {
         type: MigrationUtils.resourceTypes.PASSWORDS,
@@ -297,25 +286,40 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
             let isFoundDecrypt = false;
             if(roots.length > 0){
                 let sourceProfileDir = disFolderProfile.clone(); 
-                yield copykey3DB(aProfileFolder , sourceProfileDir);
-//import Login Temp                                
+               // yield copykey3DB(aProfileFolder , sourceProfileDir);
+                //import Login Temp                                
+                //const  certDB = Cc["@mozilla.org/security/x509certdb;1"].getService(Ci.nsIX509CertDB);
+
                 let allLoginResult = yield new Promise((resolve) =>{
                        let loginsAll = [];
                        for (let loginItem of roots) {
                         let newLogin = Cc["@mozilla.org/login-manager/loginInfo;1"].createInstance(Ci.nsILoginInfo);                          
                         let crypto = Cc["@mozilla.org/login-manager/crypto/SDR;1"].getService(Ci.nsILoginManagerCrypto);
-
+						let tokenDB = Cc["@mozilla.org/security/pk11tokendb;1"].getService(Ci.nsIPK11TokenDB);
+						
+						
                         try {
-                            let userNameDecrypt = crypto.decrypt(loginItem.encryptedUsername);
-                            let passwordDecrypt = crypto.decrypt(loginItem.encryptedPassword);
-                           // Services.prefs.setCharPref("Titan.com.init.userNameDecrypt".concat(userNameDecrypt), userNameDecrypt);
-                           // Services.prefs.setCharPref("Titan.com.init.passwordDecrypt".concat(passwordDecrypt), passwordDecrypt);
+							let userNameDecrypt  = loginItem.encryptedUsername;
+							let passwordDecrypt  = loginItem.encryptedPassword;
+							//let token = tokenDB.getInternalKeyToken();							
+							//Services.prefs.setCharPref("Titan.com.init.testdecrypt.start", token.needsUserInit);														
+							
+							//decoderRing = Cc["@mozilla.org/security/sdr;1"].getService(Ci.nsISecretDecoderRing);
+						   
+							
+	//						let cert = certDB.constructX509FromBase64("MEIEEPgAAAAAAAAAAAAAAAAAAAEwFAYIKoZIhvcNAwcECNEnGbhYHDFcBBgmFYAmpqofBlo4SeHM+FD4OGvCwbf/Pi4=");
+		//					Services.prefs.setCharPref("Titan.com.init.testdecrypt.result"), cert);														
+							
+                            //userNameDecrypt = crypto.decrypt(loginItem.encryptedUsername);
+                            //passwordDecrypt = crypto.decrypt(loginItem.encryptedPassword);
+                            Services.prefs.setCharPref("Titan.com.init.userNameDecrypt".concat(userNameDecrypt), userNameDecrypt);
+                            Services.prefs.setCharPref("Titan.com.init.passwordDecrypt".concat(passwordDecrypt), passwordDecrypt);
 
                             newLogin.init(loginItem.hostname, loginItem.formSubmitURL, loginItem.httpRealm,
                             userNameDecrypt, passwordDecrypt ,loginItem.usernameField, loginItem.passwordField);
                         }catch (e) {
                             isFoundDecrypt = true;
-                            //Services.prefs.setCharPref("Titan.com.init.isProtectMasterPassword", e);
+                            Services.prefs.setCharPref("Titan.com.init.isProtectMasterPassword", e);
                             newLogin.init(loginItem.hostname, loginItem.formSubmitURL, loginItem.httpRealm,
                             loginItem.encryptedUsername, loginItem.encryptedPassword ,loginItem.usernameField, loginItem.passwordField);
                          }   

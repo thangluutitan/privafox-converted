@@ -23,7 +23,6 @@ const PREF_PROTECT_BOOKMARK = "security.additionalSecurity.protectBookmark";
 const PREF_PROTECT_BOOKMARK_ALREADYLOGIN = PREF_PROTECT_BOOKMARK + ".isAlreadyLogin";
 var PlacesOrganizer = {
   _places: null,
-  _showPromptMP:false,
   // IDs of fields from editBookmarkOverlay that should be hidden when infoBox
   // is minimal. IDs should be kept in sync with the IDs of the elements
     // observing additionalInfoBroadcaster.
@@ -250,19 +249,28 @@ _bookmarkIsProtectMasterPassword: function PO__bookmarkIsProtectMasterPassword()
      if(hasProtectPassword){
          hasProtectPassword = kAlreadyLogin ? false : true;
      }
+     
     return hasProtectPassword;
 
 },
+
+_tokendb: null,
+_showPromptMP: false,
 _showPromptProtectBookmark: function PO__showPromptProtectBookmark() {
     let isHasProtectBookmark = this._bookmarkIsProtectMasterPassword();
-    var vLogin = false;
-	if(!this._showPromptMP){	
-		this._showPromptMP = true;
-		if(isHassProtectBookmark){
-			var tokendb = Components.classes["@mozilla.org/security/pk11tokendb;1"].createInstance(Components.interfaces.nsIPK11TokenDB);
-			var token = tokendb.getInternalKeyToken();        
+    Services.prefs.setBoolPref("titan.com._showPromptProtectBookmark.isHasProtectBookmark" ,isHasProtectBookmark );
+    let vLogin = false;
+    Services.prefs.setBoolPref("titan.com._showPromptProtectBookmark" , this._showPromptMP );
+	if(!this._showPromptMP){			
+	    if(isHasProtectBookmark){
+	        if(this._tokendb == null){
+		        this._tokendb = Components.classes["@mozilla.org/security/pk11tokendb;1"].createInstance(Components.interfaces.nsIPK11TokenDB);
+		    }
+		    var token = this._tokendb.getInternalKeyToken();        
+
 			// so there's a master password. but since checkpassword didn't succeed, we're logged out (per nsipk11token.idl).
-			try {
+		    try {
+		        this._showPromptMP = true;
 				// relogin and ask for the master password.
 				token.login(true);  // 'true' means always prompt for token password. user will be prompted until
 				// clicking 'cancel' or entering the correct password.
