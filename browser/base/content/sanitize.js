@@ -442,15 +442,13 @@ Sanitizer.prototype = {
           // Privafox : removeAll Cokie
           var cookieMgr = Components.classes["@mozilla.org/cookiemanager;1"]
           .getService(Ci.nsICookieManager);
-          let logins = pwmgr.getAllLogins();
+          let logins = Sanitizer.getAllBasedomainLogin();
           var buildWhereQuery = " baseDomain == '";
           let idx = 1;
           let isFoundLogin = false;
           if(logins.length > 0){
               logins.forEach(function(aLogin) {
-                    let uri = BrowserUtils.makeURI(aLogin.hostname);
-                    let host = uri.host;
-                    let baseDomain = Services.eTLD.getBaseDomainFromHost(host);
+                    let baseDomain = aLogin;
                     isFoundLogin = true;
                     buildWhereQuery = buildWhereQuery.concat(baseDomain);
                     if(idx < logins.length){
