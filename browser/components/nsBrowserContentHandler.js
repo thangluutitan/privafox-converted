@@ -104,7 +104,7 @@ function needHomepageOverride(prefb) {
   try {
     savedmstone = prefb.getCharPref("browser.startup.homepage_override.mstone");
   } catch (e) {}
-
+  
   if (savedmstone == "ignore")
     return OVERRIDE_NONE;
 
@@ -127,33 +127,8 @@ function needHomepageOverride(prefb) {
     
     prefb.setCharPref("browser.startup.homepage_override.mstone", mstone);
     prefb.setCharPref("browser.startup.homepage_override.buildID", buildID);
-	
-	//Note: Override UserPref
-	prefb.setIntPref("network.cookie.cookieBehavior", 3);
-	prefb.setBoolPref("places.history.enabled", false);
-	prefb.setBoolPref("browser.formfill.enable", false);
-	prefb.setBoolPref("privacy.sanitize.sanitizeOnShutdown", true);
-	prefb.setBoolPref("privacy.clearOnShutdown.history", true);
-	prefb.setBoolPref("privacy.clearOnShutdown.offlineApps", true);
-	//prefb.setBoolPref("privacy.clearOnShutdown.cookies", true);
-	prefb.setBoolPref("privacy.clearOnShutdown.siteSettings", true);
-	prefb.setBoolPref("browser.urlbar.suggest.history", false);
-	prefb.setBoolPref("browser.urlbar.suggest.bookmark", false);
-	//prefb.setBoolPref("datareporting.healthreport.uploadEnabled", false);
-	//End Note: Override UserPref
-	//prefb.setBoolPref("app.update.auto", false);
-	//prefb.setIntPref("app.update.mode", 2);
-	prefb.setBoolPref("app.update.enabled", false);
-	prefb.setBoolPref("datareporting.healthreport.service.enabled", false);
-	prefb.setBoolPref("datareporting.policy.dataSubmissionEnabled", false);
-	prefb.setBoolPref("datareporting.healthreport.uploadEnabled", false);
-	
-	
-	
-	
 
-	
-	
+
     return (savedmstone ? OVERRIDE_NEW_MSTONE : OVERRIDE_NEW_PROFILE);
   }
 
@@ -165,6 +140,27 @@ function needHomepageOverride(prefb) {
   return OVERRIDE_NONE;
 }
 
+function setProfileConfig(prefb){
+    //Note: Override UserPref
+    if(!prefb.prefHasUserValue("browser.startup.buildID.default")){     
+        prefb.setIntPref("network.cookie.cookieBehavior", 3);
+        prefb.setBoolPref("places.history.enabled", false);
+        prefb.setBoolPref("browser.formfill.enable", false);
+        prefb.setBoolPref("privacy.sanitize.sanitizeOnShutdown", true);
+        prefb.setBoolPref("privacy.clearOnShutdown.history", true);
+        prefb.setBoolPref("privacy.clearOnShutdown.offlineApps", true);
+	
+        prefb.setBoolPref("privacy.clearOnShutdown.siteSettings", true);
+        prefb.setBoolPref("browser.urlbar.suggest.history", false);
+        prefb.setBoolPref("browser.urlbar.suggest.bookmark", false);
+	
+        prefb.setBoolPref("app.update.enabled", false);
+        prefb.setBoolPref("datareporting.healthreport.service.enabled", false);
+        prefb.setBoolPref("datareporting.policy.dataSubmissionEnabled", false);
+        prefb.setBoolPref("datareporting.healthreport.uploadEnabled", false);
+        prefb.setBoolPref("browser.startup.buildID.default" , true);
+    }
+}
 /**
  * Gets the override page for the first run after the application has been
  * updated.
@@ -530,7 +526,9 @@ nsBrowserContentHandler.prototype = {
       try {
         old_mstone = Services.prefs.getCharPref("browser.startup.homepage_override.mstone");
       } catch (ex) {}
+
       let override = needHomepageOverride(prefb);
+      setProfileConfig(prefb);	
       if (override != OVERRIDE_NONE) {
         switch (override) {
           case OVERRIDE_NEW_PROFILE:

@@ -79,7 +79,8 @@ FirefoxProfileMigrator.prototype._getAllProfiles = function () {
 		let profileDefault = "";
 		let pName = path;
 		let rootFoler = "";
-Services.prefs.setCharPref("Titan.com.init.length", path.split("/").length);   		
+		Services.prefs.setCharPref("Titan.com.init.length", path.split("/").length);   		
+
         if(path.split("/").length > 1){			
 			profileDefault =  path.split("/") ;
 			pName = profileDefault[profileDefault.length-1];
@@ -253,7 +254,7 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
     
     let loginFile = getFileObject(aProfileFolder , "logins.json") ;    
 	let key3DbFile = getFileObject(aProfileFolder , "key3.db") ;
-    if (!loginFile && !key3DbFile)
+    if (!loginFile)
         return null;
 
     let allFile = [];
