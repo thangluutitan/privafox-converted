@@ -258,9 +258,7 @@ _tokendb: null,
 _showPromptMP: false,
 _showPromptProtectBookmark: function PO__showPromptProtectBookmark() {
     let isHasProtectBookmark = this._bookmarkIsProtectMasterPassword();
-    Services.prefs.setBoolPref("titan.com._showPromptProtectBookmark.isHasProtectBookmark" ,isHasProtectBookmark );
     let vLogin = false;
-    Services.prefs.setBoolPref("titan.com._showPromptProtectBookmark" , this._showPromptMP );
 	if(!this._showPromptMP){			
 	    if(isHasProtectBookmark){
 	        if(this._tokendb == null){
