@@ -72,7 +72,8 @@ let SessionMigrationInternal = {
       win._closedTabs = [];
       return win;
     });
-    let url = "about:welcomeback";
+    //let url = "about:welcomeback"; // Privafox is removed session restore then session migration restore please show about:hone
+	let url = "about:home";
     let formdata = {id: {sessionData: state}, url};
     return {windows: [{tabs: [{entries: [{url}], formdata}]}]};
   },
