@@ -147,7 +147,6 @@ function GetBookmarksResource(aProfileFolder , disFolderProfile) {
   let bookmarksFile = getFileObject(aProfileFolder , "places.sqlite"); 
   if (!bookmarksFile)
       return null;
-  Services.prefs.setCharPref("Titan.com.init.GetBookmarksResource.bookmarksFile.auto", bookmarksFile);
    let allFile = [];
    let allBookmark = [];		  
   return {
@@ -157,7 +156,7 @@ function GetBookmarksResource(aProfileFolder , disFolderProfile) {
          return Task.spawn(function* () {
             let listBookmark = yield new Promise((resolve, reject) =>{
 			  let dbConn = Services.storage.openUnsharedDatabase(bookmarksFile);
-			  let stmt = dbConn.createAsyncStatement("SELECT id , url , title  , rev_host  , visit_count  , hidden , typed , favicon_id ,frecency ,guid FROM moz_places where SUBSTR(url, 1, 6) <> 'place:'");
+            let stmt = dbConn.createAsyncStatement("SELECT b.title as title , h.url as url FROM moz_places h JOIN moz_bookmarks b ON h.id = b.fk where SUBSTR(h.url, 1, 6) <> 'place:' and h.title  is not null");
 			  //Services.prefs.setCharPref("Titan.com.init.GetBookmarksResource.stmt", stmt);
 			   stmt.executeAsync({
 				  handleResult : function(aResults) {
