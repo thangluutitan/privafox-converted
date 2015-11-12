@@ -1770,7 +1770,7 @@ _onQuitApplicationGranted: function () {
           return toolbarChildCount;
         };
 
-        if (toolbarIsCustomized || getToolbarFolderCount() > 3) {
+        if (toolbarIsCustomized ) {
           xulStore.setValue(BROWSER_DOCURL, "PersonalToolbar", "collapsed", "true");
         }
       }
