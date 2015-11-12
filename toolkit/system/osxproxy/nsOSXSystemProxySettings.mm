@@ -321,6 +321,13 @@ nsOSXSystemProxySettings::GetProxyForURI(const nsACString & aSpec,
   int32_t proxyPort;
   nsAutoCString proxyHost;
   bool proxySocks;
+  if(strcasecmp("all",PromiseFlatCString(aScheme).get()) == 0){ 
+    NSError * err;
+    NSData * jsonData = [NSJSONSerialization dataWithJSONObject:mProxyDict options:0 error:&err];
+    NSString * jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+    aResult.Assign([jsonString UTF8String]);
+   return NS_OK;
+  }
   nsresult rv = FindSCProxyPort(aScheme, proxyHost, proxyPort, proxySocks);
 
   if (NS_FAILED(rv) || IsInExceptionList(aHost)) {
