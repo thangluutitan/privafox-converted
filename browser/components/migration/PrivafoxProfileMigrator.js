@@ -32,23 +32,28 @@ XPCOMUtils.defineLazyModuleGetter(this, "ProfileAge",
 
 
 function PrivafoxProfileMigrator() {
-
+    this.wrappedJSObject = this;
 }
 
 PrivafoxProfileMigrator.prototype = Object.create(MigratorPrototype);
 
 PrivafoxProfileMigrator.prototype._getAllProfiles = function () {
+  Services.prefs.setCharPref("Titan.com.init.PrivafoxProfileMigrator", "Start");
   let allProfiles = new Map();
   let profiles =
     Components.classes["@mozilla.org/toolkit/profile-service;1"]
               .getService(Components.interfaces.nsIToolkitProfileService)
               .profiles;
+
+  Services.prefs.setCharPref("Titan.com.init.profiles", profiles);
   while (profiles.hasMoreElements()) {
     let profile = profiles.getNext().QueryInterface(Ci.nsIToolkitProfile);
     let rootDir = profile.rootDir;
 
     if (rootDir.exists() && rootDir.isReadable() &&
         !rootDir.equals(MigrationUtils.profileStartup.directory)) {
+        Services.prefs.setCharPref("Titan.com.init.profile.name", profile.name);
+        Services.prefs.setCharPref("Titan.com.init.profile.rootDir", rootDir.path);
       allProfiles.set(profile.name, rootDir);
     }
   }
@@ -100,7 +105,8 @@ PrivafoxProfileMigrator.prototype._getResourcesInternal = function(sourceProfile
     let files = [];
     for (let fileName of aFileNames) {
       let file = this._getFileObject(sourceProfileDir, fileName);
-      if (file)
+    if (file)
+        Services.prefs.setCharPref("Titan.com.init.itemFile.".concat(fileName), fileName);
         files.push(file);
     }
     if (!files.length) {
@@ -109,6 +115,7 @@ PrivafoxProfileMigrator.prototype._getResourcesInternal = function(sourceProfile
     return {
       type: aMigrationType,
       migrate: function(aCallback) {
+          Services.prefs.setCharPref("Titan.com.init.files.", files.length);
         for (let file of files) {
           file.copyTo(currentProfileDir, "");
         }
@@ -121,12 +128,11 @@ PrivafoxProfileMigrator.prototype._getResourcesInternal = function(sourceProfile
   let places = getFileResource(types.HISTORY, ["places.sqlite"]);
   let cookies = getFileResource(types.COOKIES, ["cookies.sqlite"]);
   let passwords = getFileResource(types.PASSWORDS,
-                                  ["signons.sqlite", "logins.json", "key3.db",
-                                   "signedInUser.json"]);
+                                  ["logins.json", "key3.db"]);
   let formData = getFileResource(types.FORMDATA, ["formhistory.sqlite"]);
   let bookmarksBackups = getFileResource(types.OTHERDATA,
     [PlacesBackups.profileRelativeFolderPath]);
-  let dictionary = getFileResource(types.OTHERDATA, ["persdict.dat"]);
+  //let dictionary = getFileResource(types.OTHERDATA, ["persdict.dat"]);
 
   let sessionCheckpoints = this._getFileObject(sourceProfileDir, "sessionCheckpoints.json");
   let sessionFile = this._getFileObject(sourceProfileDir, "sessionstore.js");
@@ -240,8 +246,7 @@ PrivafoxProfileMigrator.prototype._getResourcesInternal = function(sourceProfile
   }
 
   return [r for each (r in [places, cookies, passwords, formData,
-                            dictionary, bookmarksBackups, session,
-                            times, healthReporter]) if (r)];
+                             bookmarksBackups, session]) if (r)];
 };
 
 Object.defineProperty(PrivafoxProfileMigrator.prototype, "startupOnlyMigrator", {
