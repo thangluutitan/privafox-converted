@@ -246,25 +246,25 @@ _bookmarkIsProtectMasterPassword: function PO__bookmarkIsProtectMasterPassword()
     }
 
     var hasProtectPassword = kCheckBookmarksIsMasterPassword;
-     if(hasProtectPassword){
-         hasProtectPassword = kAlreadyLogin ? false : true;
-     }
-     
+    if(kCheckBookmarksIsMasterPassword){
+        hasProtectPassword = false;
+        let tokenDb = Components.classes["@mozilla.org/security/pk11tokendb;1"].createInstance(Components.interfaces.nsIPK11TokenDB);
+        let token = tokenDb.getInternalKeyToken();
+        if (!token.checkPassword("")){
+            hasProtectPassword = kAlreadyLogin ? false : true;
+        }                   
+     }     
     return hasProtectPassword;
-
 },
 
-_tokendb: null,
 _showPromptMP: false,
 _showPromptProtectBookmark: function PO__showPromptProtectBookmark() {
     let isHasProtectBookmark = this._bookmarkIsProtectMasterPassword();
     let vLogin = false;
 	if(!this._showPromptMP){			
 	    if(isHasProtectBookmark){
-	        if(this._tokendb == null){
-		        this._tokendb = Components.classes["@mozilla.org/security/pk11tokendb;1"].createInstance(Components.interfaces.nsIPK11TokenDB);
-		    }
-		    var token = this._tokendb.getInternalKeyToken();        
+		     let tokendb = Components.classes["@mozilla.org/security/pk11tokendb;1"].createInstance(Components.interfaces.nsIPK11TokenDB);
+		    var token = tokendb.getInternalKeyToken();        
 
 			// so there's a master password. but since checkpassword didn't succeed, we're logged out (per nsipk11token.idl).
 		    try {

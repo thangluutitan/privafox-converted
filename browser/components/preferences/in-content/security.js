@@ -215,6 +215,7 @@ var gSecurityPane = {
   {
     var secmodDB = Cc["@mozilla.org/security/pkcs11moduledb;1"].
                    getService(Ci.nsIPKCS11ModuleDB);
+    Services.prefs.setBoolPref(PREF_PROTECT_MP_ALREADYLOGIN, false);
     if (secmodDB.isFIPSEnabled) {
       var promptService = Cc["@mozilla.org/embedcomp/prompt-service;1"].
                           getService(Ci.nsIPromptService);
@@ -226,12 +227,13 @@ var gSecurityPane = {
      var noMP = !this._masterPasswordSet();
      checkboxProtectBookmark.disabled = noMP;
 
-      this._initMasterPasswordUI();
+     this._initMasterPasswordUI();
     }
     else {
       gSubDialog.open("chrome://mozapps/content/preferences/removemp.xul",
                       null, null, this._initMasterPasswordUI.bind(this));
     }
+
   },
 
   /**

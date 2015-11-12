@@ -559,18 +559,25 @@ var PlacesCommandHook = {
     goSetCommandEnabled("Browser:BookmarkAllTabs",
                         this.uniqueCurrentPages.length >= 2);
   },
+
   bookmarkIsProtectMasterPassword: function() {
       let kCheckBookmarksIsMasterPassword = false ;
       if(Services.prefs.prefHasUserValue(PREF_PROTECT_BOOKMARK)){
          kCheckBookmarksIsMasterPassword = Services.prefs.getBoolPref(PREF_PROTECT_BOOKMARK);
       }
+      let hasProtectPassword = false;
       let kAlreadyLogin = false;
        if(Services.prefs.prefHasUserValue(PREF_PROTECT_BOOKMARK_ALREADYLOGIN)){
          kAlreadyLogin = Services.prefs.getBoolPref(PREF_PROTECT_BOOKMARK_ALREADYLOGIN);
        }
-       var hasProtectPassword = kCheckBookmarksIsMasterPassword;
-       if(hasProtectPassword){
-         hasProtectPassword = kAlreadyLogin ? false : true;
+       hasProtectPassword = kCheckBookmarksIsMasterPassword;
+       if(kCheckBookmarksIsMasterPassword){
+           hasProtectPassword = false;
+           let tokenDb = Components.classes["@mozilla.org/security/pk11tokendb;1"].createInstance(Components.interfaces.nsIPK11TokenDB);
+           let token = tokenDb.getInternalKeyToken();
+           if (!token.checkPassword("")){
+                hasProtectPassword = kAlreadyLogin ? false : true;
+           }           
        }
        return hasProtectPassword;
    },
@@ -583,8 +590,8 @@ var PlacesCommandHook = {
   showPromptProtectBookmark: function() {
       let isHasProtectBookmark = this.bookmarkIsProtectMasterPassword();
       if(isHasProtectBookmark){
-          var tokendb = Components.classes["@mozilla.org/security/pk11tokendb;1"].createInstance(Components.interfaces.nsIPK11TokenDB);
-          var token = tokendb.getInternalKeyToken();        
+          let tokenDb = Components.classes["@mozilla.org/security/pk11tokendb;1"].createInstance(Components.interfaces.nsIPK11TokenDB);
+          var token = tokenDb.getInternalKeyToken();        
           // so there's a master password. but since checkpassword didn't succeed, we're logged out (per nsipk11token.idl).
           try {
               // relogin and ask for the master password.
