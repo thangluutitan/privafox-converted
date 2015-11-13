@@ -18,7 +18,7 @@ import android.database.Cursor;
 import android.os.RemoteException;
 import android.provider.Browser;
 import android.util.Log;
-
+import android.net.Uri;
 import java.util.ArrayList;
 
 class AndroidImport implements Runnable {
@@ -30,19 +30,23 @@ class AndroidImport implements Runnable {
     private final LocalBrowserDB mDB;
     private final boolean mImportBookmarks;
     private final boolean mImportHistory;
-
+    private static final Uri FIREFOX_BOOKMARKS_URI = Uri.parse("content://org.mozilla.firefox.db.browser/bookmarks") ;
+    private static final Uri SAMSUNG_FIREFOX_BOOKMARKS_URI = Uri.parse("content://com.sec.android.app.sbrowser.browser/bookmarks") ;
     public AndroidImport(Context context, Runnable onDoneRunnable,
                          boolean doBookmarks, boolean doHistory) {
+        Log.d(LOGTAG, "AndroidImport URI" + Browser.BOOKMARKS_URI);
         mContext = context;
         mOnDoneRunnable = onDoneRunnable;
         mOperations = new ArrayList<ContentProviderOperation>();
         mCr = mContext.getContentResolver();
         mDB = new LocalBrowserDB(GeckoProfile.get(context).getName());
+        Log.d(LOGTAG, "AndroidImport File" + GeckoProfile.get(context).getName());
         mImportBookmarks = doBookmarks;
         mImportHistory = doHistory;
     }
 
     public void mergeBookmarks() {
+        Log.d(LOGTAG, "mergeBookmarks URI" + Browser.BOOKMARKS_URI);
         Cursor cursor = null;
         try {
             cursor = mCr.query(Browser.BOOKMARKS_URI,
@@ -86,10 +90,57 @@ class AndroidImport implements Runnable {
             if (cursor != null)
                 cursor.close();
         }
-
         flushBatchOperations();
     }
+    public void mergeBookmarksFirefox() {
 
+        Log.d(LOGTAG, "mergeBookmarks Firefox URI" + FIREFOX_BOOKMARKS_URI);
+        Cursor cursor = null;
+        try {
+            cursor = mCr.query(FIREFOX_BOOKMARKS_URI,
+                    null,
+                    Browser.BookmarkColumns.BOOKMARK + " = 1",
+                    null,
+                    null);
+            Log.d(LOGTAG, "mergeBookmarks Firefox cursor : " + cursor);
+            if (cursor != null) {
+                final int faviconCol = cursor.getColumnIndexOrThrow(Browser.BookmarkColumns.FAVICON);
+                final int titleCol = cursor.getColumnIndexOrThrow(Bookmarks.TITLE);
+                final int urlCol = cursor.getColumnIndexOrThrow(Bookmarks.URL);
+                final int createCol = cursor.getColumnIndex(BrowserContract.SyncColumns.DATE_CREATED);
+                Log.d(LOGTAG, "mergeBookmarks Firefox faviconCol : " + faviconCol);
+                cursor.moveToFirst();
+                while (!cursor.isAfterLast()) {
+                    String url = cursor.getString(urlCol);
+                    String title = cursor.getString(titleCol);
+                    long created;
+                    if (createCol >= 0) {
+                        created = cursor.getLong(createCol);
+                    } else {
+                        created = System.currentTimeMillis();
+                    }
+                    // Need to set it to the current time so Sync picks it up.
+                    long modified = System.currentTimeMillis();
+                    byte[] data = cursor.getBlob(faviconCol);
+                    mDB.updateBookmarkInBatch(mCr, mOperations,
+                            url, title, null, -1,
+                            created, modified,
+                            BrowserContract.Bookmarks.DEFAULT_POSITION,
+                            null, Bookmarks.TYPE_BOOKMARK);
+                    if (data != null) {
+                        mDB.updateFaviconInBatch(mCr, mOperations, url, null, null, data);
+                    }
+                    cursor.moveToNext();
+                }
+            }
+        }catch (Exception e){
+            Log.d(LOGTAG, "mergeBookmarks Firefox Error" + e);
+        }finally {
+            if (cursor != null)
+                cursor.close();
+        }
+        flushBatchOperations();
+    }
     public void mergeHistory() {
         Cursor cursor = null;
         try {
@@ -147,6 +198,7 @@ class AndroidImport implements Runnable {
     public void run() {
         if (mImportBookmarks) {
             mergeBookmarks();
+            mergeBookmarksFirefox();
         }
         if (mImportHistory) {
             mergeHistory();

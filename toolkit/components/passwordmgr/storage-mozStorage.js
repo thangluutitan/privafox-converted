@@ -494,6 +494,33 @@ LoginManagerStorage_mozStorage.prototype = {
     return logins;
   },
 
+  /*
+   * getAll hostname Logins
+   *
+   * Returns an array of hos
+   */
+  getAllHostnameLogins : function(count) {
+    let allHostname = [];
+    let query = "SELECT hostname FROM moz_logins";
+    let stmt = null;
+        try {
+            stmt = this._dbConnection.createStatement(query);
+          while (stmt.executeStep()){
+             let host = stmt.row.hostname;
+            allHostname.push(host);
+          }
+        } catch (e) {
+            throw e;
+        } finally {
+          if (stmt) {
+            stmt.reset();
+          }
+        }
+    if (count)
+       count.value = allHostname.length;
+
+    return allHostname;
+  },
 
   /*
    * searchLogins

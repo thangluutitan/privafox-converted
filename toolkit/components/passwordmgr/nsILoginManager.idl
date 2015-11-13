@@ -102,6 +102,7 @@ interface nsILoginManager : nsISupports {
   void getAllLogins([optional] out unsigned long count,
                     [retval, array, size_is(count)] out nsILoginInfo logins);
 
+  void getAllHostnameLogins([optional] out unsigned long count , [retval, array,size_is(count)] out wstring hostnames);
 
   /**
    * Obtain a list of all hosts for which password saving is disabled.

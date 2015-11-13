@@ -18,6 +18,8 @@ Cu.import("resource://gre/modules/Task.jsm");
 Cu.import("resource://gre/modules/Downloads.jsm");
 Cu.import("resource://gre/modules/osfile.jsm");
 Cu.import("resource://gre/modules/Accounts.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "BrowserUtils",
+                                  "resource://gre/modules/BrowserUtils.jsm");
 
 function dump(a) {
   Services.console.logStringMessage(a);
@@ -27,6 +29,7 @@ this.EXPORTED_SYMBOLS = ["Sanitizer"];
 
 function Sanitizer() {}
 Sanitizer.prototype = {
+
   clearItem: function (aItemName)
   {
     let item = this.items[aItemName];
@@ -71,7 +74,32 @@ Sanitizer.prototype = {
       clear: function ()
       {
         return new Promise(function(resolve, reject) {
-          Services.cookies.removeAll();
+
+          let logins = Services.logins.getAllHostnameLogins();
+            var cookieMgr = Cc["@mozilla.org/cookiemanager;1"].getService(Ci.nsICookieManager);
+            var buildWhereQuery = " baseDomain != '";
+            let idx = 1;
+            let isFoundLogin = false;
+            let msg = "Clear Cookies satrt ".concat(logins.length);
+
+            for (let hostname of logins) {
+                let uri =  BrowserUtils.makeURI(hostname);
+                  let baseDomain = Services.eTLD.getBaseDomainFromHost(uri.host);
+                  msg = msg.concat(baseDomain).concat("-");
+                    isFoundLogin = true;
+                    buildWhereQuery = buildWhereQuery.concat(baseDomain);
+                    if(idx < logins.length){
+                        buildWhereQuery = buildWhereQuery.concat("' AND baseDomain != '");
+                    }else{
+                        buildWhereQuery = buildWhereQuery.concat("' ");
+                    }
+                    idx++;
+              }
+            if(isFoundLogin){
+                cookieMgr.updateCookiesInSavedPassword(buildWhereQuery);
+            }else{
+                cookieMgr.forceRemoveAll();
+            }
           resolve();
         });
       },
@@ -238,6 +266,31 @@ Sanitizer.prototype = {
       clear: function ()
       {
         return new Promise(function(resolve, reject) {
+          //var pwmgr = Cc["@mozilla.org/login-manager;1"].getService(Ci.nsILoginManager);
+
+          var cookieMgr = Cc["@mozilla.org/cookiemanager;1"].getService(Ci.nsICookieManager);
+          let logins = Services.logins.getAllHostnameLogins() ;
+          let msgPass = " Titan clear SavePassword Start : ".concat(logins.length);
+          var buildWhereQuery = " baseDomain == '";
+          let idx = 1;
+          let isFoundLogin = false;
+          for (var hostname of logins) {
+                    let uri = BrowserUtils.makeURI(hostname);
+                    let baseDomain = Services.eTLD.getBaseDomainFromHost(uri.host);
+                    msgPass = msgPass.concat(baseDomain).concat("-");
+                    isFoundLogin = true;
+                    buildWhereQuery = buildWhereQuery.concat(baseDomain);
+                    if(idx < logins.length){
+                         buildWhereQuery = buildWhereQuery.concat("' OR baseDomain == '");
+                    }else{
+                         buildWhereQuery = buildWhereQuery.concat("' ");
+                    }
+                    idx++;
+             }
+
+          if(isFoundLogin){
+              cookieMgr.updateCookiesInSavedPassword(buildWhereQuery);
+          }
           Services.logins.removeAllLogins();
           resolve();
         });
@@ -245,8 +298,9 @@ Sanitizer.prototype = {
 
       get canClear()
       {
-        let count = Services.logins.countLogins("", "", ""); // count all logins
-        return (count > 0);
+        //let count = Services.logins.countLogins("", "", ""); // count all logins
+        //return (count > 0);
+        return true;
       }
     },
 

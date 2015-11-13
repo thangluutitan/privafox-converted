@@ -711,7 +711,7 @@ var BrowserApp = {
                 isProtectBookmark =  (MasterPassword.enabled)? true : false ;
             }
     }
-    this.requestShowBookmark("" ,isProtectBookmark);
+    this.requestShowBookmark("requestBookmarkStartup" ,isProtectBookmark);
 
     if (!ParentalControls.isAllowed(ParentalControls.INSTALL_EXTENSION)) {
       // Disable extension installs
@@ -1789,6 +1789,7 @@ var BrowserApp = {
 
   sanitize: function (aItems, callback) {
     let success = true;
+    var promises = [];
 
     for (let key in aItems) {
       if (!aItems[key])
@@ -1796,11 +1797,10 @@ var BrowserApp = {
 
       key = key.replace("private.data.", "");
 
-      var promises = [];
       switch (key) {
         case "cookies_sessions":
-          //promises.push(Sanitizer.clearItem("cookies"));
-          //promises.push(Sanitizer.clearItem("sessions"));
+          promises.push(Sanitizer.clearItem("cookies"));
+          promises.push(Sanitizer.clearItem("sessions"));
           break;
         default:
           promises.push(Sanitizer.clearItem(key));
@@ -2240,7 +2240,7 @@ var BrowserApp = {
         break;
       case "BookmarksPanel:EventLoginRequest":
         let isLogin = MasterPassword.requestLogin();
-        this.requestShowBookmark("" , (isLogin)? false : true);
+        this.requestShowBookmark("responseLoginMasterpassword" , (isLogin)? false : true);
         break;
       case "BookmarksPanel:EventSecurityBookmark":
             let isSecurityBM = Services.prefs.getBoolPref("security.additionalSecurity.protectBookmark");

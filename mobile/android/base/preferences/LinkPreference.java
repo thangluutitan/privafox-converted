@@ -12,7 +12,7 @@ import android.preference.Preference;
 import android.util.AttributeSet;
 
 class LinkPreference extends Preference {
-    private final String mUrl;
+    private String mUrl;
 
     public LinkPreference(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -22,7 +22,9 @@ class LinkPreference extends Preference {
         super(context, attrs, defStyle);
         mUrl = attrs.getAttributeValue(null, "url");
     }
-
+    public void setUrl(String url) {
+        mUrl = url;
+    }
     @Override
     protected void onClick() {
         Tabs.getInstance().loadUrlInTab(mUrl);

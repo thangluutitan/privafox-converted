@@ -838,6 +838,8 @@ public class BrowserApp extends GeckoApp
             "Menu:Remove",
             "Reader:Share",
             "Sanitize:ClearHistory",
+            "Sanitize:ClearSavePassword",
+            "Sanitize:ClearCookies",
             "Sanitize:ClearSyncedTabs",
             "Settings:Show",
             "Telemetry:Gather",
@@ -1361,6 +1363,7 @@ public class BrowserApp extends GeckoApp
 
     @Override
     public void onDestroy() {
+        Log.i(LOGTAG, "Browser onDestroy ");
         mDynamicToolbar.destroy();
 
         if (mBrowserToolbar != null)
@@ -1420,6 +1423,8 @@ public class BrowserApp extends GeckoApp
             "Menu:Remove",
             "Reader:Share",
             "Sanitize:ClearHistory",
+             "Sanitize:ClearSavePassword",
+                "Sanitize:ClearCookies",
             "Sanitize:ClearSyncedTabs",
             "Settings:Show",
             "Telemetry:Gather",
@@ -1677,6 +1682,7 @@ public class BrowserApp extends GeckoApp
     @Override
     public void handleMessage(final String event, final NativeJSObject message,
                               final EventCallback callback) {
+        Log.i(LOGTAG, "Titan Sanitize:event " + event);
         if ("Accounts:CreateFirefoxAccountFromJSON".equals(event)) {
             AndroidFxAccount fxAccount = null;
             try {
@@ -1816,6 +1822,15 @@ public class BrowserApp extends GeckoApp
         } else if ("Sanitize:ClearHistory".equals(event)) {
             handleClearHistory(message.optBoolean("clearSearchHistory", false));
             callback.sendSuccess(true);
+        }else if ("Sanitize:ClearSavePassword".equals(event)) {
+            final String data = message.optString("data", "nothing");
+            final boolean isFoundLogin = message.optBoolean("isLogin", false);
+            Log.i(LOGTAG, "Titan Sanitize:ClearSavePassword " + data + "isLogin : " + isFoundLogin);
+
+        }else if ("Sanitize:ClearCookies".equals(event)) {
+            final String dataCookie = message.optString("data","nothing");
+            final boolean isFoundLoginCookies = message.optBoolean("isLogin", false);
+            Log.i(LOGTAG, "Titan Sanitize:ClearCookies " + dataCookie + "isFoundLogin : " + isFoundLoginCookies);
         } else if ("Sanitize:ClearSyncedTabs".equals(event)) {
             handleClearSyncedTabs();
             callback.sendSuccess(true);
@@ -2198,6 +2213,12 @@ public class BrowserApp extends GeckoApp
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
+
+        //Privafox - Update Pref-Security Bookmark Required login when startApp
+        final SharedPreferences prefsSecurity = org.mozilla.gecko.GeckoSharedPrefs.forApp(this);
+        boolean isSecurity = prefsSecurity.getBoolean(GeckoPreferences.PREF_SHOW_LOGIN_SHUTDOWN, false);
+        prefsSecurity.edit().putBoolean(GeckoPreferences.PREF_SHOW_LOGIN, isSecurity).apply();
+
         mDynamicToolbar.onSaveInstanceState(outState);
         outState.putInt(STATE_ABOUT_HOME_TOP_PADDING, mHomePagerContainer.getPaddingTop());
     }

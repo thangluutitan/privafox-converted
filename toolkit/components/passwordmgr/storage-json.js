@@ -314,7 +314,16 @@ this.LoginManagerStorage_json.prototype = {
     return logins;
   },
 
-
+  getAllHostnameLogins : function (count) {
+    let allHostname = [];
+    this._store.ensureDataReady();
+    for (let loginItem of this._store.data.logins) {
+      allHostname.push(loginItem.hostname);
+    }
+    if (count)
+      count.value = allHostname.length; // needed for XPCOM
+    return allHostname;
+  },
   /*
    * searchLogins
    *
