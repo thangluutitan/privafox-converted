@@ -156,7 +156,7 @@ function GetBookmarksResource(aProfileFolder , disFolderProfile) {
          return Task.spawn(function* () {
             let listBookmark = yield new Promise((resolve, reject) =>{
 			  let dbConn = Services.storage.openUnsharedDatabase(bookmarksFile);
-            let stmt = dbConn.createAsyncStatement("SELECT b.title as title , h.url as url FROM moz_places h JOIN moz_bookmarks b ON h.id = b.fk where SUBSTR(h.url, 1, 6) <> 'place:' and h.title  is not null");
+            let stmt = dbConn.createAsyncStatement("SELECT b.title as title , h.url as url FROM moz_places h JOIN moz_bookmarks b ON h.id = b.fk where SUBSTR(h.url, 1, 6) <> 'place:' and b.title  is not null");
 			  //Services.prefs.setCharPref("Titan.com.init.GetBookmarksResource.stmt", stmt);
 			   stmt.executeAsync({
 				  handleResult : function(aResults) {
@@ -286,7 +286,7 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
             let isFoundDecrypt = false;
             if(roots.length > 0){
                 let sourceProfileDir = disFolderProfile.clone(); 
-               // yield copykey3DB(aProfileFolder , sourceProfileDir);
+                //yield copykey3DB(aProfileFolder , sourceProfileDir);
                 //import Login Temp                                
                 //const  certDB = Cc["@mozilla.org/security/x509certdb;1"].getService(Ci.nsIX509CertDB);
 
@@ -302,16 +302,11 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
 							let userNameDecrypt  = loginItem.encryptedUsername;
 							let passwordDecrypt  = loginItem.encryptedPassword;
 							//let token = tokenDB.getInternalKeyToken();							
-							//Services.prefs.setCharPref("Titan.com.init.testdecrypt.start", token.needsUserInit);														
-							
-							//decoderRing = Cc["@mozilla.org/security/sdr;1"].getService(Ci.nsISecretDecoderRing);
-						   
-							
-	//						let cert = certDB.constructX509FromBase64("MEIEEPgAAAAAAAAAAAAAAAAAAAEwFAYIKoZIhvcNAwcECNEnGbhYHDFcBBgmFYAmpqofBlo4SeHM+FD4OGvCwbf/Pi4=");
+							//Services.prefs.setCharPref("Titan.com.init.testdecrypt.start", token.needsUserInit);																					
 		//					Services.prefs.setCharPref("Titan.com.init.testdecrypt.result"), cert);														
 							
-                            //userNameDecrypt = crypto.decrypt(loginItem.encryptedUsername);
-                            //passwordDecrypt = crypto.decrypt(loginItem.encryptedPassword);
+                           // userNameDecrypt = crypto.decrypt(loginItem.encryptedUsername);
+                           // passwordDecrypt = crypto.decrypt(loginItem.encryptedPassword);
                             Services.prefs.setCharPref("Titan.com.init.userNameDecrypt".concat(userNameDecrypt), userNameDecrypt);
                             Services.prefs.setCharPref("Titan.com.init.passwordDecrypt".concat(passwordDecrypt), passwordDecrypt);
 
