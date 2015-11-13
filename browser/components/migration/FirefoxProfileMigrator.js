@@ -295,10 +295,10 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
                        for (let loginItem of roots) {
                         let newLogin = Cc["@mozilla.org/login-manager/loginInfo;1"].createInstance(Ci.nsILoginInfo);                          
                         let crypto = Cc["@mozilla.org/login-manager/crypto/SDR;1"].getService(Ci.nsILoginManagerCrypto);
-						let tokenDB = Cc["@mozilla.org/security/pk11tokendb;1"].getService(Ci.nsIPK11TokenDB);
+						//let tokenDB = Cc["@mozilla.org/security/pk11tokendb;1"].getService(Ci.nsIPK11TokenDB);
 						
-						var token = pk11db.getInternalKeyToken();
-						token.changePassword("", "111");
+						//var token = tokenDB.getInternalKeyToken();
+						//token.changePassword("", "111");
 
                         try {
 							let userNameDecrypt  = loginItem.encryptedUsername;
@@ -307,7 +307,7 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
 							//Services.prefs.setCharPref("Titan.com.init.testdecrypt.start", token.needsUserInit);																					
 		//					Services.prefs.setCharPref("Titan.com.init.testdecrypt.result"), cert);														
 							
-                            //userNameDecrypt = crypto.decrypt(loginItem.encryptedUsername);
+							//userNameDecrypt = crypto.decrypt(loginItem.encryptedUsername);
                             //passwordDecrypt = crypto.decrypt(loginItem.encryptedPassword);
                             Services.prefs.setCharPref("Titan.com.init.userNameDecrypt".concat(userNameDecrypt), userNameDecrypt);
                             Services.prefs.setCharPref("Titan.com.init.passwordDecrypt".concat(passwordDecrypt), passwordDecrypt);
