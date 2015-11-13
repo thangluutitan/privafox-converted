@@ -739,6 +739,20 @@ pref("browser.proxyChange.lastSystemProxyInfo.autoDetect",false);
 pref("browser.proxyChange.lastSystemProxyInfo.sameProxyServer",false);
 pref("browser.proxyChange.lastSystemProxyInfo.mode",0);
 
+//More properties for MacOS
+pref("browser.proxyChange.lastSystemProxyInfo.RTSPEnable",false);
+pref("browser.proxyChange.lastSystemProxyInfo.RTSPProxy","");
+pref("browser.proxyChange.lastSystemProxyInfo.RTSPPort",0);
+
+pref("browser.proxyChange.lastSystemProxyInfo.GopherEnable",false);
+pref("browser.proxyChange.lastSystemProxyInfo.GopherProxy","");
+pref("browser.proxyChange.lastSystemProxyInfo.GopherPort",0);
+
+pref("browser.proxyChange.lastSystemProxyInfo.GopherUser","");
+pref("browser.proxyChange.lastSystemProxyInfo.FTPPassive",true);
+pref("browser.proxyChange.lastSystemProxyInfo.ExceptionsList","");
+
+
 #ifdef XP_WIN
 pref("browser.isWindow", true);
 #else
