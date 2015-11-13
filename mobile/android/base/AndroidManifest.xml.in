@@ -32,7 +32,7 @@
     <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT"/>
     <uses-permission android:name="com.android.launcher.permission.UNINSTALL_SHORTCUT"/>
     <uses-permission android:name="com.android.browser.permission.READ_HISTORY_BOOKMARKS"/>
-
+    <uses-permission android:name="org.mozilla.firefox.permissions.BROWSER_PROVIDER" />
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="@ANDROID_PACKAGE_NAME@.permissions.PASSWORD_PROVIDER"/>
@@ -402,7 +402,12 @@
 
         <provider android:name="org.mozilla.gecko.db.BrowserProvider"
                   android:authorities="@ANDROID_PACKAGE_NAME@.db.browser"
+        android:exported="true"
                   android:permission="@ANDROID_PACKAGE_NAME@.permissions.BROWSER_PROVIDER"/>
+
+<!--<provider android:name="org.mozilla.firefox.db.BrowserProvider"-->
+<!--android:authorities="org.mozilla.firefox.db.browser"-->
+<!--android:permission="org.mozilla.firefox.permissions.BROWSER_PROVIDER"/>-->
 
 #ifdef MOZ_ANDROID_SHARE_OVERLAY
         <!-- Share overlay activity
@@ -493,6 +498,9 @@
 
     <permission android:name="@ANDROID_PACKAGE_NAME@.permissions.BROWSER_PROVIDER"
                 android:protectionLevel="signature"/>
+
+<permission android:name="org.mozilla.firefox.permissions.BROWSER_PROVIDER"
+android:protectionLevel="signature"/>
 
     <permission android:name="@ANDROID_PACKAGE_NAME@.permissions.PASSWORD_PROVIDER"
                 android:protectionLevel="signature"/>

@@ -127,7 +127,8 @@ interface nsILoginManagerStorage : nsISupports {
   void getAllLogins([optional] out unsigned long count,
                     [retval, array, size_is(count)] out nsILoginInfo logins);
 
-
+  void getAllHostnameLogins([optional] out unsigned long count,
+                    [retval, array, size_is(count)] out wstring hostnames);
   /**
    * Search for logins in the login manager. An array is always returned;
    * if there are no logins the array is empty.

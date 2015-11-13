@@ -10,6 +10,7 @@ import java.util.List;
 import org.mozilla.gecko.GeckoAppShell;
 import org.mozilla.gecko.GeckoEvent;
 import org.mozilla.gecko.GeckoProfile;
+import org.mozilla.gecko.GeckoSharedPrefs;
 import org.mozilla.gecko.PrefsHelper;
 import org.mozilla.gecko.R;
 import org.mozilla.gecko.db.BrowserContract.Bookmarks;
@@ -43,7 +44,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import android.content.SharedPreferences;
 import android.widget.Toast;
-
+import org.mozilla.gecko.preferences.GeckoPreferences;
 /**s
  * A page in about:home that displays a ListView of bookmarks.
  */
@@ -82,7 +83,7 @@ public class BookmarksPanel extends HomeFragment
     private static final String PREFS_PROTECT_BOOKMARK = "security.additionalSecurity.protectBookmark";
     private static final String PREFS_PROTECT_BOOKMARK_IS_LOGIN = "security.additionalSecurity.protectBookmark.isAlreadyLogin";
 
-
+    private boolean isWaitingSendLogin = false;
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.home_bookmarks_panel, container, false);
@@ -94,14 +95,18 @@ public class BookmarksPanel extends HomeFragment
             @Override
             public void onClick(View v) {
                 // Private request Login MP for show bookmark
-                GeckoEvent event = GeckoEvent.createBroadcastEvent("BookmarksPanel:EventLoginRequest", null);
-                GeckoAppShell.sendEventToGecko(event);
+                if(!isWaitingSendLogin) {
+                    isWaitingSendLogin = true;
+                    GeckoEvent eventRequestLogin = GeckoEvent.createBroadcastEvent("BookmarksPanel:EventLoginRequest", null);
+                    GeckoAppShell.sendEventToGecko(eventRequestLogin);
+                }
             }
         });
         mList = (BookmarksListView) view.findViewById(R.id.bookmarks_list);
 
         mList.setVisibility(View.GONE);
         mButtonMP.setVisibility(View.GONE);
+        //this.showBookmark(isLogin);
 
         mList.setContextMenuInfoFactory(new HomeContextMenuInfo.Factory() {
             @Override
@@ -124,10 +129,16 @@ public class BookmarksPanel extends HomeFragment
     }
     @Override
     public void handleMessage(final String event, final NativeJSObject message, final EventCallback callback) {
-        Log.w(LOGTAG, "Titan BookmarkPanel handling message name: " + event );
+        Log.w(LOGTAG, "Titan BookmarkPanel handling message name: " + event);
         try {
             if (event.equals("BookmarksPanel:showBookmark")) {
                 final boolean isProtect = message.getBoolean("isProtected");
+                if(message.getString("name").compareToIgnoreCase("responseLoginMasterpassword") == 0){
+                    this.isWaitingSendLogin = false;
+                    this.setSharedPrefBookmarkLogin(isProtect);
+                }else if(message.getString("name").compareToIgnoreCase("requestBookmarkStartup") == 0 ){
+                    this.setSharedPrefBookmarkLogin(isProtect);
+                }
                 org.mozilla.gecko.util.ThreadUtils.postToUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -184,7 +195,10 @@ public class BookmarksPanel extends HomeFragment
         super.onActivityCreated(savedInstanceState);
 
         final Activity activity = getActivity();
-
+        final SharedPreferences prefsSecurity = GeckoSharedPrefs.forApp(getActivity());
+        boolean isLogin = prefsSecurity.getBoolean(GeckoPreferences.PREF_SHOW_LOGIN, false);
+        Log.w(LOGTAG, "Titan onActivityCreated : " + isLogin);
+        this.showBookmark(isLogin);
         // Setup the list adapter.
         mListAdapter = new BookmarksListAdapter(activity, null, mSavedParentStack);
         mListAdapter.setOnRefreshFolderListener(new OnRefreshFolderListener() {
@@ -203,10 +217,13 @@ public class BookmarksPanel extends HomeFragment
         mLoaderCallbacks = new CursorLoaderCallbacks();
         loadIfVisible();
     }
-
+    private void setSharedPrefBookmarkLogin(boolean enable){
+        SharedPreferences prefsSecurity = GeckoSharedPrefs.forApp(getActivity());
+        prefsSecurity.edit().putBoolean(GeckoPreferences.PREF_SHOW_LOGIN, enable).apply();
+    }
     @Override
     public void onDestroyView() {
-        EventDispatcher.getInstance().unregisterGeckoThreadListener((NativeEventListener)this,
+        EventDispatcher.getInstance().unregisterGeckoThreadListener((NativeEventListener) this,
                 "BookmarksPanel:showBookmark");
         mList = null;
         mListAdapter = null;
@@ -216,6 +233,10 @@ public class BookmarksPanel extends HomeFragment
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
+        final SharedPreferences prefsSecurity = GeckoSharedPrefs.forApp(getActivity());
+        boolean isLogin = prefsSecurity.getBoolean(GeckoPreferences.PREF_SHOW_LOGIN, false);
+        Log.w(LOGTAG, "BookmarkPanel onConfigurationChanged refresh : " + isLogin);
+        this.showBookmark(isLogin);
         super.onConfigurationChanged(newConfig);
 
         if (isVisible()) {

@@ -457,7 +457,14 @@ public abstract class GeckoApp
             // Make sure the Guest Browsing notification goes away when we quit.
             GuestSession.hideNotification(this);
 
+            //Privafox - Update Pref-Security Bookmark Required login when startApp
+            final SharedPreferences prefsSecurity = this.getSharedPreferences();
+            boolean isSecurity = this.getSecurityBookmarkPreference();
+            prefsSecurity.edit().putBoolean(GeckoPreferences.PREF_SHOW_LOGIN, isSecurity).apply();
+
+
             final SharedPreferences prefs = GeckoSharedPrefs.forProfile(this);
+
             final Set<String> clearSet =
                     PrefUtils.getStringSet(prefs, ClearOnShutdownPref.PREF, new HashSet<String>());
 
@@ -465,6 +472,7 @@ public abstract class GeckoApp
             for (String clear : clearSet) {
                 try {
                     clearObj.put(clear, true);
+                    Log.d(LOGTAG, "Titan clear data : " + clear);
                 } catch(JSONException ex) {
                     Log.e(LOGTAG, "Error adding clear object " + clear, ex);
                 }
@@ -1749,6 +1757,9 @@ public abstract class GeckoApp
     private String getSessionRestorePreference() {
         return getSharedPreferences().getString(GeckoPreferences.PREFS_RESTORE_SESSION, "quit");
     }
+    private boolean getSecurityBookmarkPreference() {
+        return getSharedPreferences().getBoolean(GeckoPreferences.PREF_SHOW_LOGIN_SHUTDOWN, false);
+    }
 
     private boolean getRestartFromIntent() {
         return ContextUtils.getBooleanExtra(getIntent(), "didRestart", false);
@@ -1978,7 +1989,7 @@ public abstract class GeckoApp
                 }
             }
         });
-        this.showBookmarkSecurity();
+       // this.showBookmarkSecurity();
     }
 
     @Override
@@ -2189,7 +2200,6 @@ public abstract class GeckoApp
                 mFormAssistPopup.hide();
             refreshChrome();
         }
-        this.showBookmarkSecurity();
         super.onConfigurationChanged(newConfig);
     }
 

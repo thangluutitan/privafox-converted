@@ -383,7 +383,9 @@ LoginManager.prototype = {
     return this._storage.getAllLogins(count);
   },
 
-
+  getAllHostnameLogins : function (count) {
+    return this._storage.getAllHostnameLogins(count);
+  },
   /*
    * removeAllLogins
    *

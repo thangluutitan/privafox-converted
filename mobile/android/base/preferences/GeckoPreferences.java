@@ -116,10 +116,13 @@ OnSharedPreferenceChangeListener
     private static final String PREFS_MP_ENABLED = "privacy.masterpassword.enabled";
     private static final String PREFS_PROTECT_BOOKMARK = "security.additionalSecurity.protectBookmark";
     public static final String PREFS_STARUP_MP_ENABLED = "preferences.security.useMasterPassword.enable.startup";
+    public static final String PREF_SHOW_LOGIN = "bookmark.security.required.login";
+    public static final String PREF_SHOW_LOGIN_SHUTDOWN = "bookmark.security.required.securitybookmark";
 
     private static final String PREFS_LOGIN_MANAGE = NON_PREF_PREFIX + "signon.manage";
     private static final String PREFS_UPDATER_AUTODOWNLOAD = "app.update.autodownload";
     private static final String PREFS_UPDATER_URL = "app.update.url.android";
+    private static final String PREFS_FAQ_URL = "android.not_a_preference.faq.link";
     private static final String PREFS_GEO_REPORTING = NON_PREF_PREFIX + "app.geo.reportdata";
     private static final String PREFS_GEO_LEARN_MORE = NON_PREF_PREFIX + "geo.learn_more";
     private static final String PREFS_HEALTHREPORT_LINK = NON_PREF_PREFIX + "healthreport.link";
@@ -839,6 +842,11 @@ OnSharedPreferenceChangeListener
                         i--;
                         continue;
                     }
+                }else if (PREFS_FAQ_URL.equals(key)) {
+                    final String LOCALE = Locales.getLanguageTag(lastLocale);
+                    final String url = getResources().getString(R.string.faq_link, LOCALE);
+                    ((LinkPreference) pref).setUrl(url);
+
                 }
 
                 // Some Preference UI elements are not actually preferences,
@@ -1149,6 +1157,8 @@ OnSharedPreferenceChangeListener
                             jsonPref.put("type", "bool");
                             jsonPref.put("value", (Boolean) newValue ? true : false);
 
+                            this.setSharedPrefRequireLogin((Boolean) newValue ? true : false);
+                            this.setSharedPrefRequireShutdown((Boolean) newValue ? true : false);
                             GeckoEvent event = GeckoEvent.createBroadcastEvent("Preferences:Set", jsonPref.toString());
                             GeckoAppShell.sendEventToGecko(event);
                     } catch(Exception ex) {
@@ -1342,6 +1352,8 @@ OnSharedPreferenceChangeListener
                             public void onClick(DialogInterface dialog, int which) {
                                 PrefsHelper.setPref(PREFS_MP_ENABLED, input.getText().toString());
                                 GeckoPreferences.this.setEnableAdditionalSecurity(false);
+                                GeckoPreferences.this.setSharedPrefRequireLogin(false);
+                                GeckoPreferences.this.setSharedPrefRequireShutdown(false);
                             }
                         })
                         .setNegativeButton(R.string.button_cancel, new DialogInterface.OnClickListener() {
@@ -1370,6 +1382,14 @@ OnSharedPreferenceChangeListener
         }
 
         return dialog;
+    }
+    private void setSharedPrefRequireLogin(boolean enable){
+        SharedPreferences prefsSecurity = GeckoSharedPrefs.forApp(this);
+        prefsSecurity.edit().putBoolean(PREF_SHOW_LOGIN, enable).apply();
+    }
+    private void setSharedPrefRequireShutdown(boolean enable){
+        SharedPreferences prefsSecurity = GeckoSharedPrefs.forApp(this);
+        prefsSecurity.edit().putBoolean(PREF_SHOW_LOGIN_SHUTDOWN, enable).apply();
     }
     private boolean isFoundPrefPrivacy = false;
     private boolean isEnableAdditionSecurity = false;
@@ -1414,6 +1434,7 @@ OnSharedPreferenceChangeListener
                 final CheckBoxPrefSetter prefSetter;
                 if(PREFS_MP_ENABLED.equals(prefName)){
                    GeckoPreferences.this.isFoundPrefPrivacy = true;
+                    isEnableAdditionSecurity = value;
                 }
                 if (Versions.preICS) {
                     prefSetter = new CheckBoxPrefSetter();
@@ -1424,10 +1445,10 @@ OnSharedPreferenceChangeListener
                     @Override
                     public void run() {
                         prefSetter.setBooleanPref(pref, value);
-                        if(PREFS_MP_ENABLED.equals(prefName)){
-                            isEnableAdditionSecurity = value;
-                        }else if(PREFS_PROTECT_BOOKMARK.equals(prefName)){
-                            prefSetter.setEnablePref(pref,isEnableAdditionSecurity);
+                        if(GeckoPreferences.this.isFoundPrefPrivacy) {
+                             if(PREFS_PROTECT_BOOKMARK.equals(prefName)){
+                                prefSetter.setEnablePref(pref,isEnableAdditionSecurity);
+                            }
                         }
                     }
                 });
@@ -1487,12 +1508,12 @@ OnSharedPreferenceChangeListener
                         Log.w(LOGTAG, "Privafox initMasterPassword screen : " + screen);
                         if(screen != null && GeckoPreferences.this.isFoundPrefPrivacy &&
                                 !GeckoPreferences.this.enableFirstTimePref ) {
-                                    ThreadUtils.postToUiThread(new Runnable() {
-                                            @Override
-                                            public void run() {
+//                                    ThreadUtils.postToUiThread(new Runnable() {
+//                                            @Override
+//                                            public void run() {
                                                 GeckoPreferences.this.initMasterPassword();
-                                            }
-                                    });
+//                                            }
+//                                    });
                                 }
                         }
                     });
@@ -1500,11 +1521,11 @@ OnSharedPreferenceChangeListener
         });
     }
     private void initMasterPassword() {
+        Telemetry.sendUIEvent(TelemetryContract.Event.EDIT, Method.SETTINGS, PREFS_MP_ENABLED);
+        showDialog(DIALOG_CREATE_MASTER_PASSWORD);
         final SharedPreferences prefsSecurity = GeckoSharedPrefs.forApp(this);
         prefsSecurity.edit().putBoolean(PREFS_STARUP_MP_ENABLED, true).apply();
         this.enableFirstTimePref = true;
-        Telemetry.sendUIEvent(TelemetryContract.Event.EDIT, Method.SETTINGS, PREFS_MP_ENABLED);
-        showDialog(DIALOG_CREATE_MASTER_PASSWORD);
     }
     private void setEnableAdditionalSecurity(final boolean enable){
         PrefsHelper.getPref(PREFS_PROTECT_BOOKMARK, new PrefsHelper.PrefHandlerBase() {
@@ -1515,17 +1536,13 @@ OnSharedPreferenceChangeListener
             @Override
             public void prefValue(final String pref, boolean value) {
                 final Preference prefMP = getField(pref);
-                Log.w(LOGTAG, "Titan setEnableAdditionalSecurity prefValue name: " + pref + " value : " + value);
+                Log.w(LOGTAG, "Titan setEnableAdditionalSecurity prefValue name: " + pref + " enable : " + enable);
                 if ((prefMP instanceof CheckBoxPreference)) {
                     final CheckBoxPreference chk = ((CheckBoxPreference) prefMP);
-                    ThreadUtils.postToUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (chk.isEnabled() != enable) {
-                                chk.setEnabled(enable);
-                            }
-                        }
-                    });
+                    if (chk.isEnabled() != enable) {
+                        chk.setEnabled(enable);
+                    }
+                    GeckoPreferences.this.setSharedPrefRequireShutdown(chk.isEnabled() ? chk.isChecked() : false);
                 }
             }
 
