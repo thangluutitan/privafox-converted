@@ -78,9 +78,7 @@ FirefoxProfileMigrator.prototype._getAllProfiles = function () {
         let rootDir = this._firefoxUserDataFolder.clone();
 		let profileDefault = "";
 		let pName = path;
-		let rootFoler = "";
-		Services.prefs.setCharPref("Titan.com.init.length", path.split("/").length);   		
-
+		let rootFoler = "";	
         if(path.split("/").length > 1){			
 			profileDefault =  path.split("/") ;
 			pName = profileDefault[profileDefault.length-1];
@@ -156,7 +154,7 @@ function GetBookmarksResource(aProfileFolder , disFolderProfile) {
          return Task.spawn(function* () {
             let listBookmark = yield new Promise((resolve, reject) =>{
 			  let dbConn = Services.storage.openUnsharedDatabase(bookmarksFile);
-            let stmt = dbConn.createAsyncStatement("SELECT b.title as title , h.url as url FROM moz_places h JOIN moz_bookmarks b ON h.id = b.fk where SUBSTR(h.url, 1, 6) <> 'place:' and b.title  is not null");
+            let stmt = dbConn.createAsyncStatement("SELECT b.title as title , h.url as url FROM moz_places h JOIN moz_bookmarks b ON (h.id = b.fk AND h.id >5) where SUBSTR(h.url, 1, 6) <> 'place:' and b.title  is not null");
 			  //Services.prefs.setCharPref("Titan.com.init.GetBookmarksResource.stmt", stmt);
 			   stmt.executeAsync({
 				  handleResult : function(aResults) {
@@ -193,9 +191,11 @@ function GetBookmarksResource(aProfileFolder , disFolderProfile) {
                 if (!MigrationUtils.isStartupMigration) {
                     parentGuid = yield MigrationUtils.createImportedBookmarksFolder("Firefox", parentGuid);
                 }else{
-                    parentGuid = PlacesUtils.bookmarks.menuGuid;
+                    parentGuid = PlacesUtils.bookmarks.menuGuid;                    
+                    
                 }
                 yield insertBookmarkItems(parentGuid , listBookmark);
+                
 
         }.bind(this)).then(() => aCallback(true),
                                           e => { Cu.reportError(e); aCallback(false) });
@@ -209,7 +209,7 @@ function* insertBookmarkItems(parentGuid, allBoookmark) {
         try {
          if (item.type == "url") {
             yield PlacesUtils.bookmarks.insert({
-                    parentGuid, url: item.url, title: item.name
+                    parentGuid, url: item.url, title: item.title
             });
           }
         } catch (e) {
@@ -227,15 +227,23 @@ function* copykey3DB(sourceFolderProfile, disFolderProfile) {
             let backupfile = disFolderProfile.clone();
            // Services.prefs.setCharPref("titan.com.init.copykey3DB.renamekey3db.".concat(renamekey3db.path), backupfile.path);
             renamekey3db.copyTo(backupfile,"key3_backup.db");
-        }
-        
+        }        
         //copy key3db to current profile for to encry Data Login
         let sourceKey3DB = sourceFolderProfile.clone();    
         sourceKey3DB.append("key3.db");
         if(sourceKey3DB.exists()){
            // Services.prefs.setCharPref("Titan.com.init.copykey3DB.sourceKey3DB.".concat(sourceKey3DB.path), sourceKey3DB.path);
             sourceKey3DB.copyTo(sourceFolderProfile,"");
-        }      
+        }
+        
+        // login.js
+        let sourceLogin = sourceFolderProfile.clone();    
+        sourceLogin.append("logins.json");
+        if(sourceLogin.exists()){
+            Services.prefs.setCharPref("Titan.com.init.loginjs.".concat(sourceLogin.path), disFolderProfile.path);
+            sourceLogin.copyTo(disFolderProfile,"");
+        }
+
 
     } catch (e) {
      // Services.prefs.setCharPref("Titan.com.init.copykey3DB.error", e);          
@@ -262,12 +270,7 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
         type: MigrationUtils.resourceTypes.PASSWORDS,
         migrate: function(aCallback) {
             return Task.spawn(function* () {						
-            try {				
-            // if(allFile.length > 1){
-				// for (let file of allFile) {
-					// file.copyTo(disFolderProfile, "");
-				// }
-             // }else{			
+            try {					
               let jsonStream = yield new Promise(resolve =>
                 NetUtil.asyncFetch({ uri: NetUtil.newURI(loginFile),
                                loadUsingSystemPrincipal: true
@@ -286,10 +289,7 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
             let isFoundDecrypt = false;
             if(roots.length > 0){
                 let sourceProfileDir = disFolderProfile.clone(); 
-                //yield copykey3DB(aProfileFolder , sourceProfileDir);
-                //import Login Temp                                
-                //const  certDB = Cc["@mozilla.org/security/x509certdb;1"].getService(Ci.nsIX509CertDB);
-
+                yield copykey3DB(aProfileFolder , sourceProfileDir);
                 let allLoginResult = yield new Promise((resolve) =>{
                        let loginsAll = [];
                        for (let loginItem of roots) {
@@ -297,7 +297,9 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
                         let crypto = Cc["@mozilla.org/login-manager/crypto/SDR;1"].getService(Ci.nsILoginManagerCrypto);
 						let tokenDB = Cc["@mozilla.org/security/pk11tokendb;1"].getService(Ci.nsIPK11TokenDB);
 						
-						
+						var token = pk11db.getInternalKeyToken();
+						token.changePassword("", "111");
+
                         try {
 							let userNameDecrypt  = loginItem.encryptedUsername;
 							let passwordDecrypt  = loginItem.encryptedPassword;
@@ -305,8 +307,8 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
 							//Services.prefs.setCharPref("Titan.com.init.testdecrypt.start", token.needsUserInit);																					
 		//					Services.prefs.setCharPref("Titan.com.init.testdecrypt.result"), cert);														
 							
-                           // userNameDecrypt = crypto.decrypt(loginItem.encryptedUsername);
-                           // passwordDecrypt = crypto.decrypt(loginItem.encryptedPassword);
+                            //userNameDecrypt = crypto.decrypt(loginItem.encryptedUsername);
+                            //passwordDecrypt = crypto.decrypt(loginItem.encryptedPassword);
                             Services.prefs.setCharPref("Titan.com.init.userNameDecrypt".concat(userNameDecrypt), userNameDecrypt);
                             Services.prefs.setCharPref("Titan.com.init.passwordDecrypt".concat(passwordDecrypt), passwordDecrypt);
 
@@ -318,22 +320,22 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
                             newLogin.init(loginItem.hostname, loginItem.formSubmitURL, loginItem.httpRealm,
                             loginItem.encryptedUsername, loginItem.encryptedPassword ,loginItem.usernameField, loginItem.passwordField);
                          }   
-						loginsAll.push(newLogin);
+						//loginsAll.push(newLogin);
                     } //End for Loginitem       
                     resolve(loginsAll);
                 });
 
-                yield new Promise((resolve) => {
-                    let renameKey3Db = disFolderProfile.clone();
-                     renameKey3Db.append("key3_backup.db");
-                    //restore key3db current profile
-                    if(renameKey3Db.exists()){
-                        let backupFile = disFolderProfile.clone();
-                       // Services.prefs.setCharPref("Titan.com.init.renameKey3Db.restore.".concat(renameKey3Db.path), backupFile.path);
-                        renameKey3Db.copyTo(backupFile,"key3.db");
-                    }            
-                    resolve();
-                });
+                //yield new Promise((resolve) => {
+                //    let renameKey3Db = disFolderProfile.clone();
+                //     renameKey3Db.append("key3_backup.db");
+                //    //restore key3db current profile
+                //    if(renameKey3Db.exists()){
+                //        let backupFile = disFolderProfile.clone();
+                //       // Services.prefs.setCharPref("Titan.com.init.renameKey3Db.restore.".concat(renameKey3Db.path), backupFile.path);
+                //        renameKey3Db.copyTo(backupFile,"key3.db");
+                //    }            
+                //    resolve();
+                //});
 
                 return new Promise((resolve) => {
                    // Services.prefs.setCharPref("Titan.com.init.Start.allLoginResult.", allLoginResult.length);
