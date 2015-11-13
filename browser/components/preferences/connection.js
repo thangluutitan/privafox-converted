@@ -30,6 +30,7 @@ var gConnectionsDialog = {
     }
 	var isWindow = Services.prefs.getBoolPref("browser.isWindow");
 	var isLinux = Services.prefs.getBoolPref("browser.isLinux");
+	var isMac = Services.prefs.getBoolPref("browser.isMac");
 	
 	if (proxyTypePref.value == 5){
 		//let Ci = Components.interfaces;
@@ -221,6 +222,97 @@ var gConnectionsDialog = {
 																"\nautoDetect:"+systemProxySetting.autoDetect + "sameProxyServer:" + systemProxySetting.sameProxyServer);
 																*/
 			}
+		}
+		
+		if (isMac){
+			var proxyService = Components.classes["@mozilla.org/system-proxy-settings;1"].getService(Components.interfaces.nsISystemProxySettings);
+			//Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.isChange",true);
+			var proxyString = proxyService.getProxyForURI("all","all","google.com",80);
+			Services.prompt.alert(null, "Direct Connection:",proxyString);
+			var objProxyInfo = JSON.parse(proxyString);
+
+			objProxyInfo = objProxyInfo.__SCOPED__.en0;
+			
+			systemProxySetting.HTTPEnable = objProxyInfo.HTTPEnable == 1 ;
+			systemProxySetting.HTTPSEnable = objProxyInfo.HTTPSEnable == 1 ;
+			systemProxySetting.FTPEnable = objProxyInfo.FTPEnable == 1 ;
+			systemProxySetting.SOCKSEnable = objProxyInfo.SOCKSEnable == 1 ;
+			//if(typeof(objProxyInfo.ProxyAutoDiscoveryEnable) == "undefined" || objProxyInfo.ProxyAutoDiscoveryEnable == null)
+			systemProxySetting.autoconfig = false;
+			systemProxySetting.autoDetect = false;
+			if (typeof(objProxyInfo.ProxyAutoDiscoveryEnable) !== 'undefined'){
+			  systemProxySetting.autoDetect = objProxyInfo.ProxyAutoDiscoveryEnable == 1;
+			    
+			}else{
+			  systemProxySetting.autoDetect = false;
+			}
+
+			if (typeof(objProxyInfo.ProxyAutoConfigEnable) !== 'undefined'){
+			  systemProxySetting.autoconfig = objProxyInfo.ProxyAutoConfigEnable == 1;
+			  
+			}else{
+			  systemProxySetting.autoconfig = false;
+			}
+			
+			if(systemProxySetting.HTTPEnable){
+				systemProxySetting.http = objProxyInfo.HTTPProxy;
+				systemProxySetting.http_port = objProxyInfo.HTTPPort;
+			}else{
+				systemProxySetting.http = "";
+				systemProxySetting.http_port = 0;
+			}
+			
+			if(systemProxySetting.HTTPSEnable){
+				systemProxySetting.https = objProxyInfo.HTTPSProxy;
+				systemProxySetting.https_port = objProxyInfo.HTTPSPort;
+			}else{
+				systemProxySetting.https = "";
+				systemProxySetting.https_port = 0;
+			}
+
+			if(systemProxySetting.FTPEnable){
+				systemProxySetting.ftp = objProxyInfo.FTPProxy;
+				systemProxySetting.ftp_port = objProxyInfo.FTPPort;
+			}else{
+				systemProxySetting.ftp = "";
+				systemProxySetting.ftp_port = 0;
+			}
+
+			if(systemProxySetting.SOCKSEnable){
+				systemProxySetting.socks = objProxyInfo.SOCKSProxy;
+				systemProxySetting.socks_port = objProxyInfo.SOCKSPort;
+			}else{
+				systemProxySetting.socks = "";
+				systemProxySetting.socks_port = 0;
+			}
+			
+			if(systemProxySetting.autoDetect || systemProxySetting.autoconfig){
+		    	systemProxySetting.autoconfig_url = objProxyInfo.ProxyAutoConfigURLString;
+		  	}else{
+		    	systemProxySetting.autoconfig_url = "";
+		  	}
+		  	/*
+			Services.prompt.alert(null, "ProxyInfo","http:"+systemProxySetting.http + "port:" + systemProxySetting.http_port +
+																"\nhttps:"+systemProxySetting.https + "port:" + systemProxySetting.https_port +
+																"\nftp:"+systemProxySetting.ftp + "port:" + systemProxySetting.ftp_port +
+																"\nsocks:"+systemProxySetting.socks + "port:" + systemProxySetting.socks_port +
+																"\nAutoConfig:"+systemProxySetting.autoconfig + "autoconfig_url:" + systemProxySetting.autoconfig_url +
+																"\nautoDetect:"+systemProxySetting.autoDetect );
+			*/
+			Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.autoconfig_url",systemProxySetting.autoconfig_url);
+			Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.autoconfig",systemProxySetting.autoconfig);
+			Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.autoDetect",systemProxySetting.autoDetect);
+			Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.http",systemProxySetting.http);
+			Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.http_port",systemProxySetting.http_port);
+			Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.ssl",systemProxySetting.https);
+			Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.ssl_port",systemProxySetting.https_port);
+			Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.ftp",systemProxySetting.ftp);
+			Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.ftp_port",systemProxySetting.ftp_port);
+			Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.socks",systemProxySetting.socks);
+			Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.socks_port",systemProxySetting.socks_port);
+			//Services.prompt.alert(null, "Direct Connection:","ftp:"+systemProxySetting.socks + "port:" + systemProxySetting.socks_port
+			//												+"\nautoDetect:" + systemProxySetting.autoDetect +"autoconfig:" + systemProxySetting.autoconfig_url);
+			
 		}
 	    
 		if (isLinux){
