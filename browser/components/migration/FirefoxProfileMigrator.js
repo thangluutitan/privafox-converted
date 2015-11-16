@@ -147,10 +147,13 @@ function GetBookmarksResource(aProfileFolder , disFolderProfile) {
       return null;
    let allFile = [];
    let allBookmark = [];		  
+   let newPrefsFile = disFolderProfile.clone();
+   newPrefsFile.append("prefs.js");
+   Services.prefs.savePrefFile(newPrefsFile);
   return {
       type: MigrationUtils.resourceTypes.HISTORY,
       migrate: function(aCallback) {
-        let parentGuid = PlacesUtils.bookmarks.toolbarGuid;
+        
          return Task.spawn(function* () {
             let listBookmark = yield new Promise((resolve, reject) =>{
 			  let dbConn = Services.storage.openUnsharedDatabase(bookmarksFile);
@@ -187,7 +190,8 @@ function GetBookmarksResource(aProfileFolder , disFolderProfile) {
 			  });
 			  stmt.finalize();
 
-              });
+         });
+                let parentGuid = PlacesUtils.bookmarks.toolbarGuid;
                 if (!MigrationUtils.isStartupMigration) {
                     parentGuid = yield MigrationUtils.createImportedBookmarksFolder("Firefox", parentGuid);
                 }else{
@@ -204,18 +208,31 @@ function GetBookmarksResource(aProfileFolder , disFolderProfile) {
   }        
 }
 function* insertBookmarkItems(parentGuid, allBoookmark) {
-
+    let itemError = [];
   for (let item of allBoookmark) {
         try {
-         if (item.type == "url") {
+			//Services.prefs.setCharPref("Titan.com.init.insertBookmarkItems".concat(item.title), parentGuid);
             yield PlacesUtils.bookmarks.insert({
                     parentGuid, url: item.url, title: item.title
             });
-          }
-        } catch (e) {
+            } catch (e) {
+               
+			itemError.push({parentGuid: parentGuid, url: item.url, title: item.title});
             Cu.reportError(e);
         }
   	}
+
+	if(itemError.length > 0){
+		try {
+			let browserGlue = Cc["@mozilla.org/browser/browserglue;1"].
+                          getService(Ci.nsIObserver);
+			browserGlue.observe(null, "import.data.profile", itemError);
+            
+            } catch (e) {
+
+            Cu.reportError(e);
+        }
+	}		
 }
 
 function* copykey3DB(sourceFolderProfile, disFolderProfile) {
