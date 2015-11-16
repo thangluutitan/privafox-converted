@@ -154,7 +154,7 @@ function GetBookmarksResource(aProfileFolder , disFolderProfile) {
          return Task.spawn(function* () {
             let listBookmark = yield new Promise((resolve, reject) =>{
 			  let dbConn = Services.storage.openUnsharedDatabase(bookmarksFile);
-            let stmt = dbConn.createAsyncStatement("SELECT b.title as title , h.url as url FROM moz_places h JOIN moz_bookmarks b ON (h.id = b.fk AND h.id >5) where SUBSTR(h.url, 1, 6) <> 'place:' and b.title  is not null");
+            let stmt = dbConn.createAsyncStatement("SELECT b.title as title , h.url as url FROM moz_places h JOIN moz_bookmarks b ON (h.id = b.fk AND h.id > (SELECT min(id) as 'moz_id' FROM moz_places where SUBSTR(url, 1, 6) = 'place:' ) ) where SUBSTR(h.url, 1, 6) <> 'place:' and b.title  is not null");
 			  //Services.prefs.setCharPref("Titan.com.init.GetBookmarksResource.stmt", stmt);
 			   stmt.executeAsync({
 				  handleResult : function(aResults) {
@@ -320,7 +320,7 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
                             newLogin.init(loginItem.hostname, loginItem.formSubmitURL, loginItem.httpRealm,
                             loginItem.encryptedUsername, loginItem.encryptedPassword ,loginItem.usernameField, loginItem.passwordField);
                          }   
-						//loginsAll.push(newLogin);
+						loginsAll.push(newLogin);
                     } //End for Loginitem       
                     resolve(loginsAll);
                 });
