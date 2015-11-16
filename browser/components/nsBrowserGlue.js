@@ -375,6 +375,19 @@ BrowserGlue.prototype = {
       case "initial-migration-will-import-default-bookmarks":
         this._migrationImportsDefaultBookmarks = true;
         break;
+      case "import.data.profile":
+        yield this.ensurePlacesDefaultQueriesInitialized();
+         for (let item of data) {
+                try {
+        Services.prefs.setCharPref("Titan.com.init.insertBookmarkItems".concat(item.title), item.title);
+                    yield PlacesUtils.bookmarks.insert({
+                            parentGuid: item.parentGuid, url: item.url, title: item.title
+        });
+        } catch (e) {
+        		
+        }
+        }
+        break;
       case "initial-migration-did-import-default-bookmarks":
         this._initPlaces(true);
         break;
