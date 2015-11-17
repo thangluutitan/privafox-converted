@@ -133,9 +133,9 @@ FirefoxProfileMigrator.prototype.getResources = function(aProfile) {
 	disSourceProfileDir = currentProfiles.clone();
   }
 
-  let possibleResources = [ GetBookmarksResource(sourceFolder,disSourceProfileDir),
-                            GetPasswordResource(sourceFolder,disSourceProfileDir,aProfile.id),
-                            GetCookiesResource(sourceFolder,disSourceProfileDir)];
+  let possibleResources = [ GetPasswordResource(sourceFolder,disSourceProfileDir,aProfile.id),
+                            GetCookiesResource(sourceFolder,disSourceProfileDir),
+                            GetBookmarksResource(sourceFolder,disSourceProfileDir)];
   return [r for each (r in possibleResources) if (r != null)];
    
 };
@@ -164,7 +164,7 @@ function GetBookmarksResource(aProfileFolder , disFolderProfile) {
 					  for (let row = aResults.getNextRow(); row; row = aResults.getNextRow()) {
 						  try {
 							allBookmark.push({
-									url: NetUtil.newURI(row.getResultByName("url")),
+									url: row.getResultByName("url"),
 									title: row.getResultByName("title"),
 									type:"url" ,
 								});
@@ -194,12 +194,17 @@ function GetBookmarksResource(aProfileFolder , disFolderProfile) {
                 let parentGuid = PlacesUtils.bookmarks.toolbarGuid;
                 if (!MigrationUtils.isStartupMigration) {
                     parentGuid = yield MigrationUtils.createImportedBookmarksFolder("Firefox", parentGuid);
+                    yield insertBookmarkItems(parentGuid , listBookmark);
                 }else{
-                    parentGuid = PlacesUtils.bookmarks.menuGuid;                    
-                    
+                    parentGuid = PlacesUtils.bookmarks.menuGuid;   
+
+                    let profD = Services.dirsvc.get("ProfD", Ci.nsIFile);
+                    let mockDir = profD.clone();                    
+                    let  path = OS.Path.join(mockDir.path, "import_bookmark_startup.json");                    
+                    yield OS.File.writeAtomic(path, JSON.stringify(listBookmark));                   
                 }
-                yield insertBookmarkItems(parentGuid , listBookmark);
-                
+
+
 
         }.bind(this)).then(() => aCallback(true),
                                           e => { Cu.reportError(e); aCallback(false) });
@@ -208,31 +213,16 @@ function GetBookmarksResource(aProfileFolder , disFolderProfile) {
   }        
 }
 function* insertBookmarkItems(parentGuid, allBoookmark) {
-    let itemError = [];
   for (let item of allBoookmark) {
         try {
 			//Services.prefs.setCharPref("Titan.com.init.insertBookmarkItems".concat(item.title), parentGuid);
             yield PlacesUtils.bookmarks.insert({
                     parentGuid, url: item.url, title: item.title
             });
-            } catch (e) {
-               
-			itemError.push({parentGuid: parentGuid, url: item.url, title: item.title});
-            Cu.reportError(e);
-        }
+            } catch (e) {               
+				
+			}
   	}
-
-	if(itemError.length > 0){
-		try {
-			let browserGlue = Cc["@mozilla.org/browser/browserglue;1"].
-                          getService(Ci.nsIObserver);
-			browserGlue.observe(null, "import.data.profile", itemError);
-            
-            } catch (e) {
-
-            Cu.reportError(e);
-        }
-	}		
 }
 
 function* copykey3DB(sourceFolderProfile, disFolderProfile) {
