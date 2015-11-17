@@ -1491,6 +1491,280 @@ function getWindowSystemProxyInfoStatus() { // 0: NoProxy ; 1: SameProxy; 2:Cust
 }
 
 
+function getMacLastSystemProxyInfo() {
+  lastSystemProxyInfo.autoconfig = Services.prefs.getBoolPref("browser.proxyChange.lastSystemProxyInfo.autoconfig");
+  lastSystemProxyInfo.autoDetect = Services.prefs.getBoolPref("browser.proxyChange.lastSystemProxyInfo.autoDetect");
+  lastSystemProxyInfo.http = Services.prefs.getCharPref("browser.proxyChange.lastSystemProxyInfo.http");
+  lastSystemProxyInfo.http_port = Services.prefs.getIntPref("browser.proxyChange.lastSystemProxyInfo.http_port");
+  lastSystemProxyInfo.ftp = Services.prefs.getCharPref("browser.proxyChange.lastSystemProxyInfo.ftp");
+  lastSystemProxyInfo.ftp_port = Services.prefs.getIntPref("browser.proxyChange.lastSystemProxyInfo.ftp_port");
+  lastSystemProxyInfo.ssl = Services.prefs.getCharPref("browser.proxyChange.lastSystemProxyInfo.ssl");
+  lastSystemProxyInfo.ssl_port = Services.prefs.getIntPref("browser.proxyChange.lastSystemProxyInfo.ssl_port");
+  lastSystemProxyInfo.socks = Services.prefs.getCharPref("browser.proxyChange.lastSystemProxyInfo.socks");
+  lastSystemProxyInfo.socks_port = Services.prefs.getIntPref("browser.proxyChange.lastSystemProxyInfo.socks_port");
+  lastSystemProxyInfo.autoconfig_url = Services.prefs.getCharPref("browser.proxyChange.lastSystemProxyInfo.autoconfig_url");
+
+  //More info //       
+  lastSystemProxyInfo.RTSPEnable = Services.prefs.getBoolPref("browser.proxyChange.lastSystemProxyInfo.RTSPEnable");
+  lastSystemProxyInfo.GopherEnable = Services.prefs.getBoolPref("browser.proxyChange.lastSystemProxyInfo.GopherEnable");
+  lastSystemProxyInfo.FTPPassive = Services.prefs.getBoolPref("browser.proxyChange.lastSystemProxyInfo.FTPPassive");
+
+  lastSystemProxyInfo.RTSPProxy = Services.prefs.getCharPref("browser.proxyChange.lastSystemProxyInfo.RTSPProxy");
+  lastSystemProxyInfo.RTSPPort = Services.prefs.getIntPref("browser.proxyChange.lastSystemProxyInfo.RTSPPort");
+
+  lastSystemProxyInfo.GopherProxy = Services.prefs.getCharPref("browser.proxyChange.lastSystemProxyInfo.GopherProxy");
+  lastSystemProxyInfo.GopherPort = Services.prefs.getIntPref("browser.proxyChange.lastSystemProxyInfo.GopherPort");
+  lastSystemProxyInfo.GopherUser = Services.prefs.getCharPref("browser.proxyChange.lastSystemProxyInfo.GopherUser");
+  lastSystemProxyInfo.ExceptionsList = Services.prefs.getCharPref("browser.proxyChange.lastSystemProxyInfo.ExceptionsList");
+
+  lastSystemProxyInfo.ExcludeSimpleHostnames = Services.prefs.getBoolPref("browser.proxyChange.lastSystemProxyInfo.ExcludeSimpleHostnames");
+  lastSystemProxyInfo.HTTPUser = Services.prefs.getCharPref("browser.proxyChange.lastSystemProxyInfo.HTTPUser");
+  lastSystemProxyInfo.HTTPSUser = Services.prefs.getCharPref("browser.proxyChange.lastSystemProxyInfo.HTTPSUser");
+  lastSystemProxyInfo.RTSPUser = Services.prefs.getCharPref("browser.proxyChange.lastSystemProxyInfo.RTSPUser");
+  lastSystemProxyInfo.SOCKSUser = Services.prefs.getCharPref("browser.proxyChange.lastSystemProxyInfo.SOCKSUser");
+  lastSystemProxyInfo.FTPUser = Services.prefs.getCharPref("browser.proxyChange.lastSystemProxyInfo.FTPUser");
+
+  lastSystemProxyInfo.HTTPEnable = Services.prefs.getBoolPref("browser.proxyChange.lastSystemProxyInfo.HTTPEnable");
+  lastSystemProxyInfo.HTTPSEnable = Services.prefs.getBoolPref("browser.proxyChange.lastSystemProxyInfo.HTTPSEnable");
+  lastSystemProxyInfo.FTPEnable = Services.prefs.getBoolPref("browser.proxyChange.lastSystemProxyInfo.FTPEnable");
+  lastSystemProxyInfo.SOCKSEnable = Services.prefs.getBoolPref("browser.proxyChange.lastSystemProxyInfo.SOCKSEnable");
+
+  
+     
+}
+function getMacSystemProxyInfo() { 
+  var systemProxySetting = [];
+  var proxyService = Components.classes["@mozilla.org/system-proxy-settings;1"].getService(Components.interfaces.nsISystemProxySettings);
+  var proxyString = proxyService.getProxyForURI("all","all","google.com",80);
+  //Services.prompt.alert(null, "proxyString",proxyString);
+  var objProxyInfo = JSON.parse(proxyString);
+
+  objProxyInfo = objProxyInfo.__SCOPED__.en0;
+  
+  systemProxySetting.HTTPEnable = objProxyInfo.HTTPEnable == 1 ;
+  systemProxySetting.HTTPSEnable = objProxyInfo.HTTPSEnable == 1 ;
+  systemProxySetting.FTPEnable = objProxyInfo.FTPEnable == 1 ;
+  systemProxySetting.SOCKSEnable = objProxyInfo.SOCKSEnable == 1 ;
+  systemProxySetting.FTPPassive = objProxyInfo.FTPPassive == 1 ;
+  var autoDectectLink = "http://wpad/wpad.dat";
+  systemProxySetting.autoconfig = false;
+  systemProxySetting.autoDetect = false;
+  if (typeof(objProxyInfo.ProxyAutoDiscoveryEnable) !== 'undefined' && objProxyInfo.ProxyAutoConfigURLString == autoDectectLink){
+    systemProxySetting.autoDetect = true;
+    
+  }else{
+    systemProxySetting.autoDetect = false;
+  }
+
+  if (typeof(objProxyInfo.ProxyAutoConfigEnable) !== 'undefined' && objProxyInfo.ProxyAutoConfigURLString != autoDectectLink){
+    systemProxySetting.autoconfig = objProxyInfo.ProxyAutoConfigEnable == 1;
+    
+  }else{
+    systemProxySetting.autoconfig = false;
+  }
+  
+
+  //Add more field for MAC-OS proxy
+  systemProxySetting.GopherEnable = false ;
+  systemProxySetting.GopherUser = "" ;
+  if (typeof(objProxyInfo.GopherEnable) !== 'undefined' &&  objProxyInfo.GopherEnable == 1){
+    systemProxySetting.GopherEnable = true ;
+    systemProxySetting.GopherProxy = objProxyInfo.GopherProxy;
+    systemProxySetting.GopherPort = objProxyInfo.GopherPort;
+    
+    if (typeof(objProxyInfo.GopherUser) !== 'undefined')
+      systemProxySetting.GopherUser = objProxyInfo.GopherUser;
+    //Services.prompt.alert(null, "FTPPassive","FTPPassive:"+systemProxySetting.FTPPassive + "GopherUser:"+systemProxySetting.GopherUser);
+
+  }else{
+    systemProxySetting.GopherProxy = "";
+    systemProxySetting.GopherPort = 0;
+  }
+  
+  
+  systemProxySetting.RTSPEnable = false ;
+  if (typeof(objProxyInfo.RTSPEnable) !== 'undefined' && objProxyInfo.RTSPEnable == 1){
+    systemProxySetting.RTSPEnable = true ;
+    systemProxySetting.RTSPProxy = objProxyInfo.RTSPProxy;
+    systemProxySetting.RTSPPort = objProxyInfo.RTSPPort;
+    //Services.prompt.alert(null, "RTSPProxy","RTSPProxy:"+systemProxySetting.RTSPProxy + "P:" + systemProxySetting.RTSPPort);
+  }else{
+    systemProxySetting.RTSPProxy = "";
+    systemProxySetting.RTSPPort = 0;
+  }
+
+
+  systemProxySetting.ExceptionsList = "" ;
+  if (typeof(objProxyInfo.ExceptionsList) !== 'undefined')
+      systemProxySetting.ExceptionsList = objProxyInfo.ExceptionsList.join(",");
+
+
+  systemProxySetting.ExcludeSimpleHostnames = false ;
+  if (typeof(objProxyInfo.RTSPEnable) !== 'undefined' && objProxyInfo.ExcludeSimpleHostnames == 1){
+    systemProxySetting.ExcludeSimpleHostnames = true ;
+  }else{
+    systemProxySetting.ExcludeSimpleHostnames = false ;
+  }
+
+  systemProxySetting.HTTPUser = "" ;
+  if (typeof(objProxyInfo.HTTPUser) !== 'undefined'){
+    systemProxySetting.HTTPUser = objProxyInfo.HTTPUser ;
+  }else{
+    systemProxySetting.HTTPUser = "" ;
+  }
+
+  systemProxySetting.HTTPSUser = "" ;
+  if (typeof(objProxyInfo.HTTPSUser) !== 'undefined'){
+    systemProxySetting.HTTPSUser = objProxyInfo.HTTPSUser ;
+  }else{
+    systemProxySetting.HTTPSUser = "" ;
+  }
+
+  systemProxySetting.RTSPUser = "" ;
+  if (typeof(objProxyInfo.RTSPUser) !== 'undefined'){
+    systemProxySetting.RTSPUser = objProxyInfo.RTSPUser ;
+  }else{
+    systemProxySetting.RTSPUser = "" ;
+  }
+
+  systemProxySetting.SOCKSUser = "" ;
+  if (typeof(objProxyInfo.SOCKSUser) !== 'undefined'){
+    systemProxySetting.SOCKSUser = objProxyInfo.SOCKSUser ;
+  }else{
+    systemProxySetting.SOCKSUser = "" ;
+  }
+
+  systemProxySetting.FTPUser = "" ;
+  if (typeof(objProxyInfo.FTPUser) !== 'undefined'){
+    systemProxySetting.FTPUser = objProxyInfo.FTPUser ;
+  }else{
+    systemProxySetting.FTPUser = "" ;
+  }
+  
+
+  if(systemProxySetting.HTTPEnable){
+    systemProxySetting.http = objProxyInfo.HTTPProxy;
+    systemProxySetting.http_port = objProxyInfo.HTTPPort;
+  }else{
+    systemProxySetting.http = "";
+    systemProxySetting.http_port = 0;
+  }
+  
+  if(systemProxySetting.HTTPSEnable){
+    systemProxySetting.ssl = objProxyInfo.HTTPSProxy;
+    systemProxySetting.ssl_port = objProxyInfo.HTTPSPort;
+  }else{
+    systemProxySetting.ssl = "";
+    systemProxySetting.ssl_port = 0;
+  }
+
+  if(systemProxySetting.FTPEnable){
+    systemProxySetting.ftp = objProxyInfo.FTPProxy;
+    systemProxySetting.ftp_port = objProxyInfo.FTPPort;
+  }else{
+    systemProxySetting.ftp = "";
+    systemProxySetting.ftp_port = 0;
+  }
+
+  if(systemProxySetting.SOCKSEnable){
+    systemProxySetting.socks = objProxyInfo.SOCKSProxy;
+    systemProxySetting.socks_port = objProxyInfo.SOCKSPort;
+  }else{
+    systemProxySetting.socks = "";
+    systemProxySetting.socks_port = 0;
+  }
+  
+  if(systemProxySetting.autoDetect || systemProxySetting.autoconfig){
+    systemProxySetting.autoconfig_url = objProxyInfo.ProxyAutoConfigURLString;
+  }else{
+    systemProxySetting.autoconfig_url = "";
+  }
+  
+
+  /*
+  Services.prompt.alert(null, "ProxyInfo","http:"+systemProxySetting.http + "port:" + systemProxySetting.http_port +
+                            "\nhttps:"+systemProxySetting.https + "port:" + systemProxySetting.https_port +
+                            "\nftp:"+systemProxySetting.ftp + "port:" + systemProxySetting.ftp_port +
+                            "\nsocks:"+systemProxySetting.socks + "port:" + systemProxySetting.socks_port +
+                            "\nAutoConfig:"+systemProxySetting.autoconfig + "autoconfig_url:" + systemProxySetting.autoconfig_url +
+                            "\nautoDetect:"+systemProxySetting.autoDetect );
+  */
+  return systemProxySetting;
+  
+}
+
+function getMacProxyScriptTemplate(key,value){
+  var proxyScript = "";
+  var _key = "_" + key;
+  switch(key) {
+
+    case "passiveftp":
+      proxyScript = 'do shell script "networksetup -setpassiveftp Ethernet _passiveftp" with administrator privileges'.replace(_key,value);
+      break;
+
+    case "autoproxystate":
+      proxyScript = 'do shell script "networksetup -setautoproxystate Ethernet _autoproxystate" with administrator privileges'.replace(_key,value);
+      break;
+
+    case "autoproxyurl":
+      proxyScript = 'do shell script "networksetup -setautoproxyurl Ethernet _autoproxyurl" with administrator privileges'.replace(_key,value);
+      break;
+
+    case "proxyautodiscovery":
+      proxyScript = 'do shell script "networksetup -setproxyautodiscovery Ethernet _proxyautodiscovery" with administrator privileges'.replace(_key,value);
+      break;
+    
+    case "webproxystate":
+      proxyScript = 'do shell script "networksetup -setwebproxystate Ethernet _webproxystate" with administrator privileges'.replace(_key,value);
+      break;
+    case "webproxy":
+      proxyScript = 'do shell script "networksetup -setwebproxy Ethernet _webproxy" with administrator privileges'.replace(_key,value);
+      break;
+    
+    case "securewebproxystate":
+      proxyScript = 'do shell script "networksetup -setsecurewebproxystate Ethernet _securewebproxystate" with administrator privileges'.replace(_key,value);
+      break;
+    case "securewebproxy":
+      proxyScript = 'do shell script "networksetup -setsecurewebproxy Ethernet _securewebproxy" with administrator privileges'.replace(_key,value);
+      break;
+    
+    case "ftpproxystate":
+      proxyScript = 'do shell script "networksetup -setftpproxystate Ethernet _ftpproxystate" with administrator privileges'.replace(_key,value);
+      break;
+    case "ftpproxy":
+      proxyScript = 'do shell script "networksetup -setftpproxy Ethernet _ftpproxy" with administrator privileges'.replace(_key,value);
+      break;
+
+    case "socksfirewallproxystate":
+      proxyScript = 'do shell script "networksetup -setsocksfirewallproxystate Ethernet _socksfirewallproxystate" with administrator privileges'.replace(_key,value);
+      break;
+    case "socksfirewallproxy":
+      proxyScript = 'do shell script "networksetup -setsocksfirewallproxy Ethernet _socksfirewallproxy" with administrator privileges'.replace(_key,value);
+      break;
+
+    case "streamingproxystate":
+      proxyScript = 'do shell script "networksetup -setstreamingproxystate Ethernet _streamingproxystate" with administrator privileges'.replace(_key,value);
+      break;
+    case "streamingproxy":
+      proxyScript = 'do shell script "networksetup -setstreamingproxy Ethernet _streamingproxy" with administrator privileges'.replace(_key,value);
+      break;
+
+    case "gopherproxystate":
+      proxyScript = 'do shell script "networksetup -setgopherproxystate Ethernet _gopherproxystate" with administrator privileges'.replace(_key,value);
+      break;
+    case "gopherproxy":
+      proxyScript = 'do shell script "networksetup -setgopherproxy Ethernet _gopherproxy" with administrator privileges'.replace(_key,value);
+      break;
+
+    
+    //setsocksfirewallproxystate  
+    default:
+      return "";
+  }
+  return proxyScript;
+}
+
+var macProxyRestoreScript = [];
 
 var linuxProxyMode = ["None","Auto","Manual"];
 function showProxyChangeNotification() {
@@ -1500,8 +1774,13 @@ function showProxyChangeNotification() {
 	// network.proxy.ssl , network.proxy.ssl_port
 	// network.proxy.socks_version , network.proxy.socks_remote_dns
 	// share_proxy_settings, network.proxy.no_proxies_on
+  while(macProxyRestoreScript.length > 0) {
+    macProxyRestoreScript.pop();
+  }
+  proxyScriptIndex = 0;
 	var isWindow = Services.prefs.getBoolPref("browser.isWindow");
 	var isLinux = Services.prefs.getBoolPref("browser.isLinux");
+  var isMac = Services.prefs.getBoolPref("browser.isMac");
 	currentProxy.type = Services.prefs.getIntPref("network.proxy.type");
 	currentProxy.http = Services.prefs.getCharPref("network.proxy.http");
 	currentProxy.http_port = Services.prefs.getIntPref("network.proxy.http_port");
@@ -1849,6 +2128,402 @@ function showProxyChangeNotification() {
 			}
 		
 		}
+
+
+    if (isMac && isSystemProxyInit){
+      var autoDectectLink = "http://wpad/wpad.dat";
+      getMacLastSystemProxyInfo();
+      var proxyScriptIndex = 0;
+      var isMakeScript = false;
+      //Get Current System Proxy add to currentSystemProxy
+      currentSystemProxy = getMacSystemProxyInfo();
+      //Services.prompt.alert(null, "isLinux","lastMode:"+lastSystemProxyInfo.mode + "\nCurrenMode:"+currentSystemProxy.mode);
+
+      if (currentSystemProxy.HTTPEnable != lastSystemProxyInfo.HTTPEnable){
+        isProxyChange = true;
+        prefName = "HTTPEnable: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.HTTPEnable + spacer + lastSystemProxyInfo.HTTPEnable + "\n";
+
+        var scriptValue = "off";
+        if (lastSystemProxyInfo.HTTPEnable == true) 
+          scriptValue = "on";
+        macProxyRestoreScript[proxyScriptIndex++] = getMacProxyScriptTemplate("webproxystate", scriptValue);
+        //Services.prompt.alert(null, "scriptValue",getMacProxyScriptTemplate("webproxystate", scriptValue));
+    
+      }
+      
+      if (currentSystemProxy.http != lastSystemProxyInfo.http){
+        isProxyChange = true;
+        if (lastSystemProxyInfo.HTTPEnable == true)
+          isMakeScript = true;
+        prefName = "http: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.http + spacer + lastSystemProxyInfo.http + "\n";
+    
+      } 
+      if (currentSystemProxy.http_port != lastSystemProxyInfo.http_port){
+        isProxyChange = true;
+        if (lastSystemProxyInfo.HTTPEnable == true)
+          isMakeScript = true;
+        prefName = "http_port: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.http_port + spacer + lastSystemProxyInfo.http_port + "\n";
+      } 
+      /*
+      if (currentSystemProxy.HTTPUser != lastSystemProxyInfo.HTTPUser){
+        isProxyChange = true;
+        prefName = "HTTPUser: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.HTTPUser + spacer + lastSystemProxyInfo.HTTPUser + "\n";
+      }
+      */
+      if (isMakeScript){
+        var scriptValue = "";
+        if (lastSystemProxyInfo.http == "") 
+          scriptValue = "'' " + lastSystemProxyInfo.http_port;
+        else 
+          scriptValue = lastSystemProxyInfo.http + " " + lastSystemProxyInfo.http_port;
+
+        macProxyRestoreScript[proxyScriptIndex++] = getMacProxyScriptTemplate("webproxy", scriptValue);
+        //Services.prompt.alert(null, "scriptValue",getMacProxyScriptTemplate("webproxy", scriptValue));
+        isMakeScript = false;
+      }
+
+      if (currentSystemProxy.FTPEnable != lastSystemProxyInfo.FTPEnable){
+        isProxyChange = true;
+        prefName = "FTPEnable: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.FTPEnable + spacer + lastSystemProxyInfo.FTPEnable + "\n";
+
+        var scriptValue = "off";
+        if (lastSystemProxyInfo.FTPEnable == true) 
+          scriptValue = "on";
+        macProxyRestoreScript[proxyScriptIndex++] = getMacProxyScriptTemplate("ftpproxystate", scriptValue);
+        //Services.prompt.alert(null, "scriptValue",getMacProxyScriptTemplate("ftpproxystate", scriptValue));
+    
+      }
+      
+      if (currentSystemProxy.ftp != lastSystemProxyInfo.ftp){
+        isProxyChange = true;
+        if (lastSystemProxyInfo.FTPEnable == true)
+          isMakeScript = true;
+        prefName = "ftp: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.ftp + spacer + lastSystemProxyInfo.ftp + "\n";
+      }
+      
+      if (currentSystemProxy.ftp_port != lastSystemProxyInfo.ftp_port){
+        isProxyChange = true;
+        if (lastSystemProxyInfo.FTPEnable == true)
+          isMakeScript = true;
+        prefName = "ftp_port: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.ftp_port + spacer + lastSystemProxyInfo.ftp_port + "\n";
+      }
+      /*
+      if (currentSystemProxy.FTPUser != lastSystemProxyInfo.FTPUser){
+        isProxyChange = true;
+        prefName = "FTPUser: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.FTPUser + spacer + lastSystemProxyInfo.FTPUser + "\n";
+      }
+      */
+      if (isMakeScript){
+        var scriptValue = "";
+        if (lastSystemProxyInfo.ftp == "") 
+          scriptValue = "'' " + lastSystemProxyInfo.ftp_port;
+        else 
+          scriptValue = lastSystemProxyInfo.ftp + " " + lastSystemProxyInfo.ftp_port;
+
+        macProxyRestoreScript[proxyScriptIndex++] = getMacProxyScriptTemplate("ftpproxy", scriptValue);
+        isMakeScript = false;
+      }
+      
+
+      if (currentSystemProxy.HTTPSEnable != lastSystemProxyInfo.HTTPSEnable){
+        isProxyChange = true;
+        prefName = "HTTPSEnable: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.HTTPSEnable + spacer + lastSystemProxyInfo.HTTPSEnable + "\n";
+
+        var scriptValue = "off";
+        if (lastSystemProxyInfo.HTTPSEnable == true) 
+          scriptValue = "on";
+        macProxyRestoreScript[proxyScriptIndex++] = getMacProxyScriptTemplate("securewebproxystate", scriptValue);
+        //Services.prompt.alert(null, "scriptValue",getMacProxyScriptTemplate("securewebproxystate", scriptValue));
+    
+      }
+
+      if (currentSystemProxy.ssl != lastSystemProxyInfo.ssl){
+        isProxyChange = true;
+        if (lastSystemProxyInfo.HTTPSEnable == true)
+          isMakeScript = true;
+        prefName = "ssl: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.ssl + spacer + lastSystemProxyInfo.ssl + "\n";
+      }
+      
+      if (currentSystemProxy.ssl_port != lastSystemProxyInfo.ssl_port){
+        isProxyChange = true;
+        if (lastSystemProxyInfo.HTTPSEnable == true)
+          isMakeScript = true;
+        prefName = "ssl_port: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.ssl_port + spacer + lastSystemProxyInfo.ssl_port + "\n";
+      }
+      /*
+      if (currentSystemProxy.HTTPSUser != lastSystemProxyInfo.HTTPSUser){
+        isProxyChange = true;
+        prefName = "HTTPSUser: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.HTTPSUser + spacer + lastSystemProxyInfo.HTTPSUser + "\n";
+      }
+      */
+      if (isMakeScript){
+        var scriptValue = "";
+        if (lastSystemProxyInfo.ssl == "") 
+          scriptValue = "'' " + lastSystemProxyInfo.ssl_port;
+        else 
+          scriptValue = lastSystemProxyInfo.ssl + " " + lastSystemProxyInfo.ssl_port;
+
+        macProxyRestoreScript[proxyScriptIndex++] = getMacProxyScriptTemplate("securewebproxy", scriptValue);
+        isMakeScript = false;
+      }
+
+      
+      if (currentSystemProxy.SOCKSEnable != lastSystemProxyInfo.SOCKSEnable){
+        isProxyChange = true;
+        prefName = "SOCKSEnable: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.SOCKSEnable + spacer + lastSystemProxyInfo.SOCKSEnable + "\n";
+
+        var scriptValue = "off";
+        if (lastSystemProxyInfo.SOCKSEnable == true) 
+          scriptValue = "on";
+        macProxyRestoreScript[proxyScriptIndex++] = getMacProxyScriptTemplate("socksfirewallproxystate", scriptValue);
+        //Services.prompt.alert(null, "scriptValue",getMacProxyScriptTemplate("socksfirewallproxystate", scriptValue));
+    
+      }
+      
+      if (currentSystemProxy.socks != lastSystemProxyInfo.socks){
+        isProxyChange = true;
+        if (lastSystemProxyInfo.SOCKSEnable == true)
+          isMakeScript = true;
+        prefName = "socks: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.socks + spacer + lastSystemProxyInfo.socks + "\n";
+      }
+      
+      if (currentSystemProxy.socks_port != lastSystemProxyInfo.socks_port){
+        isProxyChange = true;
+        if (lastSystemProxyInfo.SOCKSEnable == true)
+          isMakeScript = true;
+        prefName = "socks_port: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.socks_port + spacer + lastSystemProxyInfo.socks_port + "\n";
+
+        
+      }
+      /*
+      if (currentSystemProxy.SOCKSUser != lastSystemProxyInfo.SOCKSUser){
+        isProxyChange = true;
+        prefName = "SOCKSUser: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.SOCKSUser + spacer + lastSystemProxyInfo.SOCKSUser + "\n";
+      }
+      */
+      if (isMakeScript){
+        var scriptValue = "";
+        if (lastSystemProxyInfo.socks == "") 
+          scriptValue = "'' " + lastSystemProxyInfo.socks_port;
+        else 
+          scriptValue = lastSystemProxyInfo.socks + " " + lastSystemProxyInfo.socks_port;
+
+        macProxyRestoreScript[proxyScriptIndex++] = getMacProxyScriptTemplate("socksfirewallproxy", scriptValue);
+        //Services.prompt.alert(null, "scriptValue",getMacProxyScriptTemplate("webproxy", scriptValue));
+        isMakeScript = false;
+      }
+
+      if (currentSystemProxy.autoconfig != lastSystemProxyInfo.autoconfig){
+        isProxyChange = true;
+        prefName = "autoconfig: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.autoconfig + spacer + lastSystemProxyInfo.autoconfig + "\n";
+      }
+      
+      if (currentSystemProxy.autoDetect != lastSystemProxyInfo.autoDetect){
+        isProxyChange = true;
+        prefName = "autoDetect: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.autoDetect + spacer + lastSystemProxyInfo.autoDetect + "\n";
+
+        var scriptValue = "off";
+        if (lastSystemProxyInfo.autoDetect == true && lastSystemProxyInfo.autoconfig_url == autoDectectLink) 
+          scriptValue = "on";
+        macProxyRestoreScript[proxyScriptIndex++] = getMacProxyScriptTemplate("proxyautodiscovery", scriptValue);
+        //Services.prompt.alert(null, "scriptValue",getMacProxyScriptTemplate("socksfirewallproxystate", scriptValue));
+      }
+      if (currentSystemProxy.autoconfig_url != lastSystemProxyInfo.autoconfig_url){
+        isProxyChange = true;
+        prefName = "autoconfig_url: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.autoconfig_url + spacer + lastSystemProxyInfo.autoconfig_url + "\n";
+
+        
+        if (lastSystemProxyInfo.autoconfig == true) {
+          if(lastSystemProxyInfo.autoconfig_url != autoDectectLink)
+            macProxyRestoreScript[proxyScriptIndex++] = getMacProxyScriptTemplate("autoproxyurl", lastSystemProxyInfo.autoconfig_url);
+            macProxyRestoreScript[proxyScriptIndex++] = getMacProxyScriptTemplate("autoproxystate", "on");
+        }else{
+          //setautoproxystate
+          macProxyRestoreScript[proxyScriptIndex++] = getMacProxyScriptTemplate("autoproxystate", "off");
+        }
+            
+        
+      }
+      /*
+      if (currentSystemProxy.ExcludeSimpleHostnames != lastSystemProxyInfo.ExcludeSimpleHostnames){
+        isProxyChange = true;
+        prefName = "ExcludeSimpleHostnames: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.ExcludeSimpleHostnames + spacer + lastSystemProxyInfo.ExcludeSimpleHostnames + "\n";
+      }
+      */
+      //Add more Properties
+      if (currentSystemProxy.RTSPEnable != lastSystemProxyInfo.RTSPEnable){
+        //Services.prompt.alert(null, "RTSPEnable","Cur:"+currentSystemProxy.RTSPEnable +" --- last:"+lastSystemProxyInfo.RTSPEnable);
+        isProxyChange = true;
+        prefName = "RTSPEnable: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.RTSPEnable + spacer + lastSystemProxyInfo.RTSPEnable + "\n";
+
+        var scriptValue = "off";
+        if (lastSystemProxyInfo.RTSPEnable == true) 
+          scriptValue = "on";
+        macProxyRestoreScript[proxyScriptIndex++] = getMacProxyScriptTemplate("streamingproxystate", scriptValue);
+    
+      }
+      isMakeScript = false;
+      if (currentSystemProxy.RTSPProxy != lastSystemProxyInfo.RTSPProxy){
+        isProxyChange = true;
+        if (lastSystemProxyInfo.RTSPEnable == true)
+          isMakeScript = true;
+        prefName = "RTSPProxy: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.RTSPProxy + spacer + lastSystemProxyInfo.RTSPProxy + "\n";
+      }
+
+      if (currentSystemProxy.RTSPPort != lastSystemProxyInfo.RTSPPort){
+        isProxyChange = true;
+        if (lastSystemProxyInfo.RTSPEnable == true)
+          isMakeScript = true;
+        prefName = "RTSPPort: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.RTSPPort + spacer + lastSystemProxyInfo.RTSPPort + "\n";
+      }
+      /*
+      if (currentSystemProxy.RTSPUser != lastSystemProxyInfo.RTSPUser){
+        isProxyChange = true;
+        prefName = "RTSPUser: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.RTSPUser + spacer + lastSystemProxyInfo.RTSPUser + "\n";
+      }
+      */
+      if (isMakeScript){
+        var scriptValue = "";
+        if (lastSystemProxyInfo.RTSPProxy == "") 
+          scriptValue = "'' " + lastSystemProxyInfo.RTSPPort;
+        else 
+          scriptValue = lastSystemProxyInfo.RTSPProxy + " " + lastSystemProxyInfo.RTSPPort;
+
+        macProxyRestoreScript[proxyScriptIndex++] = getMacProxyScriptTemplate("streamingproxy", scriptValue);
+        //Services.prompt.alert(null, "scriptValue",getMacProxyScriptTemplate("webproxy", scriptValue));
+        isMakeScript = false;
+      }
+      isMakeScript = false;
+      if (currentSystemProxy.GopherEnable != lastSystemProxyInfo.GopherEnable){
+        isProxyChange = true;
+        prefName = "GopherEnable: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.GopherEnable + spacer + lastSystemProxyInfo.GopherEnable + "\n";
+
+        var scriptValue = "off";
+        if (lastSystemProxyInfo.GopherEnable == true) 
+          scriptValue = "on";
+        macProxyRestoreScript[proxyScriptIndex++] = getMacProxyScriptTemplate("gopherproxystate", scriptValue);
+        //Services.prompt.alert(null, "scriptValue",getMacProxyScriptTemplate("gopherproxystate", scriptValue));
+    
+      }
+
+
+      if (currentSystemProxy.GopherProxy != lastSystemProxyInfo.GopherProxy){
+        isProxyChange = true;
+        if (lastSystemProxyInfo.GopherEnable == true)
+          isMakeScript = true;
+        prefName = "GopherProxy: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.GopherProxy + spacer + lastSystemProxyInfo.GopherProxy + "\n";
+      }
+
+      if (currentSystemProxy.GopherPort != lastSystemProxyInfo.GopherPort){
+        isProxyChange = true;
+        if (lastSystemProxyInfo.GopherEnable == true)
+          isMakeScript = true;
+        prefName = "GopherPort: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.GopherPort + spacer + lastSystemProxyInfo.GopherPort + "\n";
+      }
+      /*
+      if (currentSystemProxy.GopherUser != lastSystemProxyInfo.GopherUser){
+        isProxyChange = true;
+        prefName = "GopherUser: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.GopherUser + spacer + lastSystemProxyInfo.GopherUser + "\n";
+      }
+      */
+      if (isMakeScript){
+        var scriptValue = "";
+        if (lastSystemProxyInfo.GopherProxy == "") 
+          scriptValue = "'' " + lastSystemProxyInfo.GopherPort;
+        else 
+          scriptValue = lastSystemProxyInfo.GopherProxy + " " + lastSystemProxyInfo.GopherPort;
+
+        macProxyRestoreScript[proxyScriptIndex++] = getMacProxyScriptTemplate("gopherproxy", scriptValue);
+        //Services.prompt.alert(null, "scriptValue",getMacProxyScriptTemplate("webproxy", scriptValue));
+        isMakeScript = false;
+      }
+
+      if (currentSystemProxy.FTPPassive != lastSystemProxyInfo.FTPPassive){
+        isProxyChange = true;
+        prefName = "FTPPassive: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.FTPPassive + spacer + lastSystemProxyInfo.FTPPassive + "\n";
+
+        var scriptValue = "off";
+        if (lastSystemProxyInfo.FTPPassive == true) 
+          scriptValue = "on";
+        macProxyRestoreScript[proxyScriptIndex++] = getMacProxyScriptTemplate("passiveftp", scriptValue);
+      }
+      /*
+      if (currentSystemProxy.ExceptionsList != lastSystemProxyInfo.ExceptionsList){
+        isProxyChange = true;
+        prefName = "ExceptionsList: ";
+        //prefName = autoFixLenForPref(prefName,spacer.length);
+        proxyChangeContent  = proxyChangeContent + prefName + currentSystemProxy.ExceptionsList + spacer + lastSystemProxyInfo.ExceptionsList + "\n";
+      }
+      */
+ 
+    
+      
+      //Services.prompt.alert(null, "isLinux","isLinux"+proxyChangeContent);
+      if (isProxyChange){
+        proxyChangeDialogTitle = "System Proxy changes";
+        proxyChangeContent = proxyChangeContent.replace("Proxy Settings","System Proxy Settings");
+        isSystemProxyChage = true;
+      }
+    
+    }
 		
 		
 	}
@@ -1968,6 +2643,45 @@ function showProxyChangeNotification() {
 						Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.autoconfig_url",currentSystemProxy.autoconfig_url);
 						Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.mode",currentSystemProxy.mode);
 					}
+          if(isMac){
+            currentSystemProxy = getMacSystemProxyInfo();
+            Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.isChange",true);
+            Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.autoDetect",currentSystemProxy.autoDetect);
+            Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.autoconfig",currentSystemProxy.autoconfig);
+            Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.http",currentSystemProxy.http);
+            Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.http_port",currentSystemProxy.http_port);
+            Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.HTTPUser",currentSystemProxy.HTTPUser);
+            Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.ftp",currentSystemProxy.ftp);
+            Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.ftp_port",currentSystemProxy.ftp_port);
+            Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.FTPUser",currentSystemProxy.FTPUser);
+            Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.ssl",currentSystemProxy.ssl);
+            Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.ssl_port",currentSystemProxy.ssl_port);
+            Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.HTTPSUser",currentSystemProxy.HTTPSUser);
+            Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.socks",currentSystemProxy.socks);
+            Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.socks_port",currentSystemProxy.socks_port);
+            Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.SOCKSUser",currentSystemProxy.SOCKSUser);
+            Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.autoconfig_url",currentSystemProxy.autoconfig_url);
+
+            Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.RTSPEnable",currentSystemProxy.RTSPEnable);
+            Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.GopherEnable",currentSystemProxy.GopherEnable);
+            Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.FTPPassive",currentSystemProxy.FTPPassive);
+
+            Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.RTSPProxy",currentSystemProxy.RTSPProxy);
+            Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.RTSPPort",currentSystemProxy.RTSPPort);
+            Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.RTSPUser",currentSystemProxy.RTSPUser);
+            Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.GopherProxy",currentSystemProxy.GopherProxy);
+            Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.GopherPort",currentSystemProxy.GopherPort);
+            Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.GopherUser",currentSystemProxy.GopherUser);
+            Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.ExcludeSimpleHostnames",currentSystemProxy.ExcludeSimpleHostnames);
+            Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.ExceptionsList",currentSystemProxy.ExceptionsList);
+
+
+            Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.HTTPEnable",currentSystemProxy.HTTPEnable);
+            Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.HTTPSEnable",currentSystemProxy.HTTPSEnable);
+            Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.FTPEnable",currentSystemProxy.FTPEnable);
+            Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.SOCKSEnable",currentSystemProxy.SOCKSEnable);
+            
+          }
 				}
 			}else if(isWindow){ //now, only support for window
 				//Services.prompt.alert(null, "MainSystem ","MainSystem");
@@ -2000,14 +2714,51 @@ function showProxyChangeNotification() {
 				Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.socks_port",currentSystemProxy.socks_port);
 				Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.mode",currentSystemProxy.mode);
 			
-			}
-        }
+			}else if(isMac){//add support for Mac
+        Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.isChange",true);
+        Services.prefs.setIntPref("browser.proxyChange.lastProxyInfo.type",currentProxy.type);
+        Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.autoDetect",currentSystemProxy.autoDetect);
+        Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.autoconfig",currentSystemProxy.autoconfig);
+        Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.http",currentSystemProxy.http);
+        Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.http_port",currentSystemProxy.http_port);
+        Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.HTTPUser",currentSystemProxy.HTTPUser);
+        Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.ftp",currentSystemProxy.ftp);
+        Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.ftp_port",currentSystemProxy.ftp_port);
+        Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.FTPUser",currentSystemProxy.FTPUser);
+        Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.ssl",currentSystemProxy.ssl);
+        Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.ssl_port",currentSystemProxy.ssl_port);
+        Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.HTTPSUser",currentSystemProxy.HTTPSUser);
+        Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.socks",currentSystemProxy.socks);
+        Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.socks_port",currentSystemProxy.socks_port);
+        Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.SOCKSUser",currentSystemProxy.SOCKSUser);
+        Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.autoconfig_url",currentSystemProxy.autoconfig_url);
+
+        Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.RTSPEnable",currentSystemProxy.RTSPEnable);
+        Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.GopherEnable",currentSystemProxy.GopherEnable);
+        Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.FTPPassive",currentSystemProxy.FTPPassive);
+
+        Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.RTSPProxy",currentSystemProxy.RTSPProxy);
+        Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.RTSPPort",currentSystemProxy.RTSPPort);
+        Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.RTSPUser",currentSystemProxy.RTSPUser);
+        Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.GopherProxy",currentSystemProxy.GopherProxy);
+        Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.GopherPort",currentSystemProxy.GopherPort);
+        Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.GopherUser",currentSystemProxy.GopherUser);
+        Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.ExcludeSimpleHostnames",currentSystemProxy.ExcludeSimpleHostnames);
+        Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.ExceptionsList",currentSystemProxy.ExceptionsList);
+
+        Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.HTTPEnable",currentSystemProxy.HTTPEnable);
+        Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.HTTPSEnable",currentSystemProxy.HTTPSEnable);
+        Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.FTPEnable",currentSystemProxy.FTPEnable);
+        Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.SOCKSEnable",currentSystemProxy.SOCKSEnable);
+      }
+    }
       },
 	  {
         label: "Restore",
         accessKey: "R",
         callback: function() {
 			_actionTakenProxyChangce = true;
+      Services.prefs.setIntPref("network.proxy.type",lastProxyInfo.type);
 			if (!isSystemProxyChage){
 				Services.prefs.setIntPref("network.proxy.type",lastProxyInfo.type);
 				Services.prefs.setCharPref("network.proxy.http",lastProxyInfo.http);
@@ -2082,7 +2833,19 @@ function showProxyChangeNotification() {
 					process.init(shell);
 					process.run(true,args, args.length);
 				}
-			}
+			}else if (isMac){
+
+        var resultScript = macProxyRestoreScript.join('\n');
+        //Services.prompt.alert(null, "resultScript",resultScript);
+        executeAppleScript(resultScript);
+
+      }
+
+
+
+
+
+
         }
       }
 	  
@@ -3677,6 +4440,73 @@ function BrowserPageInfo(doc, initialTab, imageElement) {
                     "chrome,toolbar,dialog=no,resizable", args);
 }
 
+
+
+
+var isMac = true; 
+function executeMacCommand2(path, args) {
+  args = [].concat(args);
+  var file = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsILocalFile);
+  file.initWithPath(path);
+  file.QueryInterface(Ci.nsILocalFileMac);
+  if (file.isPackage) {
+    args = [file.path, "--args"].concat(args);
+  }
+  file = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsILocalFile);
+  file.initWithPath("/usr/bin/open");
+  var process = Cc["@mozilla.org/process/util;1"].createInstance(Ci.nsIProcess);
+  process.init(file);
+  process.run(false, args, args.length);
+}
+
+function executeMacCommand(path, args) {
+  args = [].concat(args);
+  var file = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsILocalFile);
+  file.initWithPath(path);
+  file.QueryInterface(Ci.nsILocalFileMac);
+  if (file.isPackage) {
+    //if (isAdmin)
+    //  args = ["su "+file.path, "--args"].concat(args);
+    //args = [file.path, "--args"].concat(args);
+    //args = [file.path, "--args"].concat(args);
+    //args = [file.path, "--args"].concat(["-a","Terminal"]);
+    //args = [file.path,"--args","-e","tell app 'Terminal' to do script 'echo hello'"];
+  }
+  file = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsILocalFile);
+  file.initWithPath("/usr/bin/osascript");
+  
+  var process = Cc["@mozilla.org/process/util;1"].createInstance(Ci.nsIProcess);
+  process.init(file);
+  process.run(false, args, args.length);
+}
+
+
+var appleScript_2 = [
+  'do shell script "networksetup -setproxyautodiscovery Ethernet on" with administrator privileges',
+  'do shell script "networksetup -setproxyautodiscovery Ethernet off" with administrator privileges'
+];
+
+var isGettingMacProxy = false;
+
+
+function executeAppleScript(script) {
+    var _osascriptFile = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsILocalFile);
+    _osascriptFile.initWithPath("/usr/bin/osascript");
+    if(!_osascriptFile.exists()) {
+        return false;
+    }
+
+    if(_osascriptFile) {
+        var proc = Cc["@mozilla.org/process/util;1"].createInstance(Ci.nsIProcess);
+        proc.init(_osascriptFile);
+        try {
+            proc.run(false,['-e', script], 2);
+        } catch(e) {}
+    }
+}
+
+var lastUpdateMacProxy = 0;
+
 function URLBarSetURI(aURI) {
   var value = gBrowser.userTypedValue;
   var valid = false;
@@ -3684,9 +4514,27 @@ function URLBarSetURI(aURI) {
   //Privafax SystemProxy
   //var proxyProtocolService = Cc["@mozilla.org/network/protocol-proxy-service;1"].getService(Ci.nsIProtocolProxyService)
   //var proxyService = Cc["@mozilla.org/system-proxy-settings;1"].getService(Ci.nsISystemProxySettings);
+  //var getProxyHTTP = proxyService.getProxyForURI("all","all","google.com", 80);
+  //Services.prompt.alert(null, "Try read Proxy ", getProxyHTTP);
   
 	_actionTakenProxyChangce = false;
 	_actionTakenAuttoUpdate = false;
+  //var onFinishOSA = {
+  //observe: function(aSubject, aTopic, aData) {
+    //console.log('incoming procFinOSA', 'aSubject:', aSubject, 'aTopic:', aTopic, 'aData', aData);
+    //console.log('incoming procFinOSA unevaled', 'aSubject:', uneval(aSubject), 'aTopic:', uneval(aTopic), 'aData', uneval(aData));
+  //    isGettingMacProxy = false;
+
+  //  }
+  //};
+  let now = Math.round(Date.now() / 1000);
+  //_executeAppleScript(appleScript_2.join('\n'));
+  if(now - lastUpdateMacProxy > 5){
+    lastUpdateMacProxy = now;
+   
+    
+  }
+  
   showAutoUpdateNotification();
   if (value == null) {
     let uri = aURI || gBrowser.currentURI;

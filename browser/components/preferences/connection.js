@@ -223,12 +223,12 @@ var gConnectionsDialog = {
 																*/
 			}
 		}
-		
+
 		if (isMac){
 			var proxyService = Components.classes["@mozilla.org/system-proxy-settings;1"].getService(Components.interfaces.nsISystemProxySettings);
-			//Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.isChange",true);
+			Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.isChange",true);
 			var proxyString = proxyService.getProxyForURI("all","all","google.com",80);
-			Services.prompt.alert(null, "Direct Connection:",proxyString);
+			//Services.prompt.alert(null, "Direct Connection:",proxyString);
 			var objProxyInfo = JSON.parse(proxyString);
 
 			objProxyInfo = objProxyInfo.__SCOPED__.en0;
@@ -237,23 +237,105 @@ var gConnectionsDialog = {
 			systemProxySetting.HTTPSEnable = objProxyInfo.HTTPSEnable == 1 ;
 			systemProxySetting.FTPEnable = objProxyInfo.FTPEnable == 1 ;
 			systemProxySetting.SOCKSEnable = objProxyInfo.SOCKSEnable == 1 ;
+			systemProxySetting.FTPPassive = objProxyInfo.FTPPassive == 1 ;
 			//if(typeof(objProxyInfo.ProxyAutoDiscoveryEnable) == "undefined" || objProxyInfo.ProxyAutoDiscoveryEnable == null)
+			var autoDectectLink = "http://wpad/wpad.dat";
 			systemProxySetting.autoconfig = false;
-			systemProxySetting.autoDetect = false;
-			if (typeof(objProxyInfo.ProxyAutoDiscoveryEnable) !== 'undefined'){
-			  systemProxySetting.autoDetect = objProxyInfo.ProxyAutoDiscoveryEnable == 1;
-			    
-			}else{
-			  systemProxySetting.autoDetect = false;
-			}
+		  	systemProxySetting.autoDetect = false;
+		  	if (typeof(objProxyInfo.ProxyAutoDiscoveryEnable) !== 'undefined' && objProxyInfo.ProxyAutoConfigURLString == autoDectectLink){
+		    	systemProxySetting.autoDetect = true;
+		    
+		  	}else{
+		    	systemProxySetting.autoDetect = false;
+		  	}
 
-			if (typeof(objProxyInfo.ProxyAutoConfigEnable) !== 'undefined'){
-			  systemProxySetting.autoconfig = objProxyInfo.ProxyAutoConfigEnable == 1;
-			  
-			}else{
-			  systemProxySetting.autoconfig = false;
-			}
+		  	if (typeof(objProxyInfo.ProxyAutoConfigEnable) !== 'undefined' && objProxyInfo.ProxyAutoConfigURLString != autoDectectLink){
+		    	systemProxySetting.autoconfig = objProxyInfo.ProxyAutoConfigEnable == 1;
+		    
+		  	}else{
+		   		systemProxySetting.autoconfig = false;
+		  	}
+
+			//Add more field for MAC-OS proxy
+			systemProxySetting.GopherEnable = false ;
+			systemProxySetting.GopherUser = "" ;
+			if (typeof(objProxyInfo.GopherEnable) !== 'undefined' &&  objProxyInfo.GopherEnable == 1){
+				systemProxySetting.GopherEnable = true ;
+		    	systemProxySetting.GopherProxy = objProxyInfo.GopherProxy;
+				systemProxySetting.GopherPort = objProxyInfo.GopherPort;
+				
+				if (typeof(objProxyInfo.GopherUser) !== 'undefined')
+					systemProxySetting.GopherUser = objProxyInfo.GopherUser;
+				//Services.prompt.alert(null, "FTPPassive","FTPPassive:"+systemProxySetting.FTPPassive + "GopherUser:"+systemProxySetting.GopherUser);
+
+		  	}else{
+		   		systemProxySetting.GopherProxy = "";
+				systemProxySetting.GopherPort = 0;
+		  	}
 			
+			
+			systemProxySetting.RTSPEnable = false ;
+			if (typeof(objProxyInfo.RTSPEnable) !== 'undefined' && objProxyInfo.RTSPEnable == 1){
+				systemProxySetting.RTSPEnable = true ;
+		    	systemProxySetting.RTSPProxy = objProxyInfo.RTSPProxy;
+				systemProxySetting.RTSPPort = objProxyInfo.RTSPPort;
+				//Services.prompt.alert(null, "RTSPProxy","RTSPProxy:"+systemProxySetting.RTSPProxy + "P:" + systemProxySetting.RTSPPort);
+		  	}else{
+		   		systemProxySetting.RTSPProxy = "";
+				systemProxySetting.RTSPPort = 0;
+		  	}
+
+
+		  	systemProxySetting.ExceptionsList = "" ;
+			if (typeof(objProxyInfo.ExceptionsList) !== 'undefined')
+		    	systemProxySetting.ExceptionsList = objProxyInfo.ExceptionsList.join(",");
+		  	
+		    //Services.prompt.alert(null, "ExceptionsList","ExceptionsList:"+systemProxySetting.ExceptionsList);
+			//Add more field for MAC-OS proxy
+			//RTSPEnable RTSPProxy RTSPPort GopherEnable GopherProxy GopherPort GopherUser FTPPassive ExceptionsList
+			//ExcludeSimpleHostnames HTTPUser HTTPSUser  RTSPUser SOCKSUser FTPUser  
+			systemProxySetting.ExcludeSimpleHostnames = false ;
+			if (typeof(objProxyInfo.RTSPEnable) !== 'undefined' && objProxyInfo.ExcludeSimpleHostnames == 1){
+				systemProxySetting.ExcludeSimpleHostnames = true ;
+		  	}else{
+		   		systemProxySetting.ExcludeSimpleHostnames = false ;
+		  	}
+
+		  	systemProxySetting.HTTPUser = "" ;
+			if (typeof(objProxyInfo.HTTPUser) !== 'undefined'){
+				systemProxySetting.HTTPUser = objProxyInfo.HTTPUser ;
+		  	}else{
+		   		systemProxySetting.HTTPUser = "" ;
+		  	}
+
+		  	systemProxySetting.HTTPSUser = "" ;
+			if (typeof(objProxyInfo.HTTPSUser) !== 'undefined'){
+				systemProxySetting.HTTPSUser = objProxyInfo.HTTPSUser ;
+		  	}else{
+		   		systemProxySetting.HTTPSUser = "" ;
+		  	}
+
+		  	systemProxySetting.RTSPUser = "" ;
+			if (typeof(objProxyInfo.RTSPUser) !== 'undefined'){
+				systemProxySetting.RTSPUser = objProxyInfo.RTSPUser ;
+		  	}else{
+		   		systemProxySetting.RTSPUser = "" ;
+		  	}
+
+		  	systemProxySetting.SOCKSUser = "" ;
+			if (typeof(objProxyInfo.SOCKSUser) !== 'undefined'){
+				systemProxySetting.SOCKSUser = objProxyInfo.SOCKSUser ;
+		  	}else{
+		   		systemProxySetting.SOCKSUser = "" ;
+		  	}
+
+		  	systemProxySetting.FTPUser = "" ;
+			if (typeof(objProxyInfo.FTPUser) !== 'undefined'){
+				systemProxySetting.FTPUser = objProxyInfo.FTPUser ;
+		  	}else{
+		   		systemProxySetting.FTPUser = "" ;
+		  	}
+
 			if(systemProxySetting.HTTPEnable){
 				systemProxySetting.http = objProxyInfo.HTTPProxy;
 				systemProxySetting.http_port = objProxyInfo.HTTPPort;
@@ -291,14 +373,9 @@ var gConnectionsDialog = {
 		  	}else{
 		    	systemProxySetting.autoconfig_url = "";
 		  	}
-		  	/*
-			Services.prompt.alert(null, "ProxyInfo","http:"+systemProxySetting.http + "port:" + systemProxySetting.http_port +
-																"\nhttps:"+systemProxySetting.https + "port:" + systemProxySetting.https_port +
-																"\nftp:"+systemProxySetting.ftp + "port:" + systemProxySetting.ftp_port +
-																"\nsocks:"+systemProxySetting.socks + "port:" + systemProxySetting.socks_port +
-																"\nAutoConfig:"+systemProxySetting.autoconfig + "autoconfig_url:" + systemProxySetting.autoconfig_url +
-																"\nautoDetect:"+systemProxySetting.autoDetect );
-			*/
+		  	
+			
+			
 			Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.autoconfig_url",systemProxySetting.autoconfig_url);
 			Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.autoconfig",systemProxySetting.autoconfig);
 			Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.autoDetect",systemProxySetting.autoDetect);
@@ -310,9 +387,39 @@ var gConnectionsDialog = {
 			Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.ftp_port",systemProxySetting.ftp_port);
 			Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.socks",systemProxySetting.socks);
 			Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.socks_port",systemProxySetting.socks_port);
-			//Services.prompt.alert(null, "Direct Connection:","ftp:"+systemProxySetting.socks + "port:" + systemProxySetting.socks_port
-			//												+"\nautoDetect:" + systemProxySetting.autoDetect +"autoconfig:" + systemProxySetting.autoconfig_url);
-			
+
+			Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.FTPPassive",systemProxySetting.FTPPassive);
+			Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.RTSPEnable",systemProxySetting.RTSPEnable);
+			Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.RTSPProxy",systemProxySetting.RTSPProxy);
+			Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.RTSPPort",systemProxySetting.RTSPPort);
+			Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.GopherEnable",systemProxySetting.GopherEnable);
+			Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.GopherProxy",systemProxySetting.GopherProxy);
+			Services.prefs.setIntPref("browser.proxyChange.lastSystemProxyInfo.GopherPort",systemProxySetting.GopherPort);
+			Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.GopherUser",systemProxySetting.GopherUser);
+			Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.ExceptionsList",systemProxySetting.ExceptionsList);
+
+			Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.ExcludeSimpleHostnames",systemProxySetting.ExcludeSimpleHostnames);
+			Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.HTTPUser",systemProxySetting.HTTPUser);
+			Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.HTTPSUser",systemProxySetting.HTTPSUser);
+			Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.RTSPUser",systemProxySetting.RTSPUser);
+			Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.SOCKSUser",systemProxySetting.SOCKSUser);
+			Services.prefs.setCharPref("browser.proxyChange.lastSystemProxyInfo.FTPUser",systemProxySetting.FTPUser);
+
+			Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.HTTPEnable",systemProxySetting.HTTPEnable);
+			Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.HTTPSEnable",systemProxySetting.HTTPSEnable);
+			Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.FTPEnable",systemProxySetting.FTPEnable);
+			Services.prefs.setBoolPref("browser.proxyChange.lastSystemProxyInfo.SOCKSEnable",systemProxySetting.SOCKSEnable);
+			//HTTPEnable HTTPSEnable FTPEnable SOCKSEnable
+
+			////       
+			/*
+			Services.prompt.alert(null, "ProxyInfo","http:"+systemProxySetting.http + "port:" + systemProxySetting.http_port +
+                            "\nhttps:"+systemProxySetting.https + "port:" + systemProxySetting.https_port +
+                            "\nftp:"+systemProxySetting.ftp + "port:" + systemProxySetting.ftp_port +
+                            "\nsocks:"+systemProxySetting.socks + "port:" + systemProxySetting.socks_port +
+                            "\nAutoConfig:"+systemProxySetting.autoconfig + "autoconfig_url:" + systemProxySetting.autoconfig_url +
+                            "\nautoDetect:"+systemProxySetting.autoDetect + "FTPPassive:" + systemProxySetting.FTPPassive );
+			*/
 		}
 	    
 		if (isLinux){
@@ -432,6 +539,8 @@ var gConnectionsDialog = {
 			}
 			
 		}
+		
+
 		
 	}
 	

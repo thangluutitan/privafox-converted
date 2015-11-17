@@ -740,7 +740,12 @@ pref("browser.proxyChange.lastSystemProxyInfo.sameProxyServer",false);
 pref("browser.proxyChange.lastSystemProxyInfo.mode",0);
 
 //More properties for MacOS
+pref("browser.proxyChange.lastSystemProxyInfo.HTTPEnable",false);
+pref("browser.proxyChange.lastSystemProxyInfo.HTTPSEnable",false);
+pref("browser.proxyChange.lastSystemProxyInfo.FTPEnable",false);
+pref("browser.proxyChange.lastSystemProxyInfo.SOCKSEnable",false);
 pref("browser.proxyChange.lastSystemProxyInfo.RTSPEnable",false);
+
 pref("browser.proxyChange.lastSystemProxyInfo.RTSPProxy","");
 pref("browser.proxyChange.lastSystemProxyInfo.RTSPPort",0);
 
@@ -749,8 +754,16 @@ pref("browser.proxyChange.lastSystemProxyInfo.GopherProxy","");
 pref("browser.proxyChange.lastSystemProxyInfo.GopherPort",0);
 
 pref("browser.proxyChange.lastSystemProxyInfo.GopherUser","");
+pref("browser.proxyChange.lastSystemProxyInfo.RTSPUser","");
+pref("browser.proxyChange.lastSystemProxyInfo.HTTPSUser","");
+pref("browser.proxyChange.lastSystemProxyInfo.HTTPUser","");
+pref("browser.proxyChange.lastSystemProxyInfo.SOCKSUser","");
+pref("browser.proxyChange.lastSystemProxyInfo.HTTPUser","");
+
+
 pref("browser.proxyChange.lastSystemProxyInfo.FTPPassive",true);
 pref("browser.proxyChange.lastSystemProxyInfo.ExceptionsList","");
+pref("browser.proxyChange.lastSystemProxyInfo.ExcludeSimpleHostnames",false);
 
 
 #ifdef XP_WIN
