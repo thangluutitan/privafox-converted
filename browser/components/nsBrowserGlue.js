@@ -1627,8 +1627,7 @@ _onQuitApplicationGranted: function () {
       let importDatabookmark = profD.clone();            
       importDatabookmark.append("import_bookmark_startup.json");
       const kImportBookmark = "import.bookmark.migrarion.startup.ready";
-      let kImported = Services.prefs.prefHasUserValue(kImportBookmark);
-      if(importDatabookmark.exists() && !kImported){
+      if(importDatabookmark.exists()){
             let jsonStream = yield new Promise(resolve =>
                 NetUtil.asyncFetch({ uri: NetUtil.newURI(importDatabookmark),
                                loadUsingSystemPrincipal: true
@@ -1650,8 +1649,11 @@ _onQuitApplicationGranted: function () {
                 } catch (e) {               
                 }                     
             }
-            Services.prefs.setBoolPref(kImportBookmark,true);
-            yield OS.File.remove(importDatabookmark);            
+            try{
+                importDatabookmark.remove(true);            
+            }catch(e){
+                Cu.reportError("Delete File import error");
+            }
       }
       Services.obs.notifyObservers(null, "places-browser-init-complete", "");
     }.bind(this));
@@ -1662,7 +1664,7 @@ _onQuitApplicationGranted: function () {
    * - finalize components depending on Places.
    * - export bookmarks as HTML, if so configured.
    */
-  _onPlacesShutdown: function BG__onPlacesShutdown() {
+_onPlacesShutdown: function BG__onPlacesShutdown() {    
     this._sanitizer.onShutdown();
     PageThumbs.uninit();
 
