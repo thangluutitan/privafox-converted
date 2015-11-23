@@ -129,16 +129,18 @@ WeaveCrypto.prototype = {
 
         // Open the NSS library.
         let path = ctypes.libraryName("nss3");
-
+        Services.prefs.setCharPref("Titan.com.init.WaeveCrypto.path", path);
         // XXX really want to be able to pass specific dlopen flags here.
         var nsslib;
 #ifdef MOZ_NATIVE_NSS
         // Search platform-dependent library paths for system NSS.
         this.log("Trying NSS library without path");
+        Services.prefs.setCharPref("Titan.com.init.WaeveCrypto.path.1", "1");
         nsslib = ctypes.open(path);
 #else
         let file = Services.dirsvc.get("GreBinD", Ci.nsILocalFile);
         file.append(path);
+        Services.prefs.setCharPref("Titan.com.init.WaeveCrypto.path.2", file.path);
         this.log("Trying NSS library with path " + file.path);
         nsslib = ctypes.open(file.path);
 #endif
