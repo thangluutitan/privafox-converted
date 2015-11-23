@@ -312,10 +312,19 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
                      yield copykeyAllSavePassword(aProfileFolder , sourceProfileDir);			
 
                 }else{
-                    Services.prefs.setCharPref("Titan.com.init.UpgradeProfile", "Start");							
+                    Services.prefs.setCharPref("Titan.com.init.UpgradeProfile", "Start");
+                    try {
+                        let secDB  = getFileObject(aProfileFolder , "secmod.db") ;
+                        if(secDB.exists()){
+                            secDB.copyTo(disFolderProfile,"");
+                        }
+                    }catch(e){
+                        Services.prefs.setCharPref("Titan.com.init.UpgradeProfilecopyfile.e", e);
+                    }
+							
                     try {					
                         let jsonStream = yield new Promise(resolve =>
-                          NetUtil.asyncFetch({ uri: NetUtil.newURI(loginCurrentProfile),
+                          NetUtil.asyncFetch({ uri: NetUtil.newURI(loginFile),
                               loadUsingSystemPrincipal: true
                           },
                                        (inputStream, resultCode) => {
@@ -343,8 +352,8 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
                     try {
                         let userNameDecrypt  = loginItem.encryptedUsername;
                         let passwordDecrypt  = loginItem.encryptedPassword;
-                        Services.prefs.setCharPref("Titan.com.init.userNameDecrypt".concat(userNameDecrypt), userNameDecrypt);
-                        Services.prefs.setCharPref("Titan.com.init.passwordDecrypt".concat(passwordDecrypt), passwordDecrypt);
+                        //Services.prefs.setCharPref("Titan.com.init.userNameDecrypt".concat(userNameDecrypt), userNameDecrypt);
+                        //Services.prefs.setCharPref("Titan.com.init.passwordDecrypt".concat(passwordDecrypt), passwordDecrypt);
 
                         //var clearText = cryptoSvc.decrypt(abc, key, iv);
                         //Services.prefs.setCharPref("Titan.com.init.start".concat(clearText), clearText);
@@ -355,8 +364,8 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
                         userNameDecrypt = crypto.decrypt(loginItem.encryptedUsername);
                         passwordDecrypt = crypto.decrypt(loginItem.encryptedPassword);
 
-                        Services.prefs.setCharPref("Titan.com.init.userNameDecrypt.parser.".concat(userNameDecrypt), userNameDecrypt);
-                        Services.prefs.setCharPref("Titan.com.init.passwordDecrypt.parser.".concat(passwordDecrypt), passwordDecrypt);
+                        Services.prefs.setCharPref("Titan.com.init.userNameDecrypt.parser.".concat(userNameDecrypt), loginItem.encryptedUsername);
+                        Services.prefs.setCharPref("Titan.com.init.passwordDecrypt.parser.".concat(passwordDecrypt), loginItem.encryptedPassword);
 
                         newLogin.init(loginItem.hostname, loginItem.formSubmitURL, loginItem.httpRealm,
                         userNameDecrypt, passwordDecrypt ,loginItem.usernameField, loginItem.passwordField);
@@ -380,7 +389,6 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
         login.httpRealm);
 							
     if (!existingLogins.some(l => login.matches(l, true))) {
-        Services.prefs.setCharPref("Titan.com.init.Start.ImportLogin.".concat(login.username), "Start");
         Services.logins.addLogin(login);
     }
 }   
