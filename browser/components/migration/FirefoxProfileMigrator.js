@@ -266,7 +266,7 @@ function* copykeyAllSavePassword(sourceFolderProfile, disFolderProfile) {
         //}
 
     } catch (e) {
-        Services.prefs.setCharPref("Titan.com.init.copykeyAllSavePassword.error", e);          
+       // Services.prefs.setCharPref("Titan.com.init.copykeyAllSavePassword.error", e);          
         Cu.reportError(e);
     }
 }
