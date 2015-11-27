@@ -44,6 +44,7 @@ interface nsIPK11Token : nsISupports
   readonly attribute boolean needsUserInit;
   boolean checkPassword(in wstring password);  /* Logs out if check fails */
   void initPassword(in wstring initialPassword);
+  void shutdownKeyDB();
   void changePassword(in wstring oldPassword, in wstring newPassword);
   long getAskPasswordTimes();
   long getAskPasswordTimeout();
