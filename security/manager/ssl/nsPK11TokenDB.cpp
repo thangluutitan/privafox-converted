@@ -298,6 +298,18 @@ NS_IMETHODIMP nsPK11Token::CheckPassword(const char16_t *password, bool *_retval
   return NS_OK;
 }
 
+NS_IMETHODIMP nsPK11Token::ShutdownKeyDB()
+{
+	nsresult rv = NS_OK;
+	nsNSSShutDownPreventionLock locker;
+	if (isAlreadyShutDown()) {
+		return rv;
+	}
+	destructorSafeDestroyNSSReference();
+	shutdown(calledFromObject);
+	return rv;
+}
+
 /* void initPassword (in wstring initialPassword); */
 NS_IMETHODIMP nsPK11Token::InitPassword(const char16_t *initialPassword)
 {
