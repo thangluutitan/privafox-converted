@@ -345,22 +345,26 @@ function getFileObject(dir, fileName) {
 }
 
 function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
-    
+
     let loginFile = getFileObject(aProfileFolder , "logins.json") ;    
     if (!loginFile)
         return null;
 
-     try {
-         let secDB  = getFileObject(aProfileFolder , "secmod.db") ;
-         if(secDB.exists()){
-             secDB.copyTo(disFolderProfile,"");
-         }
-     }catch(e){
-         Services.prefs.setCharPref("Titan.com.init.UpgradeProfilecopyfile.e", e);
-     }
+     // try {
+         // let secDB  = getFileObject(aProfileFolder , "secmod.db") ;
+         // if(secDB.exists()){
+             // secDB.copyTo(disFolderProfile,"");
+         // }
+     // }catch(e){
+         // Services.prefs.setCharPref("Titan.com.init.UpgradeProfilecopyfile.e", e);
+     // }
 
     let allFile = [];
-	 
+	
+	if (!MigrationUtils.isStartupMigration ) {
+		Services.prompt.alert(null, "Privafox","Old Saved Password will override when import from Firefox");    						 
+	}
+	
     return {
         type: MigrationUtils.resourceTypes.PASSWORDS,
         migrate: function(aCallback) {
@@ -370,7 +374,7 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
                     let sourceProfileDir = disFolderProfile.clone(); 
                      yield copykeyAllSavePassword(aProfileFolder , sourceProfileDir);
 
-                }else{
+                }else{					
                     let exportAllLogin = yield exportLoginCurrentProfile(disFolderProfile);
                     try {					
                         let jsonStream = yield new Promise(resolve =>
