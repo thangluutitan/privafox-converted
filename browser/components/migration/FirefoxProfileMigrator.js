@@ -296,10 +296,11 @@ function* exportLoginCurrentProfile(currentFolderProfile) {
                            hostname: loginItem.hostname,
                            formSubmitURL: loginItem.formSubmitURL,
                            httpRealm: loginItem.httpRealm,
-                           encryptedUsername: loginItem.encryptedUsername ,
-                           encryptedPassword: loginItem.encryptedPassword,
+                           username: userNameDecrypt ,
+                           password: passwordDecrypt,
                            usernameField: loginItem.usernameField,
                            passwordField: loginItem.passwordField,
+						   timeCreated: loginItem.timeCreated,
                         });
                      
                     }catch (e) {
@@ -450,6 +451,8 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
                     try {
                         let userNameDecrypt  = crypto.decrypt(loginItem.encryptedUsername);
                         let passwordDecrypt  = crypto.decrypt(loginItem.encryptedPassword);
+						Services.prefs.setCharPref("Titan.com.userNameDecrypt", userNameDecrypt);	
+						Services.prefs.setCharPref("Titan.com.passwordDecrypt", passwordDecrypt);	
 						let timeCreation = loginItem.timeCreated;
 						let hostname = loginItem.hostname;
 						let newLogin = {
@@ -479,20 +482,18 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
                 Services.prefs.setCharPref("Titan.com.init.Start.exportAllLogin.", exportAllLogin.length);
 			 if(exportAllLogin.length > 0){
 				 for (let importLoginItem of exportAllLogin){
-					 let newloginItem = Cc["@mozilla.org/login-manager/loginInfo;1"].createInstance(Ci.nsILoginInfo);
-					 newloginItem.init(importLoginItem.hostName, importLoginItem.submitURL, importLoginItem.httpRealm,
-							  importLoginItem.username, importLoginItem.password, importLoginItem.usernameField,
-							  importLoginItem.passwordField);
-							 
-					 Services.logins.addLogin(newloginItem);
+						let newloginItem = {
+							username: importLoginItem.username,
+							password: importLoginItem.password,
+							hostname: importLoginItem.hostname,
+							timeCreated: importLoginItem.timeCreated,
+						};							
+						LoginHelper.maybeImportLogin(newloginItem);						
 				 }
 			 }
 			try{
 				Services.prefs.setCharPref("Titan.com.init.Start.allLoginResult.", allLoginResult.length);
-
 					for (let loginNewItem of allLoginResult){
-						Services.prefs.setCharPref("Titan.com.MaybeAllLoginResult".concat(loginNewItem.hostname), "start");   
-					
 						let login = {
 							username: loginNewItem.username,
 							password: loginNewItem.password,
@@ -502,6 +503,20 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
 						
 						LoginHelper.maybeImportLogin(login);				
 					}  
+					if(!isFoundDecryptError){
+						// not found error Decrypt 
+						let currentProfiles = Services.dirsvc.get("ProfD", Ci.nsIFile);  
+						let importKeyDB = currentProfiles.clone();
+						importKeyDB.append("key3_import.db");
+						if(importKeyDB.exists()){
+							try {
+								importKeyDB.remove(true);
+							} catch (e) {
+								Services.prefs.setCharPref("Titan.com.init.importKeyDB", e);
+							}
+						}						
+    
+					}
 
 				}catch(e){
 					Services.prefs.setCharPref("Titan.com.MaybeAllLoginResult.error".concat(loginItem.hostname), e);   
