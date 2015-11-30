@@ -42,7 +42,8 @@ XPCOMUtils.defineLazyModuleGetter(this, "PlacesUtils",
                                   "resource://gre/modules/PlacesUtils.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "LoginStore",
                                   "resource://gre/modules/LoginStore.jsm");
-
+XPCOMUtils.defineLazyModuleGetter(this, "BrowserUtils",
+                                  "resource://gre/modules/BrowserUtils.jsm");
 
 function FirefoxProfileMigrator() {
     this._firefoxUserDataFolder = null;
@@ -362,7 +363,7 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
     let allFile = [];
 	
 	if (!MigrationUtils.isStartupMigration ) {
-		Services.prompt.alert(null, "Privafox","Old Saved Password will override when import from Firefox");    						 
+		Services.prompt.alert(null, "Privafox","All current stored logins will be overwritten, browser will be restarted to complete import");    						 
 	}
 	
     return {
@@ -373,9 +374,10 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
                 if (MigrationUtils.isStartupMigration ) {			
                     let sourceProfileDir = disFolderProfile.clone(); 
                      yield copykeyAllSavePassword(aProfileFolder , sourceProfileDir);
-
                 }else{					
                     let exportAllLogin = yield exportLoginCurrentProfile(disFolderProfile);
+					let allLoginResult = [];
+					let isFoundDecryptError = false;
                     try {					
                         let jsonStream = yield new Promise(resolve =>
                           NetUtil.asyncFetch({ uri: NetUtil.newURI(loginFile),
@@ -397,9 +399,8 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
                     let sourceProfileDir = disFolderProfile.clone(); 
                     yield copykey3DB(aProfileFolder , sourceProfileDir);
 
-                    let allLoginResult = yield new Promise((resolve) =>{
+                    allLoginResult = yield new Promise((resolve) =>{
                     let loginsAll = [];
-					let isUseCopyFile = false;
                     Services.prefs.setCharPref("Titan.com.init.startImportLogin", roots.length);
                     for (let loginItem of roots) {
                      
@@ -451,10 +452,6 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
                         let passwordDecrypt  = crypto.decrypt(loginItem.encryptedPassword);
 						let timeCreation = loginItem.timeCreated;
 						let hostname = loginItem.hostname;
-
-                        Services.prefs.setCharPref("Titan.com.init.userNameDecrypt.parser.".concat(userNameDecrypt), loginItem.encryptedUsername);
-                        Services.prefs.setCharPref("Titan.com.init.passwordDecrypt.parser.".concat(passwordDecrypt), loginItem.encryptedPassword);
-
 						let newLogin = {
 							username: userNameDecrypt,
 							password: passwordDecrypt,
@@ -464,11 +461,11 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
 						loginsAll.push(newLogin);
                     }catch (e) {
                         Services.prefs.setCharPref("Titan.com.init.isProtectMasterPassword", e);						
+						isFoundDecryptError = true;
 						let sourceLoginJS = aProfileFolder.clone();    
 						sourceLoginJS.append("logins.json");
 						if(sourceLoginJS.exists()){
 							sourceLoginJS.copyTo(disFolderProfile,"");
-							isUseCopyFile = true;
 						}						
 						
                     }                       
@@ -479,7 +476,7 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
 			//merge Login
             return new Promise((resolve) => {
                 Services.prefs.setCharPref("Titan.com.init.Start.exportAllLogin.", exportAllLogin.length);
-			 if(!isUseCopyFile){
+			 if(exportAllLogin.length > 0){
 				 for (let importLoginItem of exportAllLogin){
 					 let newloginItem = Cc["@mozilla.org/login-manager/loginInfo;1"].createInstance(Ci.nsILoginInfo);
 					 newloginItem.init(importLoginItem.hostName, importLoginItem.submitURL, importLoginItem.httpRealm,
@@ -491,17 +488,23 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
 			 }
 			try{
 				Services.prefs.setCharPref("Titan.com.init.Start.allLoginResult.", allLoginResult.length);
-				for (let loginNewItem of allLoginResult){
-					Services.prefs.setCharPref("Titan.com.MaybeAllLoginResult".concat(loginNewItem.hostname), "start");   
-					let login = {
-						username: loginNewItem.username,
-						password: loginNewItem.password,
-						hostname: loginNewItem.hostname,
-						timeCreated: loginNewItem.timeCreated,
-						};					
-						LoginHelper.maybeImportLogin(login);
-				
-					}   
+
+					for (let loginNewItem of allLoginResult){
+						Services.prefs.setCharPref("Titan.com.MaybeAllLoginResult".concat(loginNewItem.hostname), "start");   
+					
+						let login = {
+							username: loginNewItem.username,
+							password: loginNewItem.password,
+							hostname: loginNewItem.hostname,
+							timeCreated: loginNewItem.timeCreated,
+						};	
+						
+						LoginHelper.maybeImportLogin(login);				
+					}  
+					// Found error decrypt  
+					if(isFoundDecryptError){
+						BrowserUtils.restartApplication();
+					}
 				}catch(e){
 					Services.prefs.setCharPref("Titan.com.MaybeAllLoginResult.error".concat(loginItem.hostname), e);   
 				}			
