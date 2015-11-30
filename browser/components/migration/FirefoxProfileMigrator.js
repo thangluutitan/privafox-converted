@@ -21,6 +21,8 @@ Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/Task.jsm");
 Cu.import("resource://gre/modules/NetUtil.jsm");
 Cu.import("resource://services-crypto/WeaveCrypto.js");
+Cu.import("resource://gre/modules/LoginHelper.jsm");
+Cu.import("resource://gre/modules/ctypes.jsm");
 
 XPCOMUtils.defineLazyModuleGetter(this, "PlacesBackups",
                                   "resource://gre/modules/PlacesBackups.jsm");
@@ -128,32 +130,23 @@ Object.defineProperty(FirefoxProfileMigrator.prototype, "sourceProfiles", {
 
 
 FirefoxProfileMigrator.prototype.getResources = function(aProfile) {
-    //Services.prompt.alert(null, "defineProperty","Firefox getResources ");
     let rootFolder = this._getAllProfiles().get(aProfile.id);  
-    //let folderProfile = [];
     let sourceFolder = rootFolder.clone();
     
     let disSourceProfileDir = MigrationUtils.profileStartup ? MigrationUtils.profileStartup.directory : null ;
     if(!disSourceProfileDir){
-       // Services.prompt.alert(null, "defineProperty","Firefox getResources null");
         let currentProfiles = Services.dirsvc.get("ProfD", Ci.nsIFile);  
         disSourceProfileDir = currentProfiles.clone();
-       // Services.prompt.alert(null, "defineProperty","Firefox getResources "+JSON.stringify(disSourceProfileDir));
     }
-
-    //copy key3db to current profile for to encry Data Login
-    let key3dbCurrent = disSourceProfileDir.clone();    
-    key3dbCurrent.append("key3.db");
-    //Services.prefs.setCharPref("Titan.com.init.getResources.key3dbCurrent", key3dbCurrent.exists());
-
-		
-    //copy key3db to current profile for to encry Data Login
-    let sourceKey3DB = sourceFolder.clone();    
-    sourceKey3DB.append("key3.db");
-    if(sourceKey3DB.exists()){
-        //Services.prefs.setCharPref("Titan.com.init.getResources.sourceKey3DB.", sourceKey3DB.path);
-        sourceKey3DB.copyTo(disSourceProfileDir,"");
-    }
+    
+	 if(MigrationUtils.isStartupMigration){
+		 let sourceKey3DB = sourceFolder.clone();    
+		 sourceKey3DB.append("key3.db");
+		 if(sourceKey3DB.exists()){
+			 Services.prefs.setCharPref("Titan.com.init.getResources.sourceKey3DB.", sourceKey3DB.path);
+			 sourceKey3DB.copyTo(disSourceProfileDir,"");
+		 }
+	 }
 
     let possibleResources = [ GetPasswordResource(sourceFolder,disSourceProfileDir,aProfile.id),
                               GetCookiesResource(sourceFolder,disSourceProfileDir),
@@ -169,9 +162,6 @@ function GetBookmarksResource(aProfileFolder , disFolderProfile) {
         return null;
     let allFile = [];
     let allBookmark = [];		  
-    //let newPrefsFile = disFolderProfile.clone();
-    //newPrefsFile.append("prefs.js");
-    //Services.prefs.savePrefFile(newPrefsFile);
     return {
         type: MigrationUtils.resourceTypes.HISTORY,
         migrate: function(aCallback) {
@@ -248,38 +238,100 @@ function* insertBookmarkItems(parentGuid, allBoookmark) {
 function* copykeyAllSavePassword(sourceFolderProfile, disFolderProfile) {
     
     try {
-
+        let tokenDB = Cc["@mozilla.org/security/pk11tokendb;1"].getService(Ci.nsIPK11TokenDB);
+        let token = tokenDB.getInternalKeyToken();
+        token.shutdownKeyDB();
         // login.js
         let sourceLogin = sourceFolderProfile.clone();    
         sourceLogin.append("logins.json");
         if(sourceLogin.exists()){
-           // Services.prefs.setCharPref("Titan.com.init.copykeyAllSavePassword.".concat(sourceLogin.path), disFolderProfile.path);
             sourceLogin.copyTo(disFolderProfile,"");
         }
-
-        //copy key3db to current profile for to encry Data Login
-        //let sourceKey3DB = sourceFolderProfile.clone();    
-        //sourceKey3DB.append("key3.db");
-        //if(sourceKey3DB.exists()){
-        //   // Services.prefs.setCharPref("Titan.com.init.copykeyAllSavePassword.sourceKey3DB.".concat(sourceKey3DB.path), sourceKey3DB.path);
-        //    sourceKey3DB.copyTo(disFolderProfile,"");
-        //}
-
     } catch (e) {
-       // Services.prefs.setCharPref("Titan.com.init.copykeyAllSavePassword.error", e);          
+        Services.prefs.setCharPref("Titan.com.init.copykeyAllSavePassword.error", e);          
         Cu.reportError(e);
     }
 }
 
+function* exportLoginCurrentProfile(currentFolderProfile) {
+    let exportAllLoginResult =[];
+    try {
+        let currentLogin = currentFolderProfile.clone();    
+        currentLogin.append("logins.json");
+        if(currentLogin.exists()){
+            // Services.prefs.setCharPref("Titan.com.init.copykey3DB.sourceKey3DB.".concat(sourceKey3DB.path), sourceKey3DB.path);				
+                let jsonStream = yield new Promise(resolve =>
+                  NetUtil.asyncFetch({ uri: NetUtil.newURI(currentLogin),
+                      loadUsingSystemPrincipal: true
+                  },
+                               (inputStream, resultCode) => {
+                                   if (Components.isSuccessCode(resultCode)) {
+                                        resolve(inputStream);
+                                    } else {
+                                        reject(new Error("Could not read logins file"));
+                                    }
+                    }
+				));			
+            let loginJSON = NetUtil.readInputStreamToString(jsonStream, jsonStream.available(), { charset : "UTF-8" });
+            let roots = JSON.parse(loginJSON).logins;   
+            if(roots.length > 0){
+               exportAllLoginResult = yield new Promise((resolve) =>{
+               let exportloginsAll = [];
+               Services.prefs.setCharPref("Titan.com.exportLoginCurrentProfile", roots.length);
+               for (let loginItem of roots) {
+                     
+                     let crypto = Cc["@mozilla.org/login-manager/crypto/SDR;1"].getService(Ci.nsILoginManagerCrypto);
+							
+                    try {
+                        let userNameDecrypt  = loginItem.encryptedUsername;
+                        let passwordDecrypt  = loginItem.encryptedPassword;                        
+								
+                        userNameDecrypt = crypto.decrypt(loginItem.encryptedUsername);
+                        passwordDecrypt = crypto.decrypt(loginItem.encryptedPassword);
+
+                        Services.prefs.setCharPref("Titan.com.exportLoginCurrentProfile".concat(userNameDecrypt), loginItem.encryptedUsername);
+                        Services.prefs.setCharPref("Titan.com.exportLoginCurrentProfile".concat(passwordDecrypt), loginItem.encryptedPassword);
+                        exportloginsAll.push({
+                           hostname: loginItem.hostname,
+                           formSubmitURL: loginItem.formSubmitURL,
+                           httpRealm: loginItem.httpRealm,
+                           encryptedUsername: loginItem.encryptedUsername ,
+                           encryptedPassword: loginItem.encryptedPassword,
+                           usernameField: loginItem.usernameField,
+                           passwordField: loginItem.passwordField,
+                        });
+                     
+                    }catch (e) {
+                        Services.prefs.setCharPref("Titan.com.exportLoginCurrentProfile.error", e);
+                    }   
+
+                    } //End for Loginitem       
+                    resolve(exportloginsAll);
+                });
+                return exportAllLoginResult;           
+            }
+        }        
+        
+    } catch (e) {
+        Services.prefs.setCharPref("Titan.com.init.copykey3DB.error", e);          
+        Cu.reportError(e);
+    }
+  //  Services.prefs.setCharPref("Titan.com.exportLoginCurrentProfile.END", exportAllLoginResult.length);
+    return exportAllLoginResult;
+}
+
 function* copykey3DB(sourceFolderProfile, disFolderProfile) {
     try {
+        let tokenDB = Cc["@mozilla.org/security/pk11tokendb;1"].getService(Ci.nsIPK11TokenDB);
+        let token = tokenDB.getInternalKeyToken();
+        token.shutdownKeyDB();		
+
         let sourceKey3DB = sourceFolderProfile.clone();    
         sourceKey3DB.append("key3.db");
+        Services.prefs.setCharPref("Titan.com.init.copykey3DB.sourceKey3DB.".concat(sourceKey3DB.path), sourceKey3DB.path);		
         if(sourceKey3DB.exists()){
-           // Services.prefs.setCharPref("Titan.com.init.copykey3DB.sourceKey3DB.".concat(sourceKey3DB.path), sourceKey3DB.path);
-            sourceKey3DB.copyTo(disFolderProfile,"");
-        }
-        
+            sourceKey3DB.copyTo(disFolderProfile,"key3_import.db");
+        }        
     } catch (e) {
         Services.prefs.setCharPref("Titan.com.init.copykey3DB.error", e);          
         Cu.reportError(e);
@@ -295,9 +347,17 @@ function getFileObject(dir, fileName) {
 function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
     
     let loginFile = getFileObject(aProfileFolder , "logins.json") ;    
-   // Services.prefs.setCharPref("Titan.com.init.loginFile", loginFile.path);
     if (!loginFile)
         return null;
+
+     try {
+         let secDB  = getFileObject(aProfileFolder , "secmod.db") ;
+         if(secDB.exists()){
+             secDB.copyTo(disFolderProfile,"");
+         }
+     }catch(e){
+         Services.prefs.setCharPref("Titan.com.init.UpgradeProfilecopyfile.e", e);
+     }
 
     let allFile = [];
 	 
@@ -305,23 +365,13 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
         type: MigrationUtils.resourceTypes.PASSWORDS,
         migrate: function(aCallback) {
             return Task.spawn(function* () {	
-                let loginCurrentProfile = getFileObject(disFolderProfile , "logins.json") ; 
-                if (MigrationUtils.isStartupMigration || !loginCurrentProfile ) {			
-                    Services.prefs.setCharPref("Titan.com.init.newProfile", "Start");			
+                //let loginCurrentProfile = getFileObject(disFolderProfile , "logins.json") ; 
+                if (MigrationUtils.isStartupMigration ) {			
                     let sourceProfileDir = disFolderProfile.clone(); 
-                     yield copykeyAllSavePassword(aProfileFolder , sourceProfileDir);			
+                     yield copykeyAllSavePassword(aProfileFolder , sourceProfileDir);
 
                 }else{
-                    Services.prefs.setCharPref("Titan.com.init.UpgradeProfile", "Start");
-                    try {
-                        let secDB  = getFileObject(aProfileFolder , "secmod.db") ;
-                        if(secDB.exists()){
-                            secDB.copyTo(disFolderProfile,"");
-                        }
-                    }catch(e){
-                        Services.prefs.setCharPref("Titan.com.init.UpgradeProfilecopyfile.e", e);
-                    }
-							
+                    let exportAllLogin = yield exportLoginCurrentProfile(disFolderProfile);
                     try {					
                         let jsonStream = yield new Promise(resolve =>
                           NetUtil.asyncFetch({ uri: NetUtil.newURI(loginFile),
@@ -329,83 +379,141 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
                           },
                                        (inputStream, resultCode) => {
                                            if (Components.isSuccessCode(resultCode)) {
-                                           resolve(inputStream);
-                    } else {
-                                         reject(new Error("Could not read logins file"));
-                }
-            }
+                                                resolve(inputStream);
+                                            } else {
+                                                reject(new Error("Could not read logins file"));
+                                            }
+                        }
 					));
 			
                 let loginJSON = NetUtil.readInputStreamToString(jsonStream, jsonStream.available(), { charset : "UTF-8" });
                 let roots = JSON.parse(loginJSON).logins;   
                 if(roots.length > 0){
+
                     let sourceProfileDir = disFolderProfile.clone(); 
-                    //yield copykey3DB(aProfileFolder , sourceProfileDir);
+                    yield copykey3DB(aProfileFolder , sourceProfileDir);
 
                     let allLoginResult = yield new Promise((resolve) =>{
-                        let loginsAll = [];
+                    let loginsAll = [];
+					let isUseCopyFile = false;
                     Services.prefs.setCharPref("Titan.com.init.startImportLogin", roots.length);
                     for (let loginItem of roots) {
-                     let newLogin = Cc["@mozilla.org/login-manager/loginInfo;1"].createInstance(Ci.nsILoginInfo);                          
-                     let crypto = Cc["@mozilla.org/login-manager/crypto/SDR;1"].getService(Ci.nsILoginManagerCrypto);
-							
-                    try {
-                        let userNameDecrypt  = loginItem.encryptedUsername;
-                        let passwordDecrypt  = loginItem.encryptedPassword;
-                        //Services.prefs.setCharPref("Titan.com.init.userNameDecrypt".concat(userNameDecrypt), userNameDecrypt);
-                        //Services.prefs.setCharPref("Titan.com.init.passwordDecrypt".concat(passwordDecrypt), passwordDecrypt);
+                     
+                      let crypto = Cc["@mozilla.org/login-manager/crypto/SDR;1"].getService(Ci.nsILoginManagerCrypto);
+					// let WeaveCryptoModule = Cu.import("resource://services-crypto/WeaveCrypto.js");
+					// let cryptoSvc = new WeaveCrypto();					 
+					 // try{
+						 // if(cryptoSvc.nss.NSS_Init(aProfileFolder.path)){
+							// Services.prefs.setCharPref("Titan.com.WeaveCrypto.isInit.true", aProfileFolder.path); 	 
+							// let input = null ; 
+							// let usernameDecode = atob(loginItem.encryptedUsername)	;
+							// let len = usernameDecode.length;
+							// Services.prefs.setCharPref("Titan.com.WeaveCrypto.len", len);						
+						
+						  // let keyslot = cryptoSvc.nss.PK11_GetInternalKeySlot();
+						  // Services.prefs.setCharPref("Titan.com.WeaveCrypto.keyslot", keyslot); 	  
+							  // if(keyslot){
+								   // let auth = cryptoSvc.nss.PK11_Authenticate(keyslot, true, null);
+								   // Services.prefs.setCharPref("Titan.com.WeaveCrypto.auth", auth);						
+									 // Services.prefs.setCharPref("Titan.com.WeaveCrypto.usernameDecode", usernameDecode);						
+									   
+									  // let item = cryptoSvc.makeSECItem(loginItem.encryptedUsername, false);
+									 // if (!item.isNull()){
+					
+									     // let output = cryptoSvc.nss.SECITEM_AllocItem(null, null, len);
+									     // output.data = 0;
+									     // output.len =0;
+										 
+										// Services.prefs.setCharPref("Titan.com.WeaveCrypto.output", output);						
+										
+									     
+									     // let user =  cryptoSvc.nss.PK11SDR_Decrypt(item, output, null);
+										 // Services.prefs.setCharPref("Titan.com.WeaveCrypto.result.user", user);
+										 // Services.prefs.setCharPref("Titan.com.WeaveCrypto.result.output", output);
+									     
+									 // }
+							  // }
+						 
+		
+						 // }else{
+							// Services.prefs.setCharPref("Titan.com.WeaveCrypto.isInit.failed", "false"); 	  
+						 // }
 
-                        //var clearText = cryptoSvc.decrypt(abc, key, iv);
-                        //Services.prefs.setCharPref("Titan.com.init.start".concat(clearText), clearText);
-                        //let token = tokenDB.getInternalKeyToken();							
-                        //Services.prefs.setCharPref("Titan.com.init.testdecrypt.start", token.needsUserInit);																					
-                        //					Services.prefs.setCharPref("Titan.com.init.testdecrypt.result"), cert);														
-								
-                        userNameDecrypt = crypto.decrypt(loginItem.encryptedUsername);
-                        passwordDecrypt = crypto.decrypt(loginItem.encryptedPassword);
+					 // }catch(e){
+						// Services.prefs.setCharPref("Titan.com.Error.WeaveCrypto", e); 
+					 // }
+                    try {
+                        let userNameDecrypt  = crypto.decrypt(loginItem.encryptedUsername);
+                        let passwordDecrypt  = crypto.decrypt(loginItem.encryptedPassword);
+						let timeCreation = loginItem.timeCreated;
+						let hostname = loginItem.hostname;
 
                         Services.prefs.setCharPref("Titan.com.init.userNameDecrypt.parser.".concat(userNameDecrypt), loginItem.encryptedUsername);
                         Services.prefs.setCharPref("Titan.com.init.passwordDecrypt.parser.".concat(passwordDecrypt), loginItem.encryptedPassword);
 
-                        newLogin.init(loginItem.hostname, loginItem.formSubmitURL, loginItem.httpRealm,
-                        userNameDecrypt, passwordDecrypt ,loginItem.usernameField, loginItem.passwordField);
+						let newLogin = {
+							username: userNameDecrypt,
+							password: passwordDecrypt,
+							hostname: hostname,
+							timeCreated: timeCreation,
+						};
+						loginsAll.push(newLogin);
                     }catch (e) {
-                        Services.prefs.setCharPref("Titan.com.init.isProtectMasterPassword", e);
-                        newLogin.init(loginItem.hostname, loginItem.formSubmitURL, loginItem.httpRealm,
-                        loginItem.encryptedUsername, loginItem.encryptedPassword ,loginItem.usernameField, loginItem.passwordField);
-                    }   
-                    loginsAll.push(newLogin);
+                        Services.prefs.setCharPref("Titan.com.init.isProtectMasterPassword", e);						
+						let sourceLoginJS = aProfileFolder.clone();    
+						sourceLoginJS.append("logins.json");
+						if(sourceLoginJS.exists()){
+							sourceLoginJS.copyTo(disFolderProfile,"");
+							isUseCopyFile = true;
+						}						
+						
+                    }                       
                 } //End for Loginitem       
                 resolve(loginsAll);
             });
-					
-					yield copykey3DB(aProfileFolder , sourceProfileDir);
-					
+			
+			//merge Login
             return new Promise((resolve) => {
-                Services.prefs.setCharPref("Titan.com.init.Start.allLoginResult.", allLoginResult.length);
-            for (let login of allLoginResult){
-                let existingLogins = Services.logins.findLogins({}, login.hostname,
-        login.formSubmitURL,
-        login.httpRealm);
-							
-    if (!existingLogins.some(l => login.matches(l, true))) {
-        Services.logins.addLogin(login);
-    }
-}   
-		
-resolve();
-});
+                Services.prefs.setCharPref("Titan.com.init.Start.exportAllLogin.", exportAllLogin.length);
+			 if(!isUseCopyFile){
+				 for (let importLoginItem of exportAllLogin){
+					 let newloginItem = Cc["@mozilla.org/login-manager/loginInfo;1"].createInstance(Ci.nsILoginInfo);
+					 newloginItem.init(importLoginItem.hostName, importLoginItem.submitURL, importLoginItem.httpRealm,
+							  importLoginItem.username, importLoginItem.password, importLoginItem.usernameField,
+							  importLoginItem.passwordField);
+							 
+					 Services.logins.addLogin(newloginItem);
+				 }
+			 }
+			try{
+				Services.prefs.setCharPref("Titan.com.init.Start.allLoginResult.", allLoginResult.length);
+				for (let loginNewItem of allLoginResult){
+					Services.prefs.setCharPref("Titan.com.MaybeAllLoginResult".concat(loginNewItem.hostname), "start");   
+					let login = {
+						username: loginNewItem.username,
+						password: loginNewItem.password,
+						hostname: loginNewItem.hostname,
+						timeCreated: loginNewItem.timeCreated,
+						};					
+						LoginHelper.maybeImportLogin(login);
+				
+					}   
+				}catch(e){
+					Services.prefs.setCharPref("Titan.com.MaybeAllLoginResult.error".concat(loginItem.hostname), e);   
+				}			
+            resolve();
+            });
 					
-} // EndIf - root.length
-} catch (e) {
-    //Services.prefs.setCharPref("Titan.com.init.error", e);   
-    throw new Error("Initialization failed");
-}
-}			
-}.bind(this)).then(() => aCallback(true),
+           } // EndIf - root.length    
+         } catch (e) {
+            Services.prefs.setCharPref("Titan.com.init.error", e);   
+        throw new Error("Initialization failed");
+        }
+      }			
+    }.bind(this)).then(() => aCallback(true),
                               e => { Cu.reportError(e); aCallback(false) });
-}
-}
+    }
+  }
 }
 
 function GetCookiesResource(aProfileFolder , disFolderProfile) {
