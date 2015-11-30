@@ -22,10 +22,10 @@ XPCOMUtils.defineLazyModuleGetter(this, "PlacesUtils",
 XPCOMUtils.defineLazyModuleGetter(this, "BookmarkHTMLUtils",
                                   "resource://gre/modules/BookmarkHTMLUtils.jsm");
 
+
 let gMigrators = null;
 let gProfileStartup = null;
 let gMigrationBundle = null;
-
 function getMigrationBundle() {
   if (!gMigrationBundle) {
     gMigrationBundle = Services.strings.createBundle(
@@ -252,6 +252,7 @@ this.MigratorPrototype = {
         }
       }
     }
+
 
     if (MigrationUtils.isStartupMigration && !this.startupOnlyMigrator) {
       MigrationUtils.profileStartup.doStartup();
@@ -634,5 +635,12 @@ this.MigrationUtils = Object.freeze({
     gMigrators = null;
     gProfileStartup = null;
     gMigrationBundle = null;
+	let isForceRestart = Services.prefs.getBoolPref("browser.application.restart");
+    if(isForceRestart){
+          Services.prefs.clearUserPref("browser.application.restart");             
+			let browserGlue = Cc["@mozilla.org/browser/browserglue;1"].
+                          getService(Ci.nsIObserver);
+			browserGlue.observe(null, "browser.application.restart", "");
+    }	
   }
 });
