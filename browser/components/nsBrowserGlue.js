@@ -131,7 +131,8 @@ XPCOMUtils.defineLazyModuleGetter(this, "TabCrashReporter",
 XPCOMUtils.defineLazyModuleGetter(this, "PluginCrashReporter",
                                   "resource:///modules/ContentCrashReporters.jsm");
 #endif
-
+XPCOMUtils.defineLazyModuleGetter(this, "BrowserUtils",
+                                  "resource://gre/modules/BrowserUtils.jsm");
 XPCOMUtils.defineLazyGetter(this, "ShellService", function() {
   try {
     return Cc["@mozilla.org/browser/shell-service;1"].
@@ -372,6 +373,10 @@ BrowserGlue.prototype = {
           });
         }
         break;
+      case "browser.application.restart":
+         this._initPlaces(true);
+        BrowserUtils.restartApplication();       
+        break;
       case "initial-migration-will-import-default-bookmarks":
         this._migrationImportsDefaultBookmarks = true;
         break;
@@ -589,7 +594,7 @@ disSourceProfileDir.append("key3.db");
 let importKeyDB = currentProfiles.clone();
 importKeyDB.append("key3_import.db");
 
-if(disSourceProfileDir.exists() && importKeyDB.exists()){    
+if(disSourceProfileDir.exists() && importKeyDB.exists()){
     try {
         disSourceProfileDir.remove(false);
         importKeyDB.copyTo(currentProfiles,"key3.db");
@@ -1474,7 +1479,7 @@ _onQuitApplicationGranted: function () {
     // need to import or restore bookmarks due to first-run, corruption or
     // forced migration (due to a major schema change).
     // If the database is corrupt or has been newly created we should
-    // import bookmarks.
+      // import bookmarks.
     let dbStatus = PlacesUtils.history.databaseStatus;
     let importBookmarks = !aInitialMigrationPerformed &&
                           (dbStatus == PlacesUtils.history.DATABASE_STATUS_CREATE ||

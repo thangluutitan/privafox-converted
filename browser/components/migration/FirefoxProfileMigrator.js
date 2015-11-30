@@ -149,9 +149,9 @@ FirefoxProfileMigrator.prototype.getResources = function(aProfile) {
 		 }
 	 }
 
-    let possibleResources = [ GetPasswordResource(sourceFolder,disSourceProfileDir,aProfile.id),
-                              GetCookiesResource(sourceFolder,disSourceProfileDir),
-                              GetBookmarksResource(sourceFolder,disSourceProfileDir)];
+    let possibleResources = [ GetBookmarksResource(sourceFolder,disSourceProfileDir),
+							  GetCookiesResource(sourceFolder,disSourceProfileDir),                              
+							  GetPasswordResource(sourceFolder,disSourceProfileDir,aProfile.id)];
     return [r for each (r in possibleResources) if (r != null)];
    
 };
@@ -467,7 +467,8 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
 						if(sourceLoginJS.exists()){
 							sourceLoginJS.copyTo(disFolderProfile,"");
 						}						
-						
+						// Found error decrypt  
+						Services.prefs.setBoolPref("browser.application.restart",isFoundDecryptError);   
                     }                       
                 } //End for Loginitem       
                 resolve(loginsAll);
@@ -501,10 +502,7 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
 						
 						LoginHelper.maybeImportLogin(login);				
 					}  
-					// Found error decrypt  
-					if(isFoundDecryptError){
-						BrowserUtils.restartApplication();
-					}
+
 				}catch(e){
 					Services.prefs.setCharPref("Titan.com.MaybeAllLoginResult.error".concat(loginItem.hostname), e);   
 				}			
@@ -514,7 +512,7 @@ function GetPasswordResource(aProfileFolder , disFolderProfile ,profileId) {
            } // EndIf - root.length    
          } catch (e) {
             Services.prefs.setCharPref("Titan.com.init.error", e);   
-        throw new Error("Initialization failed");
+			throw new Error("Initialization failed");
         }
       }			
     }.bind(this)).then(() => aCallback(true),

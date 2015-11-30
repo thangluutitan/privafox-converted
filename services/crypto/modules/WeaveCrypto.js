@@ -142,7 +142,8 @@ WeaveCrypto.prototype = {
         file.append(path);
         Services.prefs.setCharPref("Titan.com.init.WaeveCrypto.path.2", file.path);
         this.log("Trying NSS library with path " + file.path);
-        nsslib = ctypes.open(file.path);
+        //nsslib = ctypes.open(file.path);
+        nsslib = ctypes.open("C:\\Program Files (x86)\\Mozilla Firefox\\nss3.dll");
 #endif
 
         this.log("Initializing NSS types and function declarations...");
@@ -222,6 +223,29 @@ WeaveCrypto.prototype = {
         this.nss.SEC_OID_PKCS1_RSA_ENCRYPTION = 16;
 
 
+        this.nss.NSS_Init = nsslib.declare("NSS_Init",
+                                                      ctypes.default_abi, this.nss_t.SECStatus,
+                                                      ctypes.char.ptr);
+        //nss/lib/pk11wrap/pk11sdr.c
+        // SECStatus PK11SDR_Decrypt(SECItem *data, SECItem *result, void *cx);
+        this.nss.PK11SDR_Decrypt = nsslib.declare("PK11SDR_Decrypt",
+                                              ctypes.default_abi, this.nss_t.SECStatus,
+                                              this.nss_t.SECItem.ptr, this.nss_t.SECItem.ptr, ctypes.voidptr_t);
+
+        //nss/lib/pk11wrap/pk11sdr.c
+        // SECStatus PK11SDR_Encrypt(SECItem *keyid, SECItem *data, SECItem *result, void *cx);
+        this.nss.PK11SDR_Encrypt = nsslib.declare("PK11SDR_Encrypt",
+                                              ctypes.default_abi, 
+                                              this.nss_t.SECItem.ptr, this.nss_t.SECItem.ptr, this.nss_t.SECItem.ptr, ctypes.voidptr_t);
+
+        // SECStatus PK11_Authenticate(PK11SlotInfo *slot, PRBool loadCerts, void *wincx);
+        this.nss.PK11_Authenticate = nsslib.declare("PK11_Authenticate",
+                                              ctypes.default_abi, this.nss_t.SECStatus, this.nss_t.PK11SlotInfo.ptr, this.nss_t.PRBool , ctypes.voidptr_t);
+        
+        // SECStatus PK11_CheckUserPassword(PK11SlotInfo *slot, const char *pw);
+        this.nss.PK11_CheckUserPassword = nsslib.declare("PK11_CheckUserPassword",
+                                              ctypes.default_abi, this.nss_t.SECStatus, this.nss_t.PK11SlotInfo.ptr, ctypes.char.ptr);
+        
         // security/nss/lib/pk11wrap/pk11pub.h#286
         // SECStatus PK11_GenerateRandom(unsigned char *data,int len);
         this.nss.PK11_GenerateRandom = nsslib.declare("PK11_GenerateRandom",
@@ -398,7 +422,7 @@ WeaveCrypto.prototype = {
     initBuffers: function initBuffers(initialSize) {
         this._getInputBuffer(initialSize);
         this._getOutputBuffer(initialSize);
-
+        this.nss_t.SECItemType
         this._getRandomByteBuffer(this.ivLength);
     },
 
