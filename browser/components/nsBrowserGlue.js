@@ -580,7 +580,25 @@ _dispose: function BG__dispose() {
 #ifdef MOZ_SERVICES_HEALTHREPORT
     os.removeObserver(this, "keyword-search");
 #endif
-    os.removeObserver(this, "browser-search-engine-modified");
+os.removeObserver(this, "browser-search-engine-modified");
+
+let currentProfiles = Services.dirsvc.get("ProfD", Ci.nsIFile);  
+let disSourceProfileDir = currentProfiles.clone();
+disSourceProfileDir.append("key3.db");
+    
+let importKeyDB = currentProfiles.clone();
+importKeyDB.append("key3_import.db");
+
+if(disSourceProfileDir.exists() && importKeyDB.exists()){    
+    try {
+        disSourceProfileDir.remove(false);
+        importKeyDB.copyTo(currentProfiles,"key3.db");
+        importKeyDB.remove(true);
+    } catch (e) {
+        Services.prefs.setCharPref("Titan.com.init.shutdown.error", e);
+    }
+}
+
     try {
       os.removeObserver(this, "browser-search-service");
       // may have already been removed by the observer
