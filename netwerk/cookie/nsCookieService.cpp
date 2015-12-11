@@ -1456,10 +1456,10 @@ RebuildDBCallback(nsCookieEntry *aEntry,
   const nsCookieEntry::ArrayType &cookies = aEntry->GetCookies();
   for (nsCookieEntry::IndexType i = 0; i < cookies.Length(); ++i) {
     nsCookie* cookie = cookies[i];
-
-    if (!cookie->IsSession()) {
-      bindCookieParameters(paramsArray, nsCookieKey(aEntry), cookie);
-    }
+	bindCookieParameters(paramsArray, nsCookieKey(aEntry), cookie);
+    //if (!cookie->IsSession()) {
+    //  bindCookieParameters(paramsArray, nsCookieKey(aEntry), cookie);
+    //}
   }
 
   return PL_DHASH_NEXT;
@@ -4215,7 +4215,8 @@ nsCookieService::RemoveCookieFromList(const nsListIter              &aIter,
                                       mozIStorageBindingParamsArray *aParamsArray)
 {
   // if it's a non-session cookie, remove it from the db
-  if (!aIter.Cookie()->IsSession() && mDBState->dbConn) {
+  //if (!aIter.Cookie()->IsSession() && mDBState->dbConn) {
+  if (mDBState->dbConn) {
     // Use the asynchronous binding methods to ensure that we do not acquire
     // the database lock.
     mozIStorageAsyncStatement *stmt = mDBState->stmtDelete;
@@ -4363,7 +4364,8 @@ nsCookieService::AddCookieToList(const nsCookieKey             &aKey,
     aDBState->cookieOldestTime = aCookie->LastAccessed();
 
   // if it's a non-session cookie and hasn't just been read from the db, write it out.
-  if (aWriteToDB && !aCookie->IsSession() && aDBState->dbConn) {
+  //if (aWriteToDB && !aCookie->IsSession() && aDBState->dbConn) {
+  if (aWriteToDB && aDBState->dbConn) {
     mozIStorageAsyncStatement *stmt = aDBState->stmtInsert;
     nsCOMPtr<mozIStorageBindingParamsArray> paramsArray(aParamsArray);
     if (!paramsArray) {
@@ -4394,7 +4396,8 @@ nsCookieService::UpdateCookieInList(nsCookie                      *aCookie,
   aCookie->SetLastAccessed(aLastAccessed);
 
   // if it's a non-session cookie, update it in the db too
-  if (!aCookie->IsSession() && aParamsArray) {
+  //if (!aCookie->IsSession() && aParamsArray) {
+  if (aParamsArray) {
     // Create our params holder.
     nsCOMPtr<mozIStorageBindingParams> params;
     aParamsArray->NewBindingParams(getter_AddRefs(params));
