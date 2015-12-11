@@ -147,6 +147,7 @@ function setProfileConfig(prefb){
         prefb.setBoolPref("places.history.enabled", false);
         prefb.setBoolPref("browser.formfill.enable", false);
         prefb.setBoolPref("privacy.sanitize.sanitizeOnShutdown", true);
+		prefb.setIntPref("network.cookie.lifetimePolicy", 2);
         prefb.setBoolPref("privacy.clearOnShutdown.history", true);
         prefb.setBoolPref("privacy.clearOnShutdown.offlineApps", true);
 	
