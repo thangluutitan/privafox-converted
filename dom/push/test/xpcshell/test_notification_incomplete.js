@@ -5,9 +5,13 @@
 
 const {PushDB, PushService, PushServiceWebSocket} = serviceExports;
 
+const userAgentID = '1ca1cf66-eeb4-4df7-87c1-d5c92906ab90';
+
 function run_test() {
   do_get_profile();
-  setPrefs();
+  setPrefs({
+    userAgentID: userAgentID,
+  });
   disableServiceWorkerEvents(
     'https://example.com/page/1',
     'https://example.com/page/2',
@@ -24,34 +28,42 @@ add_task(function* test_notification_incomplete() {
     channelID: '123',
     pushEndpoint: 'https://example.org/update/1',
     scope: 'https://example.com/page/1',
-    version: 1
+    version: 1,
+    originAttributes: '',
+    quota: Infinity,
   }, {
     channelID: '3ad1ed95-d37a-4d88-950f-22cbe2e240d7',
     pushEndpoint: 'https://example.org/update/2',
     scope: 'https://example.com/page/2',
-    version: 1
+    version: 1,
+    originAttributes: '',
+    quota: Infinity,
   }, {
     channelID: 'd239498b-1c85-4486-b99b-205866e82d1f',
     pushEndpoint: 'https://example.org/update/3',
     scope: 'https://example.com/page/3',
-    version: 3
+    version: 3,
+    originAttributes: '',
+    quota: Infinity,
   }, {
     channelID: 'a50de97d-b496-43ce-8b53-05522feb78db',
     pushEndpoint: 'https://example.org/update/4',
     scope: 'https://example.com/page/4',
-    version: 10
+    version: 10,
+    originAttributes: '',
+    quota: Infinity,
   }];
   for (let record of records) {
-    db.put(record);
+    yield db.put(record);
   }
 
   Services.obs.addObserver(function observe(subject, topic, data) {
     ok(false, 'Should not deliver malformed updates');
   }, 'push-notification', false);
 
-  let notificationDefer = Promise.defer();
-  let notificationDone = after(2, notificationDefer.resolve);
-  let prevHandler = PushService._handleNotificationReply;
+  let notificationDone;
+  let notificationPromise = new Promise(resolve => notificationDone = after(2, resolve));
+  let prevHandler = PushServiceWebSocket._handleNotificationReply;
   PushServiceWebSocket._handleNotificationReply = function _handleNotificationReply() {
     notificationDone();
     return prevHandler.apply(this, arguments);
@@ -66,7 +78,7 @@ add_task(function* test_notification_incomplete() {
           this.serverSendMsg(JSON.stringify({
             messageType: 'hello',
             status: 200,
-            uaid: '1ca1cf66-eeb4-4df7-87c1-d5c92906ab90'
+            uaid: userAgentID,
           }));
           this.serverSendMsg(JSON.stringify({
             // Missing "updates" field; should ignore message.
@@ -99,7 +111,7 @@ add_task(function* test_notification_incomplete() {
     }
   });
 
-  yield waitForPromise(notificationDefer.promise, DEFAULT_TIMEOUT,
+  yield waitForPromise(notificationPromise, DEFAULT_TIMEOUT,
     'Timed out waiting for incomplete notifications');
 
   let storeRecords = yield db.getAllKeyIDs();

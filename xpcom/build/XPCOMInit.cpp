@@ -6,8 +6,10 @@
 
 #include "base/basictypes.h"
 
+#include "mozilla/AbstractThread.h"
 #include "mozilla/Atomics.h"
 #include "mozilla/Poison.h"
+#include "mozilla/SharedThreadPool.h"
 #include "mozilla/XPCOM.h"
 #include "nsXULAppAPI.h"
 
@@ -153,6 +155,7 @@ extern nsresult nsStringInputStreamConstructor(nsISupports*, REFNSIID, void**);
 #include "GeckoProfiler.h"
 
 #include "jsapi.h"
+#include "js/Initialization.h"
 
 #include "gfxPlatform.h"
 
@@ -211,7 +214,7 @@ NS_GENERIC_FACTORY_CONSTRUCTOR(nsStorageStream)
 NS_GENERIC_FACTORY_CONSTRUCTOR(nsVersionComparatorImpl)
 NS_GENERIC_FACTORY_CONSTRUCTOR(nsScriptableBase64Encoder)
 
-NS_GENERIC_FACTORY_CONSTRUCTOR(nsVariant)
+NS_GENERIC_FACTORY_CONSTRUCTOR(nsVariantCC)
 
 NS_GENERIC_FACTORY_CONSTRUCTOR(nsHashPropertyBagCC)
 
@@ -496,6 +499,8 @@ NS_InitXPCOM2(nsIServiceManager** aResult,
 
   NS_LogInit();
 
+  mozilla::LogModule::Init();
+
   JS_SetCurrentEmbedderTimeFunction(TimeSinceProcessCreation);
 
   char aLocal;
@@ -535,7 +540,7 @@ NS_InitXPCOM2(nsIServiceManager** aResult,
     sMessageLoop->set_hang_timeouts(128, 8192);
   }
 
-  if (XRE_GetProcessType() == GeckoProcessType_Default &&
+  if (XRE_IsParentProcess() &&
       !BrowserProcessSubThread::GetMessageLoop(BrowserProcessSubThread::IO)) {
     UniquePtr<BrowserProcessSubThread> ioThread = MakeUnique<BrowserProcessSubThread>(BrowserProcessSubThread::IO);
 
@@ -714,6 +719,12 @@ NS_InitXPCOM2(nsIServiceManager** aResult,
   // to the directory service.
   nsDirectoryService::gService->RegisterCategoryProviders();
 
+  // Init SharedThreadPool (which needs the service manager).
+  SharedThreadPool::InitStatics();
+
+  // Init AbstractThread.
+  AbstractThread::InitStatics();
+
   // Force layout to spin up so that nsContentUtils is available for cx stack
   // munging.
   nsCOMPtr<nsISupports> componentLoader =
@@ -733,7 +744,7 @@ NS_InitXPCOM2(nsIServiceManager** aResult,
   // We only want the SystemMemoryReporter running in one process, because it
   // profiles the entire system.  The main process is the obvious place for
   // it.
-  if (XRE_GetProcessType() == GeckoProcessType_Default) {
+  if (XRE_IsParentProcess()) {
     mozilla::SystemMemoryReporter::Init();
   }
 
@@ -827,7 +838,7 @@ ShutdownXPCOM(nsIServiceManager* aServMgr)
       return NS_ERROR_UNEXPECTED;
     }
 
-    nsRefPtr<nsObserverService> observerService;
+    RefPtr<nsObserverService> observerService;
     CallGetService("@mozilla.org/observer-service;1",
                    (nsObserverService**)getter_AddRefs(observerService));
 
@@ -964,7 +975,7 @@ ShutdownXPCOM(nsIServiceManager* aServMgr)
   // On Windows XP debug, there are intermittent failures in
   // dom/media/tests/mochitest/test_peerConnection_basicH264Video.html
   // if we don't exit early in a child process. See bug 1073310.
-  if (XRE_GetProcessType() == GeckoProcessType_Content && !IsVistaOrLater()) {
+  if (XRE_IsContentProcess() && !IsVistaOrLater()) {
       NS_WARNING("Exiting child process early!");
       exit(0);
   }
@@ -1048,7 +1059,7 @@ ShutdownXPCOM(nsIServiceManager* aServMgr)
   // checking working on Linux.
   // On debug B2G, the child process crashes very late.  Instead, just
   // give up so at least we exit cleanly. See bug 1071866.
-  if (XRE_GetProcessType() == GeckoProcessType_Content) {
+  if (XRE_IsContentProcess()) {
       NS_WARNING("Exiting child process early!");
       exit(0);
   }

@@ -40,7 +40,6 @@
 #include "nsXULContentUtils.h"
 #include "nsLayoutCID.h"
 #include "nsNameSpaceManager.h"
-#include "nsNetUtil.h"
 #include "nsRDFCID.h"
 #include "nsString.h"
 #include "nsXPIDLString.h"
@@ -67,7 +66,7 @@ nsIRDFService* nsXULContentUtils::gRDF;
 nsIDateTimeFormat* nsXULContentUtils::gFormat;
 nsICollation *nsXULContentUtils::gCollation;
 
-extern PRLogModuleInfo* gXULTemplateLog;
+extern LazyLogModule gXULTemplateLog;
 
 #define XUL_RESOURCE(ident, uri) nsIRDFResource* nsXULContentUtils::ident
 #define XUL_LITERAL(ident, val) nsIRDFLiteral* nsXULContentUtils::ident
@@ -96,7 +95,7 @@ nsXULContentUtils::Init()
 
 #define XUL_LITERAL(ident, val)                                   \
   PR_BEGIN_MACRO                                                  \
-   rv = gRDF->GetLiteral(NS_LITERAL_STRING(val).get(), &(ident)); \
+   rv = gRDF->GetLiteral(MOZ_UTF16(val), &(ident));               \
    if (NS_FAILED(rv)) return rv;                                  \
   PR_END_MACRO
 

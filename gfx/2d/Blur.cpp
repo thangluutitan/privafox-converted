@@ -11,7 +11,6 @@
 #include <string.h>
 
 #include "mozilla/CheckedInt.h"
-#include "mozilla/Constants.h"
 
 #include "2D.h"
 #include "DataSurfaceHelpers.h"
@@ -764,5 +763,5 @@ AlphaBoxBlur::CalculateBlurRadius(const Point& aStd)
     return size;
 }
 
-}
-}
+} // namespace gfx
+} // namespace mozilla

@@ -17,6 +17,7 @@
 #include "mozilla/RefPtr.h"             // for already_AddRefed, RefPtr
 #include "mozilla/gfx/2D.h"             // for DrawTarget
 #include "mozilla/gfx/BaseSize.h"       // for BaseSize
+#include "mozilla/gfx/MatrixFwd.h"      // for Matrix4x4
 #include "mozilla/gfx/Point.h"          // for IntSize, Point
 #include "mozilla/gfx/Rect.h"           // for Rect, IntRect
 #include "mozilla/gfx/Types.h"          // for Float, SurfaceFormat, etc
@@ -36,10 +37,6 @@
 class nsIWidget;
 
 namespace mozilla {
-
-namespace gfx {
-class Matrix4x4;
-}
 
 namespace layers {
 
@@ -183,6 +180,7 @@ class CompositorOGL final : public Compositor
   typedef mozilla::gl::GLContext GLContext;
 
   friend class GLManagerCompositor;
+  friend class CompositingRenderTargetOGL;
 
   std::map<ShaderConfigOGL, ShaderProgramOGL*> mPrograms;
 public:
@@ -208,8 +206,6 @@ public:
                                GetMaxTextureSize(),
                                mFBOTextureTarget == LOCAL_GL_TEXTURE_2D,
                                SupportsPartialTextureUpdate());
-    result.mSupportedBlendModes += gfx::CompositionOp::OP_SCREEN;
-    result.mSupportedBlendModes += gfx::CompositionOp::OP_MULTIPLY;
     result.mSupportedBlendModes += gfx::CompositionOp::OP_SOURCE;
     return result;
   }
@@ -233,8 +229,6 @@ public:
                         const gfx::Rect& aVisibleRect) override;
 
   virtual void EndFrame() override;
-  virtual void SetDispAcquireFence(Layer* aLayer) override;
-  virtual FenceHandle GetReleaseFence() override;
   virtual void EndFrameForExternalComposition(const gfx::Matrix& aTransform) override;
 
   virtual bool SupportsPartialTextureUpdate() override;
@@ -260,9 +254,6 @@ public:
   }
 
   virtual void MakeCurrent(MakeCurrentFlags aFlags = 0) override;
-
-  virtual void PrepareViewport(const gfx::IntSize& aSize) override;
-
 
 #ifdef MOZ_DUMP_PAINTING
   virtual const char* Name() const override { return "OGL"; }
@@ -328,10 +319,12 @@ private:
                         gfx::Float aOpacity,
                         const gfx::Matrix4x4& aTransform);
 
+  void PrepareViewport(CompositingRenderTargetOGL *aRenderTarget);
+
   /** Widget associated with this compositor */
   nsIWidget *mWidget;
   gfx::IntSize mWidgetSize;
-  nsRefPtr<GLContext> mGLContext;
+  RefPtr<GLContext> mGLContext;
   UniquePtr<GLBlitTextureImageHelper> mBlitTextureImageHelper;
   gfx::Matrix4x4 mProjMatrix;
 
@@ -454,15 +447,14 @@ private:
    */
   gfx::IntSize mViewportSize;
 
-  FenceHandle mReleaseFenceHandle;
   ShaderProgramOGL *mCurrentProgram;
 
-  gfx::Rect mRenderBoundsOut;
+  gfx::Rect mRenderBound;
 
   CompositorOGLVRObjects mVR;
 };
 
-}
-}
+} // namespace layers
+} // namespace mozilla
 
 #endif /* MOZILLA_GFX_COMPOSITOROGL_H */

@@ -6,26 +6,24 @@
 
 this.EXPORTED_SYMBOLS = ["MigrationUtils", "MigratorPrototype"];
 
-const Cu = Components.utils;
-const Ci = Components.interfaces;
-const Cc = Components.classes;
-
+const { classes: Cc, interfaces: Ci, results: Cr, utils: Cu } = Components;
 const TOPIC_WILL_IMPORT_BOOKMARKS = "initial-migration-will-import-default-bookmarks";
 const TOPIC_DID_IMPORT_BOOKMARKS = "initial-migration-did-import-default-bookmarks";
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/Task.jsm");
+Cu.import("resource://gre/modules/AppConstants.jsm");
 
 XPCOMUtils.defineLazyModuleGetter(this, "PlacesUtils",
                                   "resource://gre/modules/PlacesUtils.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "BookmarkHTMLUtils",
                                   "resource://gre/modules/BookmarkHTMLUtils.jsm");
 
+var gMigrators = null;
+var gProfileStartup = null;
+var gMigrationBundle = null;
 
-let gMigrators = null;
-let gProfileStartup = null;
-let gMigrationBundle = null;
 function getMigrationBundle() {
   if (!gMigrationBundle) {
     gMigrationBundle = Services.strings.createBundle(
@@ -37,11 +35,12 @@ function getMigrationBundle() {
 /**
  * Figure out what is the default browser, and if there is a migrator
  * for it, return that migrator's internal name.
- * For the time being, the "internal name" of a migraotr is its contract-id
+ * For the time being, the "internal name" of a migrator is its contract-id
  * trailer (e.g. ie for @mozilla.org/profile/migrator;1?app=browser&type=ie),
  * but it will soon be exposed properly.
  */
 function getMigratorKeyForDefaultBrowser() {
+  // Canary uses the same description as Chrome so we can't distinguish them.
   const APP_DESC_TO_KEY = {
     "Internet Explorer":                 "ie",
     "Safari":                            "safari",
@@ -49,6 +48,8 @@ function getMigratorKeyForDefaultBrowser() {
     "Firefox":                           "firefox",
     "Google Chrome":                     "chrome",  // Windows, Linux
     "Chrome":                            "chrome",  // OS X
+    "Chromium":                          "chromium", // Windows, OS X
+    "Chromium Web Browser":              "chromium", // Linux
     "360\u5b89\u5168\u6d4f\u89c8\u5668": "360se",
   };
 
@@ -99,7 +100,9 @@ this.MigratorPrototype = {
    * For a single-profile source (e.g. safari, ie), this returns null,
    * and not an empty array.  That is the default implementation.
    */
-  get sourceProfiles() null,
+  get sourceProfiles() {
+    return null;
+  },
 
   /**
    * MUST BE OVERRIDDEN.
@@ -160,13 +163,25 @@ this.MigratorPrototype = {
    *   The migrator can call MigrationUtils.profileStartup.doStartup
    *   at any point in order to initialize the profile.
    */
-  get startupOnlyMigrator() false,
+  get startupOnlyMigrator() {
+    return false;
+  },
 
   /**
    * OVERRIDE IF AND ONLY IF your migrator supports importing the homepage.
    * @see nsIBrowserProfileMigrator
    */
-  get sourceHomePageURL() "",
+  get sourceHomePageURL() {
+    return "";
+  },
+
+  /**
+   * Override if the data to migrate is locked/in-use and the user should
+   * probably shutdown the source browser.
+   */
+  get sourceLocked() {
+    return false;
+  },
 
   /**
    * DO NOT OVERRIDE - After deCOMing migration, the UI will just call
@@ -175,8 +190,12 @@ this.MigratorPrototype = {
    * @see nsIBrowserProfileMigrator
    */
   getMigrateData: function MP_getMigrateData(aProfile) {
-    let types = [r.type for each (r in this._getMaybeCachedResources(aProfile))];
-    return types.reduce(function(a, b) a |= b, 0);
+    let resources = this._getMaybeCachedResources(aProfile);
+    if (!resources) {
+      return [];
+    }
+    let types = resources.map(r => r.type);
+    return types.reduce((a, b) => a |= b, 0);
   },
 
   /**
@@ -191,7 +210,7 @@ this.MigratorPrototype = {
       throw new Error("migrate called for a non-existent source");
 
     if (aItems != Ci.nsIBrowserProfileMigrator.ALL)
-      resources = [r for each (r in resources) if (aItems & r.type)];
+      resources = resources.filter(r => aItems & r.type);
 
     // Called either directly or through the bookmarks import callback.
     function doMigrate() {
@@ -253,7 +272,6 @@ this.MigratorPrototype = {
       }
     }
 
-
     if (MigrationUtils.isStartupMigration && !this.startupOnlyMigrator) {
       MigrationUtils.profileStartup.doStartup();
 
@@ -262,7 +280,7 @@ this.MigratorPrototype = {
       // (=startupOnlyMigrator), as it just copies over the places database
       // from another profile.
       const BOOKMARKS = MigrationUtils.resourceTypes.BOOKMARKS;
-      let migratingBookmarks = resources.some(function(r) r.type == BOOKMARKS);
+      let migratingBookmarks = resources.some(r => r.type == BOOKMARKS);
       if (migratingBookmarks) {
         let browserGlue = Cc["@mozilla.org/browser/browserglue;1"].
                           getService(Ci.nsIObserver);
@@ -401,13 +419,15 @@ this.MigrationUtils = Object.freeze({
    *
    * @param aKey
    *        The key of the string to retrieve.
-   * @param aReplacemts
+   * @param aReplacements
    *        [optioanl] Array of replacements to run on the retrieved string.
    * @return the retrieved string.
    *
    * @see nsIStringBundle
    */
   getLocalizedString: function MU_getLocalizedString(aKey, aReplacements) {
+    aKey = aKey.replace(/_(canary|chromium)$/, "_chrome");
+
     const OVERRIDES = {
       "4_firefox": "4_firefox_history_and_bookmarks",
       "64_firefox": "64_firefox_other"
@@ -451,8 +471,11 @@ this.MigrationUtils = Object.freeze({
    *
    * @param aKey internal name of the migration source.
    *             Supported values: ie (windows),
+   *                               edge (windows),
    *                               safari (mac/windows),
+   *                               canary (mac/windows),
    *                               chrome (mac/windows/linux),
+   *                               chromium (mac/windows/linux),
    *                               360se (windows),
    *                               firefox.
    *
@@ -474,11 +497,13 @@ this.MigrationUtils = Object.freeze({
         migrator = Cc["@mozilla.org/profile/migrator;1?app=browser&type=" +
                       aKey].createInstance(Ci.nsIBrowserProfileMigrator);
       }
-      catch(ex) { }
+      catch(ex) { Cu.reportError(ex) }
       this._migrators.set(aKey, migrator);
     }
 
-    return migrator && migrator.sourceExists ? migrator : null;
+    try {
+      return migrator && migrator.sourceExists ? migrator : null;
+    } catch (ex) { Cu.reportError(ex); return null }
   },
 
   // Iterates the available migrators, in the most suitable
@@ -486,11 +511,11 @@ this.MigrationUtils = Object.freeze({
   get migrators() {
     let migratorKeysOrdered = [
 #ifdef XP_WIN
-      "privafox", "firefox", "ie", "chrome", "safari", "360se"
+      "privafox", "firefox", "edge", "ie", "chrome", "chromium", "safari", "360se", "canary"
 #elifdef XP_MACOSX
-      "privafox", "firefox", "safari", "chrome"
+      "privafox", "firefox", "safari", "chrome", "chromium", "canary"
 #elifdef XP_UNIX
-      "privafox", "firefox", "chrome"
+      "privafox", "firefox", "chrome", "chromium"
 #endif
     ];
 
@@ -498,7 +523,7 @@ this.MigrationUtils = Object.freeze({
     // so that the wizard defaults to import from that browser.
     let defaultBrowserKey = getMigratorKeyForDefaultBrowser();
     if (defaultBrowserKey)
-      migratorKeysOrdered.sort(function (a, b) b == defaultBrowserKey ? 1 : 0);
+      migratorKeysOrdered.sort((a, b) => b == defaultBrowserKey ? 1 : 0);
 
     for (let migratorKey of migratorKeysOrdered) {
       let migrator = this.getMigrator(migratorKey);
@@ -508,7 +533,9 @@ this.MigrationUtils = Object.freeze({
   },
 
   // Whether or not we're in the process of startup migration
-  get isStartupMigration() gProfileStartup != null,
+  get isStartupMigration() {
+    return gProfileStartup != null;
+  },
 
   /**
    * In the case of startup migration, this is set to the nsIProfileStartup
@@ -516,18 +543,29 @@ this.MigrationUtils = Object.freeze({
    *
    * @see showMigrationWizard
    */
-  get profileStartup() gProfileStartup,
+  get profileStartup() {
+    return gProfileStartup;
+  },
 
   /**
    * Show the migration wizard.  On mac, this may just focus the wizard if it's
    * already running, in which case aOpener and aParams are ignored.
    *
-   * @param [optional] aOpener
-   *        the window that asks to open the wizard.
-   * @param [optioanl] aParams
-   *        arguments for the migration wizard, in the form of an nsIArray.
+   * @param {Window} [aOpener]
+   *        optional; the window that asks to open the wizard.
+   * @param {Array} [aParams]
+   *        optional arguments for the migration wizard, in the form of an array
    *        This is passed as-is for the params argument of
-   *        nsIWindowWatcher.openWindow.
+   *        nsIWindowWatcher.openWindow. The array elements we expect are, in
+   *        order:
+   *        - {Number} migration entry point constant (see below)
+   *        - {String} source browser identifier
+   *        - {nsIBrowserProfileMigrator} actual migrator object
+   *        - {Boolean} whether this is a startup migration
+   *        - {Boolean} whether to skip the 'source' page
+   *        NB: If you add new consumers, please add a migration entry point
+   *        constant below, and specify at least the first element of the array
+   *        (the migration entry point for purposes of telemetry).
    */
   showMigrationWizard:
   function MU_showMigrationWizard(aOpener, aParams) {
@@ -545,11 +583,53 @@ this.MigrationUtils = Object.freeze({
     }
 #endif
 
+    // nsIWindowWatcher doesn't deal with raw arrays, so we convert the input
+    let params;
+    if (Array.isArray(aParams)) {
+      params = Cc["@mozilla.org/array;1"].createInstance(Ci.nsIMutableArray);
+      for (let item of aParams) {
+        let comtaminatedVal;
+        if (item && item instanceof Ci.nsISupports) {
+          comtaminatedVal = item;
+        } else {
+          switch (typeof item) {
+            case "boolean":
+              comtaminatedVal = Cc["@mozilla.org/supports-PRBool;1"].
+                                createInstance(Ci.nsISupportsPRBool);
+              comtaminatedVal.data = item;
+              break;
+            case "number":
+              comtaminatedVal = Cc["@mozilla.org/supports-PRUint32;1"].
+                                createInstance(Ci.nsISupportsPRUint32);
+              comtaminatedVal.data = item;
+              break;
+            case "string":
+              comtaminatedVal = Cc["@mozilla.org/supports-cstring;1"].
+                                createInstance(Ci.nsISupportsCString);
+              comtaminatedVal.data = item;
+              break;
+
+            case "undefined":
+            case "object":
+              if (!item) {
+                comtaminatedVal = null;
+                break;
+              }
+            default:
+              throw new Error("Unexpected parameter type " + (typeof item) + ": " + item);
+          }
+        }
+        params.appendElement(comtaminatedVal, false);
+      }
+    } else {
+      params = aParams;
+    }
+
     Services.ww.openWindow(aOpener,
                            "chrome://browser/content/migration/migration.xul",
                            "_blank",
                            features,
-                           aParams);
+                           params);
   },
 
   /**
@@ -613,18 +693,18 @@ this.MigrationUtils = Object.freeze({
       }
     }
 
-    let params = Cc["@mozilla.org/array;1"].createInstance(Ci.nsIMutableArray);
-    let keyCSTR = Cc["@mozilla.org/supports-cstring;1"].
-                  createInstance(Ci.nsISupportsCString);
-    keyCSTR.data = migratorKey;
-    let skipImportSourcePageBool = Cc["@mozilla.org/supports-PRBool;1"].
-                                   createInstance(Ci.nsISupportsPRBool);
-    skipImportSourcePageBool.data = skipSourcePage;
-    params.appendElement(keyCSTR, false);
-    params.appendElement(migrator, false);
-    params.appendElement(aProfileStartup, false);
-    params.appendElement(skipImportSourcePageBool, false);
+    let migrationEntryPoint = this.MIGRATION_ENTRYPOINT_FIRSTRUN;
+    if (migrator && skipSourcePage && migratorKey == AppConstants.MOZ_APP_NAME) {
+      migrationEntryPoint = this.MIGRATION_ENTRYPOINT_FXREFRESH;
+    }
 
+    let params = [
+      migrationEntryPoint,
+      migratorKey,
+      migrator,
+      aProfileStartup,
+      skipSourcePage
+    ];
     this.showMigrationWizard(null, params);
   },
 
@@ -642,5 +722,26 @@ this.MigrationUtils = Object.freeze({
                           getService(Ci.nsIObserver);
 			browserGlue.observe(null, "browser.application.restart", "");
     }	
-  }
+  },
+
+  MIGRATION_ENTRYPOINT_UNKNOWN: 0,
+  MIGRATION_ENTRYPOINT_FIRSTRUN: 1,
+  MIGRATION_ENTRYPOINT_FXREFRESH: 2,
+  MIGRATION_ENTRYPOINT_PLACES: 3,
+  MIGRATION_ENTRYPOINT_PASSWORDS: 4,
+
+  _sourceNameToIdMapping: {
+    "nothing":    1,
+    "firefox":    2,
+    "edge":       3,
+    "ie":         4,
+    "chrome":     5,
+    "chromium":   6,
+    "canary":     7,
+    "safari":     8,
+    "360se":      9,
+  },
+  getSourceIdForTelemetry(sourceName) {
+    return this._sourceNameToIdMapping[sourceName] || 0;
+  },
 });

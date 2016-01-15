@@ -53,21 +53,17 @@ function BannerMessage(options) {
   if ("ondismiss" in options && typeof options.ondismiss === "function")
     this.ondismiss = options.ondismiss;
 
-  if ("mode" in options && options.mode != null)
-    this.mode = options.mode;
-
   let weight = parseInt(options.weight, 10);
   this.weight = weight > 0 ? weight : DEFAULT_WEIGHT;
 }
 
 // We need this object to have access to the HomeBanner
 // private members without leaking it outside Home.jsm.
-let HomeBannerMessageHandlers;
-let window = Services.wm.getMostRecentWindow("navigator:browser");
-let HomeBanner = (function () {
+var HomeBannerMessageHandlers;
+
+var HomeBanner = (function () {
   // Whether there is a "HomeBanner:Get" request we couldn't fulfill.
   let _pendingRequest = false;
-  //window.NativeWindow.toast.show("HomeBanner Created " , "short");
 
   // Functions used to handle messages sent from Java.
   HomeBannerMessageHandlers = {
@@ -98,12 +94,10 @@ let HomeBanner = (function () {
     for (let key in _messages) {
       let message = _messages[key];
       if (threshold < message.totalWeight) {
-        //window.NativeWindow.toast.show("sendRequest:"+key, "short");
         Messaging.sendRequest({
           type: "HomeBanner:Data",
           id: message.id,
           text: message.text,
-          mode: message.mode,
           iconURI: message.iconURI
         });
         return;
@@ -113,9 +107,8 @@ let HomeBanner = (function () {
 
   let _handleShown = function(id) {
     let message = _messages[id];
-    if (message.onshown){
+    if (message.onshown)
       message.onshown();
-    }
   };
 
   let _handleClick = function(id) {
@@ -132,10 +125,8 @@ let HomeBanner = (function () {
 
   return Object.freeze({
     observe: function(subject, topic, data) {
-      //window.NativeWindow.toast.show("Object.freeze:"+topic, "short");
       switch(topic) {
         case "HomeBanner:Shown":
-          //window.NativeWindow.toast.show("handleShown:"+topic, "short");
           _handleShown(data);
           break;
 
@@ -156,21 +147,17 @@ let HomeBanner = (function () {
      */
     add: function(options) {
       let message = new BannerMessage(options);
-      //_messages = {};
-     
       _messages[message.id] = message;
-      //window.NativeWindow.toast.show("Add call message:"+message.id, "short");	
+
       // If this is the first message we're adding, add
       // observers to listen for requests from the Java UI.
       if (Object.keys(_messages).length == 1) {
         Services.obs.addObserver(this, "HomeBanner:Shown", false);
         Services.obs.addObserver(this, "HomeBanner:Click", false);
         Services.obs.addObserver(this, "HomeBanner:Dismiss", false);
-        //window.NativeWindow.toast.show("Send a message to Java", "short");
-        //_handleShown(message.id);
+
         // Send a message to Java if there's a pending "HomeBanner:Get" request.
         if (_pendingRequest) {
-           //window.NativeWindow.toast.show("Send a message to Java pendingRequest"+_pendingRequest, "short");
           _pendingRequest = false;
           _sendBannerData();
         }
@@ -225,9 +212,9 @@ let HomeBanner = (function () {
 
 // We need this object to have access to the HomePanels
 // private members without leaking it outside Home.jsm.
-let HomePanelsMessageHandlers;
+var HomePanelsMessageHandlers;
 
-let HomePanels = (function () {
+var HomePanels = (function () {
   // Functions used to handle messages sent from Java.
   HomePanelsMessageHandlers = {
 

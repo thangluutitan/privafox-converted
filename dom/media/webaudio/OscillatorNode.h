@@ -29,13 +29,8 @@ public:
 
   virtual JSObject* WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
 
-  virtual void DestroyMediaStream() override
-  {
-    if (mStream) {
-      mStream->RemoveMainThreadListener(this);
-    }
-    AudioNode::DestroyMediaStream();
-  }
+  virtual void DestroyMediaStream() override;
+
   virtual uint16_t NumberOfInputs() const final override
   {
     return 0;
@@ -92,21 +87,19 @@ protected:
   virtual ~OscillatorNode();
 
 private:
-  static void SendFrequencyToStream(AudioNode* aNode);
-  static void SendDetuneToStream(AudioNode* aNode);
   void SendTypeToStream();
   void SendPeriodicWaveToStream();
 
 private:
   OscillatorType mType;
-  nsRefPtr<PeriodicWave> mPeriodicWave;
-  nsRefPtr<AudioParam> mFrequency;
-  nsRefPtr<AudioParam> mDetune;
+  RefPtr<PeriodicWave> mPeriodicWave;
+  RefPtr<AudioParam> mFrequency;
+  RefPtr<AudioParam> mDetune;
   bool mStartCalled;
 };
 
-}
-}
+} // namespace dom
+} // namespace mozilla
 
 #endif
 

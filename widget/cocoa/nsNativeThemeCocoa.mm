@@ -6,6 +6,7 @@
 #include "nsNativeThemeCocoa.h"
 
 #include "mozilla/gfx/2D.h"
+#include "mozilla/gfx/Helpers.h"
 #include "nsDeviceContext.h"
 #include "nsLayoutUtils.h"
 #include "nsObjCExceptions.h"
@@ -311,7 +312,6 @@ static BOOL IsToolbarStyleContainer(nsIFrame* aFrame)
 
   switch (aFrame->StyleDisplay()->mAppearance) {
     case NS_THEME_TOOLBAR:
-    case NS_THEME_MOZ_MAC_UNIFIED_TOOLBAR:
     case NS_THEME_STATUSBAR:
       return YES;
     default:
@@ -527,24 +527,24 @@ nsNativeThemeCocoa::nsNativeThemeCocoa()
   // before the main event-loop pool is in place
   nsAutoreleasePool pool;
 
-  mDisclosureButtonCell = [[NSButtonCell alloc] initTextCell:nil];
+  mDisclosureButtonCell = [[NSButtonCell alloc] initTextCell:@""];
   [mDisclosureButtonCell setBezelStyle:NSRoundedDisclosureBezelStyle];
   [mDisclosureButtonCell setButtonType:NSPushOnPushOffButton];
   [mDisclosureButtonCell setHighlightsBy:NSPushInCellMask];
   
-  mHelpButtonCell = [[NSButtonCell alloc] initTextCell:nil];
+  mHelpButtonCell = [[NSButtonCell alloc] initTextCell:@""];
   [mHelpButtonCell setBezelStyle:NSHelpButtonBezelStyle];
   [mHelpButtonCell setButtonType:NSMomentaryPushInButton];
   [mHelpButtonCell setHighlightsBy:NSPushInCellMask];
 
-  mPushButtonCell = [[NSButtonCell alloc] initTextCell:nil];
+  mPushButtonCell = [[NSButtonCell alloc] initTextCell:@""];
   [mPushButtonCell setButtonType:NSMomentaryPushInButton];
   [mPushButtonCell setHighlightsBy:NSPushInCellMask];
 
-  mRadioButtonCell = [[RadioButtonCell alloc] initTextCell:nil];
+  mRadioButtonCell = [[RadioButtonCell alloc] initTextCell:@""];
   [mRadioButtonCell setButtonType:NSRadioButton];
 
-  mCheckboxCell = [[CheckboxCell alloc] initTextCell:nil];
+  mCheckboxCell = [[CheckboxCell alloc] initTextCell:@""];
   [mCheckboxCell setButtonType:NSSwitchButton];
   [mCheckboxCell setAllowsMixedState:YES];
 
@@ -1113,17 +1113,17 @@ static const NSSize kCheckmarkSize = NSMakeSize(11, 11);
 static const NSSize kMenuarrowSize = nsCocoaFeatures::OnLionOrLater() ?
                                      NSMakeSize(9, 10) : NSMakeSize(8, 10);
 static const NSSize kMenuScrollArrowSize = NSMakeSize(10, 8);
-static const NSString* kCheckmarkImage = @"image.MenuOnState";
-static const NSString* kMenuarrowRightImage = @"image.MenuSubmenu";
-static const NSString* kMenuarrowLeftImage = @"image.MenuSubmenuLeft";
-static const NSString* kMenuDownScrollArrowImage = @"image.MenuScrollDown";
-static const NSString* kMenuUpScrollArrowImage = @"image.MenuScrollUp";
+static NSString* kCheckmarkImage = @"MenuOnState";
+static NSString* kMenuarrowRightImage = @"MenuSubmenu";
+static NSString* kMenuarrowLeftImage = @"MenuSubmenuLeft";
+static NSString* kMenuDownScrollArrowImage = @"MenuScrollDown";
+static NSString* kMenuUpScrollArrowImage = @"MenuScrollUp";
 static const CGFloat kMenuIconIndent = 6.0f;
 
 void
 nsNativeThemeCocoa::DrawMenuIcon(CGContextRef cgContext, const CGRect& aRect,
                                  EventStates inState, nsIFrame* aFrame,
-                                 const NSSize& aIconSize, const NSString* aImageName,
+                                 const NSSize& aIconSize, NSString* aImageName,
                                  bool aCenterHorizontally)
 {
   NS_OBJC_BEGIN_TRY_ABORT_BLOCK;
@@ -1153,10 +1153,16 @@ nsNativeThemeCocoa::DrawMenuIcon(CGContextRef cgContext, const CGRect& aRect,
   NSString* backgroundTypeKey = !otherKeysAndValues ? @"kCUIBackgroundTypeMenu" :
     !isDisabled && isActive ? @"backgroundTypeDark" : @"backgroundTypeLight";
 
+  NSString* imageName = aImageName;
+  if (!nsCocoaFeatures::OnElCapitanOrLater()) {
+    // Pre-10.11, image names are prefixed with "image."
+    imageName = [@"image." stringByAppendingString:aImageName];
+  }
+
   NSMutableArray* keys = [NSMutableArray arrayWithObjects:@"backgroundTypeKey",
     @"imageNameKey", @"state", @"widget", @"is.flipped", nil];
   NSMutableArray* values = [NSMutableArray arrayWithObjects: backgroundTypeKey,
-    aImageName, state, @"image", [NSNumber numberWithBool:YES], nil];
+    imageName, state, @"image", [NSNumber numberWithBool:YES], nil];
 
   if (otherKeysAndValues) { // Earlier versions used one more key-value pair.
     [keys insertObject:@"imageIsGrayscaleKey" atIndex:1];
@@ -2423,19 +2429,14 @@ nsNativeThemeCocoa::DrawWidgetBackground(nsRenderingContext* aContext,
   if (nativeWidgetRect.IsEmpty())
     return NS_OK; // Don't attempt to draw invisible widgets.
 
-  gfxContext* thebesCtx = aContext->ThebesContext();
-  if (!thebesCtx)
-    return NS_ERROR_FAILURE;
-
-  gfxContextMatrixAutoSaveRestore save(thebesCtx);
+  AutoRestoreTransform autoRestoreTransform(&aDrawTarget);
 
   bool hidpi = IsHiDPIContext(aFrame->PresContext());
   if (hidpi) {
     // Use high-resolution drawing.
     nativeWidgetRect.Scale(0.5f);
     nativeDirtyRect.Scale(0.5f);
-    thebesCtx->SetMatrix(
-      thebesCtx->CurrentMatrix().Scale(2.0f, 2.0f));
+    aDrawTarget.SetTransform(aDrawTarget.GetTransform().PreScale(2.0f, 2.0f));
   }
 
   gfxQuartzNativeDrawing nativeDrawing(aDrawTarget, nativeDirtyRect);
@@ -2682,7 +2683,6 @@ nsNativeThemeCocoa::DrawWidgetBackground(nsRenderingContext* aContext,
     }
       break;
 
-    case NS_THEME_MOZ_MAC_UNIFIED_TOOLBAR:
     case NS_THEME_TOOLBAR: {
       NSWindow* win = NativeWindowForFrame(aFrame);
       if (ToolbarCanBeUnified(cgContext, macRect, win)) {
@@ -2878,6 +2878,8 @@ nsNativeThemeCocoa::DrawWidgetBackground(nsRenderingContext* aContext,
         BOOL isOverlay = nsLookAndFeel::UseOverlayScrollbars();
         BOOL isHorizontal = (aWidgetType == NS_THEME_SCROLLBAR_THUMB_HORIZONTAL);
         BOOL isRolledOver = IsParentScrollbarRolledOver(aFrame);
+        nsIFrame* scrollbarFrame = GetParentScrollbarFrame(aFrame);
+        bool isSmall = (scrollbarFrame && scrollbarFrame->StyleDisplay()->mAppearance == NS_THEME_SCROLLBAR_SMALL);
         if (isOverlay && (!nsCocoaFeatures::OnMountainLionOrLater() || !isRolledOver)) {
           if (isHorizontal) {
             macRect.origin.y += 4;
@@ -2896,7 +2898,7 @@ nsNativeThemeCocoa::DrawWidgetBackground(nsRenderingContext* aContext,
         RenderWithCoreUILegacy(macRect, cgContext,
                 [NSDictionary dictionaryWithObjectsAndKeys:
                   (isOverlay ? @"kCUIWidgetOverlayScrollBar" : @"scrollbar"), @"widget",
-                  @"regular", @"size",
+                  (isSmall ? @"small" : @"regular"), @"size",
                   (isRolledOver ? @"rollover" : @"normal"), @"state",
                   (isHorizontal ? @"kCUIOrientHorizontal" : @"kCUIOrientVertical"), @"kCUIOrientationKey",
                   (isOnTopOfDarkBackground ? @"kCUIVariantWhite" : @""), @"kCUIVariantKey",
@@ -2926,6 +2928,8 @@ nsNativeThemeCocoa::DrawWidgetBackground(nsRenderingContext* aContext,
         BOOL isOverlay = nsLookAndFeel::UseOverlayScrollbars();
         if (!isOverlay || IsParentScrollbarRolledOver(aFrame)) {
           BOOL isHorizontal = (aWidgetType == NS_THEME_SCROLLBAR_TRACK_HORIZONTAL);
+          nsIFrame* scrollbarFrame = GetParentScrollbarFrame(aFrame);
+          bool isSmall = (scrollbarFrame && scrollbarFrame->StyleDisplay()->mAppearance == NS_THEME_SCROLLBAR_SMALL);
           if (isOverlay && !nsCocoaFeatures::OnMountainLionOrLater()) {
             // On OSX 10.7, scrollbars don't grow when hovered.
             // The adjustments below were obtained by trial and error.
@@ -2944,7 +2948,7 @@ nsNativeThemeCocoa::DrawWidgetBackground(nsRenderingContext* aContext,
           RenderWithCoreUILegacy(macRect, cgContext,
                   [NSDictionary dictionaryWithObjectsAndKeys:
                     (isOverlay ? @"kCUIWidgetOverlayScrollBar" : @"scrollbar"), @"widget",
-                    @"regular", @"size",
+                    (isSmall ? @"small" : @"regular"), @"size",
                     (isHorizontal ? @"kCUIOrientHorizontal" : @"kCUIOrientVertical"), @"kCUIOrientationKey",
                     (isOnTopOfDarkBackground ? @"kCUIVariantWhite" : @""), @"kCUIVariantKey",
                     [NSNumber numberWithBool:YES], @"noindicator",
@@ -3591,7 +3595,6 @@ nsNativeThemeCocoa::WidgetStateChanged(nsIFrame* aFrame, uint8_t aWidgetType,
     case NS_THEME_WINDOW_TITLEBAR:
     case NS_THEME_TOOLBOX:
     case NS_THEME_TOOLBAR:
-    case NS_THEME_MOZ_MAC_UNIFIED_TOOLBAR:
     case NS_THEME_STATUSBAR:
     case NS_THEME_STATUSBAR_PANEL:
     case NS_THEME_STATUSBAR_RESIZER_PANEL:
@@ -3685,7 +3688,7 @@ nsNativeThemeCocoa::ThemeSupportsWidget(nsPresContext* aPresContext, nsIFrame* a
       if (aFrame && aFrame->GetWritingMode().IsVertical()) {
         return false;
       }
-      // fall through
+      MOZ_FALLTHROUGH;
 
     case NS_THEME_LISTBOX:
 
@@ -3718,7 +3721,6 @@ nsNativeThemeCocoa::ThemeSupportsWidget(nsPresContext* aPresContext, nsIFrame* a
     case NS_THEME_SPINNER_UP_BUTTON:
     case NS_THEME_SPINNER_DOWN_BUTTON:
     case NS_THEME_TOOLBAR:
-    case NS_THEME_MOZ_MAC_UNIFIED_TOOLBAR:
     case NS_THEME_STATUSBAR:
     case NS_THEME_NUMBER_INPUT:
     case NS_THEME_TEXTFIELD:
@@ -3765,7 +3767,6 @@ nsNativeThemeCocoa::ThemeSupportsWidget(nsPresContext* aPresContext, nsIFrame* a
     case NS_THEME_SCROLLBAR_TRACK_HORIZONTAL:
     case NS_THEME_SCROLLBAR_NON_DISAPPEARING:
       return !IsWidgetStyled(aPresContext, aFrame, aWidgetType);
-      break;
 
     case NS_THEME_RESIZER:
     {
@@ -3781,8 +3782,8 @@ nsNativeThemeCocoa::ThemeSupportsWidget(nsPresContext* aPresContext, nsIFrame* a
       nsIScrollableFrame* scrollFrame = do_QueryFrame(parentFrame);
       return (!nsLookAndFeel::UseOverlayScrollbars() &&
               scrollFrame && scrollFrame->GetScrollbarVisibility());
-      break;
     }
+
     case NS_THEME_FOCUS_OUTLINE:
       return true;
 
@@ -3809,7 +3810,6 @@ nsNativeThemeCocoa::WidgetIsContainer(uint8_t aWidgetType)
    case NS_THEME_MAC_DISCLOSURE_BUTTON_OPEN:
    case NS_THEME_MAC_DISCLOSURE_BUTTON_CLOSED:
     return false;
-    break;
   }
   return true;
 }
@@ -3948,7 +3948,6 @@ nsNativeThemeCocoa::ThemeGeometryTypeForWidget(nsIFrame* aFrame, uint8_t aWidget
     case NS_THEME_WINDOW_TITLEBAR:
       return eThemeGeometryTypeTitlebar;
     case NS_THEME_TOOLBAR:
-    case NS_THEME_MOZ_MAC_UNIFIED_TOOLBAR:
       return eThemeGeometryTypeToolbar;
     case NS_THEME_TOOLBOX:
       return eThemeGeometryTypeToolbox;
@@ -3999,7 +3998,6 @@ nsNativeThemeCocoa::GetWidgetTransparency(nsIFrame* aFrame, uint8_t aWidgetType)
     return eOpaque;
 
   case NS_THEME_TOOLBAR:
-  case NS_THEME_MOZ_MAC_UNIFIED_TOOLBAR:
     return eOpaque;
 
   default:

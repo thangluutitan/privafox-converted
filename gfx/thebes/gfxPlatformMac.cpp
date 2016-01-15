@@ -116,11 +116,11 @@ gfxPlatformMac::CreatePlatformFontList()
 }
 
 already_AddRefed<gfxASurface>
-gfxPlatformMac::CreateOffscreenSurface(const IntSize& size,
-                                       gfxContentType contentType)
+gfxPlatformMac::CreateOffscreenSurface(const IntSize& aSize,
+                                       gfxImageFormat aFormat)
 {
-    nsRefPtr<gfxASurface> newSurface =
-      new gfxQuartzSurface(size, OptimalFormatForContent(contentType));
+    RefPtr<gfxASurface> newSurface =
+      new gfxQuartzSurface(aSize, aFormat);
     return newSurface.forget();
 }
 
@@ -141,9 +141,12 @@ gfxPlatformMac::GetStandardFamilyName(const nsAString& aFontName, nsAString& aFa
 gfxFontGroup *
 gfxPlatformMac::CreateFontGroup(const FontFamilyList& aFontFamilyList,
                                 const gfxFontStyle *aStyle,
-                                gfxUserFontSet *aUserFontSet)
+                                gfxTextPerfMetrics* aTextPerf,
+                                gfxUserFontSet *aUserFontSet,
+                                gfxFloat aDevToCssSize)
 {
-    return new gfxFontGroup(aFontFamilyList, aStyle, aUserFontSet);
+    return new gfxFontGroup(aFontFamilyList, aStyle, aTextPerf,
+                            aUserFontSet, aDevToCssSize);
 }
 
 // these will move to gfxPlatform once all platforms support the fontlist
@@ -151,19 +154,19 @@ gfxFontEntry*
 gfxPlatformMac::LookupLocalFont(const nsAString& aFontName,
                                 uint16_t aWeight,
                                 int16_t aStretch,
-                                bool aItalic)
+                                uint8_t aStyle)
 {
     return gfxPlatformFontList::PlatformFontList()->LookupLocalFont(aFontName,
                                                                     aWeight,
                                                                     aStretch,
-                                                                    aItalic);
+                                                                    aStyle);
 }
 
 gfxFontEntry* 
 gfxPlatformMac::MakePlatformFont(const nsAString& aFontName,
                                  uint16_t aWeight,
                                  int16_t aStretch,
-                                 bool aItalic,
+                                 uint8_t aStyle,
                                  const uint8_t* aFontData,
                                  uint32_t aLength)
 {
@@ -173,7 +176,7 @@ gfxPlatformMac::MakePlatformFont(const nsAString& aFontName,
     return gfxPlatformFontList::PlatformFontList()->MakePlatformFont(aFontName,
                                                                      aWeight,
                                                                      aStretch,
-                                                                     aItalic,
+                                                                     aStyle,
                                                                      aFontData,
                                                                      aLength);
 }
@@ -387,6 +390,17 @@ gfxPlatformMac::GetCommonFallbackFonts(uint32_t aCh, uint32_t aNextCh,
     aFontList.AppendElement(kFontArialUnicodeMS);
 }
 
+/*static*/ void
+gfxPlatformMac::LookupSystemFont(mozilla::LookAndFeel::FontID aSystemFontID,
+                                 nsAString& aSystemFontName,
+                                 gfxFontStyle& aFontStyle,
+                                 float aDevPixPerCSSPixel)
+{
+    gfxMacPlatformFontList* pfl = gfxMacPlatformFontList::PlatformFontList();
+    return pfl->LookupSystemFont(aSystemFontID, aSystemFontName, aFontStyle,
+                                 aDevPixPerCSSPixel);
+}
+
 uint32_t
 gfxPlatformMac::ReadAntiAliasingThreshold()
 {
@@ -425,6 +439,17 @@ gfxPlatformMac::UseProgressivePaint()
   // Progressive painting requires cross-process mutexes, which don't work so
   // well on OS X 10.6 so we disable there.
   return nsCocoaFeatures::OnLionOrLater() && gfxPlatform::UseProgressivePaint();
+}
+
+bool
+gfxPlatformMac::AccelerateLayersByDefault()
+{
+  // 10.6.2 and lower have a bug involving textures and pixel buffer objects
+  // that caused bug 629016, so we don't allow OpenGL-accelerated layers on
+  // those versions of the OS.
+  // This will still let full-screen video be accelerated on OpenGL, because
+  // that XUL widget opts in to acceleration, but that's probably OK.
+  return nsCocoaFeatures::AccelerateByDefault();
 }
 
 // This is the renderer output callback function, called on the vsync thread
@@ -519,6 +544,18 @@ public:
         CVDisplayLinkRelease(mDisplayLink);
         mDisplayLink = nullptr;
       }
+
+      CVTime vsyncRate = CVDisplayLinkGetNominalOutputVideoRefreshPeriod(mDisplayLink);
+      if (vsyncRate.flags & kCVTimeIsIndefinite) {
+        NS_WARNING("Could not get vsync rate, setting to 60.");
+        mVsyncRate = TimeDuration::FromMilliseconds(1000.0 / 60.0);
+      } else {
+        int64_t timeValue = vsyncRate.timeValue;
+        int64_t timeScale = vsyncRate.timeScale;
+        const int milliseconds = 1000;
+        float rateInMs = ((double) timeValue / (double) timeScale) * milliseconds;
+        mVsyncRate = TimeDuration::FromMilliseconds(rateInMs);
+      }
     }
 
     virtual void DisableVsync() override
@@ -541,6 +578,11 @@ public:
       return mDisplayLink != nullptr;
     }
 
+    virtual TimeDuration GetVsyncRate() override
+    {
+      return mVsyncRate;
+    }
+
     // The vsync timestamps given by the CVDisplayLinkCallback are
     // in the future for the NEXT frame. Large parts of Gecko, such
     // as animations assume a timestamp at either now or in the past.
@@ -551,7 +593,8 @@ public:
   private:
     // Manages the display link render thread
     CVDisplayLinkRef   mDisplayLink;
-    nsRefPtr<nsITimer> mTimer;
+    RefPtr<nsITimer> mTimer;
+    TimeDuration mVsyncRate;
   }; // OSXDisplay
 
 private:
@@ -599,7 +642,7 @@ static CVReturn VsyncCallback(CVDisplayLinkRef aDisplayLink,
 already_AddRefed<mozilla::gfx::VsyncSource>
 gfxPlatformMac::CreateHardwareVsyncSource()
 {
-  nsRefPtr<VsyncSource> osxVsyncSource = new OSXVsyncSource();
+  RefPtr<VsyncSource> osxVsyncSource = new OSXVsyncSource();
   VsyncSource::Display& primaryDisplay = osxVsyncSource->GetGlobalDisplay();
   primaryDisplay.EnableVsync();
   if (!primaryDisplay.IsVsyncEnabled()) {

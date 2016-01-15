@@ -44,6 +44,8 @@ enum Phase : uint8_t {
     PHASE_SWEEP_MARK_GRAY,
     PHASE_SWEEP_MARK_GRAY_WEAK,
     PHASE_FINALIZE_START,
+    PHASE_WEAK_ZONEGROUP_CALLBACK,
+    PHASE_WEAK_COMPARTMENT_CALLBACK,
     PHASE_SWEEP_ATOMS,
     PHASE_SWEEP_SYMBOL_REGISTRY,
     PHASE_SWEEP_COMPARTMENTS,
@@ -74,6 +76,8 @@ enum Phase : uint8_t {
     PHASE_MINOR_GC,
     PHASE_EVICT_NURSERY,
     PHASE_TRACE_HEAP,
+    PHASE_BARRIER,
+    PHASE_UNMARK_GRAY,
     PHASE_MARK_ROOTS,
     PHASE_BUFFER_GRAY_ROOTS,
     PHASE_MARK_CCWS,
@@ -158,6 +162,8 @@ struct Statistics
     /* Create a convenient type for referring to tables of phase times. */
     using PhaseTimeTable = int64_t[NumTimingArrays][PHASE_LIMIT];
 
+    static void initialize();
+
     explicit Statistics(JSRuntime* rt);
     ~Statistics();
 
@@ -169,7 +175,7 @@ struct Statistics
                     SliceBudget budget, JS::gcreason::Reason reason);
     void endSlice();
 
-    void startTimingMutator();
+    bool startTimingMutator();
     bool stopTimingMutator(double& mutator_ms, double& gc_ms);
 
     void reset(const char* reason) {
@@ -331,46 +337,37 @@ struct Statistics
     double computeMMU(int64_t resolution) const;
 };
 
-struct AutoGCSlice
+struct MOZ_RAII AutoGCSlice
 {
     AutoGCSlice(Statistics& stats, const ZoneGCStats& zoneStats, JSGCInvocationKind gckind,
-                SliceBudget budget, JS::gcreason::Reason reason
-                MOZ_GUARD_OBJECT_NOTIFIER_PARAM)
+                SliceBudget budget, JS::gcreason::Reason reason)
       : stats(stats)
     {
-        MOZ_GUARD_OBJECT_NOTIFIER_INIT;
         stats.beginSlice(zoneStats, gckind, budget, reason);
     }
     ~AutoGCSlice() { stats.endSlice(); }
 
     Statistics& stats;
-    MOZ_DECL_USE_GUARD_OBJECT_NOTIFIER
 };
 
-struct AutoPhase
+struct MOZ_RAII AutoPhase
 {
-    AutoPhase(Statistics& stats, Phase phase
-              MOZ_GUARD_OBJECT_NOTIFIER_PARAM)
+    AutoPhase(Statistics& stats, Phase phase)
       : stats(stats), task(nullptr), phase(phase), enabled(true)
     {
-        MOZ_GUARD_OBJECT_NOTIFIER_INIT;
         stats.beginPhase(phase);
     }
 
-    AutoPhase(Statistics& stats, bool condition, Phase phase
-              MOZ_GUARD_OBJECT_NOTIFIER_PARAM)
+    AutoPhase(Statistics& stats, bool condition, Phase phase)
       : stats(stats), task(nullptr), phase(phase), enabled(condition)
     {
-        MOZ_GUARD_OBJECT_NOTIFIER_INIT;
         if (enabled)
             stats.beginPhase(phase);
     }
 
-    AutoPhase(Statistics& stats, const GCParallelTask& task, Phase phase
-              MOZ_GUARD_OBJECT_NOTIFIER_PARAM)
+    AutoPhase(Statistics& stats, const GCParallelTask& task, Phase phase)
       : stats(stats), task(&task), phase(phase), enabled(true)
     {
-        MOZ_GUARD_OBJECT_NOTIFIER_INIT;
         if (enabled)
             stats.beginPhase(phase);
     }
@@ -388,16 +385,13 @@ struct AutoPhase
     const GCParallelTask* task;
     Phase phase;
     bool enabled;
-    MOZ_DECL_USE_GUARD_OBJECT_NOTIFIER
 };
 
-struct AutoSCC
+struct MOZ_RAII AutoSCC
 {
-    AutoSCC(Statistics& stats, unsigned scc
-            MOZ_GUARD_OBJECT_NOTIFIER_PARAM)
+    AutoSCC(Statistics& stats, unsigned scc)
       : stats(stats), scc(scc)
     {
-        MOZ_GUARD_OBJECT_NOTIFIER_INIT;
         start = stats.beginSCC();
     }
     ~AutoSCC() {
@@ -407,7 +401,6 @@ struct AutoSCC
     Statistics& stats;
     unsigned scc;
     int64_t start;
-    MOZ_DECL_USE_GUARD_OBJECT_NOTIFIER
 };
 
 const char* ExplainInvocationKind(JSGCInvocationKind gckind);

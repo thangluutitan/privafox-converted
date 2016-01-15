@@ -50,7 +50,12 @@ DrawTargetD2D1::~DrawTargetD2D1()
     // mSnapshot will be cleared now.
   }
 
-  mDC->EndDraw();
+  if (mDC) {
+    // The only way mDC can be null is if Init failed, but it can happen and the
+    // destructor is the only place where we need to check for it since the
+    // DrawTarget will destroyed right after Init fails.
+    mDC->EndDraw();
+  }
 
   // Targets depending on us can break that dependency, since we're obviously not going to
   // be modified in the future.
@@ -134,7 +139,7 @@ DrawTargetD2D1::DrawSurface(SourceSurface *aSurface,
   if (aSurface->GetType() == SurfaceType::D2D1_1_IMAGE) {
     // If this is called with a DataSourceSurface it might do a partial upload
     // that our DrawBitmap call doesn't support.
-    image->QueryInterface((ID2D1Bitmap**)byRef(bitmap));
+    image->QueryInterface((ID2D1Bitmap**)getter_AddRefs(bitmap));
   }
 
   if (bitmap && aSurfOptions.mSamplingBounds == SamplingBounds::UNBOUNDED) {
@@ -148,7 +153,7 @@ DrawTargetD2D1::DrawSurface(SourceSurface *aSurface,
                                                      D2D1_EXTEND_MODE_CLAMP,
                                                      D2DInterpolationMode(aSurfOptions.mFilter)),
                           D2D1::BrushProperties(aOptions.mAlpha, D2DMatrix(transform)),
-                          byRef(brush));
+                          getter_AddRefs(brush));
     mDC->FillRectangle(D2DRect(aDest), brush);
   }
 
@@ -205,7 +210,7 @@ DrawTargetD2D1::DrawSurfaceWithShadow(SourceSurface *aSurface,
 
   // Step 1, create the shadow effect.
   RefPtr<ID2D1Effect> shadowEffect;
-  HRESULT hr = mDC->CreateEffect(CLSID_D2D1Shadow, byRef(shadowEffect));
+  HRESULT hr = mDC->CreateEffect(CLSID_D2D1Shadow, getter_AddRefs(shadowEffect));
   if (FAILED(hr) || !shadowEffect) {
     gfxWarning() << "Failed to create shadow effect. Code: " << hexa(hr);
     return;
@@ -249,20 +254,23 @@ DrawTargetD2D1::ClearRect(const Rect &aRect)
     return;
   }
 
-  mDC->SetTarget(mTempBitmap);
-  mDC->Clear();
+  RefPtr<ID2D1CommandList> list;
+  mDC->CreateCommandList(getter_AddRefs(list));
+  mDC->SetTarget(list);
 
   IntRect addClipRect;
   RefPtr<ID2D1Geometry> geom = GetClippedGeometry(&addClipRect);
 
   RefPtr<ID2D1SolidColorBrush> brush;
-  mDC->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::White), byRef(brush));
+  mDC->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::White), getter_AddRefs(brush));
   mDC->PushAxisAlignedClip(D2D1::RectF(addClipRect.x, addClipRect.y, addClipRect.XMost(), addClipRect.YMost()), D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
   mDC->FillGeometry(geom, brush);
   mDC->PopAxisAlignedClip();
 
   mDC->SetTarget(mBitmap);
-  mDC->DrawImage(mTempBitmap, D2D1_INTERPOLATION_MODE_NEAREST_NEIGHBOR, D2D1_COMPOSITE_MODE_DESTINATION_OUT);
+  list->Close();
+
+  mDC->DrawImage(list, D2D1_INTERPOLATION_MODE_NEAREST_NEIGHBOR, D2D1_COMPOSITE_MODE_DESTINATION_OUT);
 
   PopClip();
 
@@ -279,7 +287,12 @@ DrawTargetD2D1::MaskSurface(const Pattern &aSource,
 
   RefPtr<ID2D1Bitmap> bitmap;
 
-  RefPtr<ID2D1Image> image = GetImageForSurface(aMask, ExtendMode::CLAMP);
+  Matrix mat = Matrix::Translation(aOffset);
+  RefPtr<ID2D1Image> image = GetImageForSurface(aMask, mat, ExtendMode::CLAMP, nullptr);
+
+  MOZ_ASSERT(!mat.HasNonTranslation());
+  aOffset.x = mat._31;
+  aOffset.y = mat._32;
 
   if (!image) {
     gfxWarning() << "Failed to get image for surface.";
@@ -291,13 +304,15 @@ DrawTargetD2D1::MaskSurface(const Pattern &aSource,
   // FillOpacityMask only works if the antialias mode is MODE_ALIASED
   mDC->SetAntialiasMode(D2D1_ANTIALIAS_MODE_ALIASED);
 
-  IntSize size = aMask->GetSize();
-  Rect maskRect = Rect(0.f, 0.f, Float(size.width), Float(size.height));
-  image->QueryInterface((ID2D1Bitmap**)&bitmap);
+  image->QueryInterface((ID2D1Bitmap**)getter_AddRefs(bitmap));
   if (!bitmap) {
     gfxWarning() << "FillOpacityMask only works with Bitmap source surfaces.";
     return;
   }
+
+  IntSize size = IntSize(bitmap->GetSize().width, bitmap->GetSize().height);
+
+  Rect maskRect = Rect(0.f, 0.f, Float(size.width), Float(size.height));
 
   Rect dest = Rect(aOffset.x, aOffset.y, Float(size.width), Float(size.height));
   RefPtr<ID2D1Brush> brush = CreateBrushForPattern(aSource, aOptions.mAlpha);
@@ -334,12 +349,12 @@ DrawTargetD2D1::CopySurface(SourceSurface *aSurface,
   }
 
   RefPtr<ID2D1Bitmap> bitmap;
-  image->QueryInterface((ID2D1Bitmap**)byRef(bitmap));
+  image->QueryInterface((ID2D1Bitmap**)getter_AddRefs(bitmap));
 
   if (bitmap && mFormat == SurfaceFormat::A8) {
     RefPtr<ID2D1SolidColorBrush> brush;
     mDC->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::White),
-                               D2D1::BrushProperties(), byRef(brush));
+                               D2D1::BrushProperties(), getter_AddRefs(brush));
     mDC->SetAntialiasMode(D2D1_ANTIALIAS_MODE_ALIASED);
     mDC->SetPrimitiveBlend(D2D1_PRIMITIVE_BLEND_COPY);
     mDC->FillOpacityMask(bitmap, brush, D2D1_OPACITY_MASK_CONTENT_GRAPHICS);
@@ -569,9 +584,9 @@ DrawTargetD2D1::FillGlyphs(ScaledFont *aFont,
                                     DWRITE_MEASURING_MODE_NATURAL, &userRect);
 
         RefPtr<ID2D1PathGeometry> path;
-        D2DFactory()->CreatePathGeometry(byRef(path));
+        D2DFactory()->CreatePathGeometry(getter_AddRefs(path));
         RefPtr<ID2D1GeometrySink> sink;
-        path->Open(byRef(sink));
+        path->Open(getter_AddRefs(sink));
         sink->BeginFigure(D2D1::Point2F(userRect.left, userRect.top), D2D1_FIGURE_BEGIN_FILLED);
         sink->AddLine(D2D1::Point2F(userRect.right, userRect.top));
         sink->AddLine(D2D1::Point2F(userRect.right, userRect.bottom));
@@ -724,10 +739,10 @@ DrawTargetD2D1::CreateSourceSurfaceFromData(unsigned char *aData,
 
   HRESULT hr = mDC->CreateBitmap(D2DIntSize(aSize), aData, aStride,
                                  D2D1::BitmapProperties1(D2D1_BITMAP_OPTIONS_NONE, D2DPixelFormat(aFormat)),
-                                 byRef(bitmap));
+                                 getter_AddRefs(bitmap));
 
   if (FAILED(hr) || !bitmap) {
-    gfxCriticalError(CriticalLog::DefaultOptions(Factory::ReasonableSurfaceSize(aSize))) << "[D2D1.1] 1CreateBitmap failure " << aSize << " Code: " << hexa(hr);
+    gfxCriticalError(CriticalLog::DefaultOptions(Factory::ReasonableSurfaceSize(aSize))) << "[D2D1.1] 1CreateBitmap failure " << aSize << " Code: " << hexa(hr) << " format " << (int)aFormat;
     return nullptr;
   }
 
@@ -750,7 +765,7 @@ already_AddRefed<PathBuilder>
 DrawTargetD2D1::CreatePathBuilder(FillRule aFillRule) const
 {
   RefPtr<ID2D1PathGeometry> path;
-  HRESULT hr = factory()->CreatePathGeometry(byRef(path));
+  HRESULT hr = factory()->CreatePathGeometry(getter_AddRefs(path));
 
   if (FAILED(hr)) {
     gfxWarning() << *this << ": Failed to create Direct2D Path Geometry. Code: " << hexa(hr);
@@ -758,7 +773,7 @@ DrawTargetD2D1::CreatePathBuilder(FillRule aFillRule) const
   }
 
   RefPtr<ID2D1GeometrySink> sink;
-  hr = path->Open(byRef(sink));
+  hr = path->Open(getter_AddRefs(sink));
   if (FAILED(hr)) {
     gfxWarning() << *this << ": Failed to access Direct2D Path Geometry. Code: " << hexa(hr);
     return nullptr;
@@ -790,8 +805,8 @@ DrawTargetD2D1::CreateGradientStops(GradientStop *rawStops, uint32_t aNumStops, 
 
   HRESULT hr =
     mDC->CreateGradientStopCollection(stops, aNumStops,
-                                      D2D1_GAMMA_2_2, D2DExtend(aExtendMode),
-                                      byRef(stopCollection));
+                                      D2D1_GAMMA_2_2, D2DExtend(aExtendMode, Axis::BOTH),
+                                      getter_AddRefs(stopCollection));
   delete [] stops;
 
   if (FAILED(hr)) {
@@ -818,16 +833,16 @@ DrawTargetD2D1::Init(ID3D11Texture2D* aTexture, SurfaceFormat aFormat)
     return false;
   }
 
-  hr = device->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_ENABLE_MULTITHREADED_OPTIMIZATIONS, byRef(mDC));
+  hr = device->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_ENABLE_MULTITHREADED_OPTIMIZATIONS, getter_AddRefs(mDC));
 
   if (FAILED(hr)) {
-    gfxCriticalError() <<"[D2D1.1] 1Failed to create a DeviceContext, code: " << hexa(hr);
+    gfxCriticalError() <<"[D2D1.1] 1Failed to create a DeviceContext, code: " << hexa(hr) << " format " << (int)aFormat;
     return false;
   }
 
   RefPtr<IDXGISurface> dxgiSurface;
   aTexture->QueryInterface(__uuidof(IDXGISurface),
-                           (void**)((IDXGISurface**)byRef(dxgiSurface)));
+                           (void**)((IDXGISurface**)getter_AddRefs(dxgiSurface)));
   if (!dxgiSurface) {
     gfxCriticalError() <<"[D2D1.1] Failed to obtain a DXGI surface.";
     return false;
@@ -839,34 +854,24 @@ DrawTargetD2D1::Init(ID3D11Texture2D* aTexture, SurfaceFormat aFormat)
   props.pixelFormat = D2DPixelFormat(aFormat);
   props.colorContext = nullptr;
   props.bitmapOptions = D2D1_BITMAP_OPTIONS_TARGET;
-  hr = mDC->CreateBitmapFromDxgiSurface(dxgiSurface, props, (ID2D1Bitmap1**)byRef(mBitmap));
+  hr = mDC->CreateBitmapFromDxgiSurface(dxgiSurface, props, (ID2D1Bitmap1**)getter_AddRefs(mBitmap));
 
   if (FAILED(hr)) {
-    gfxCriticalError() << "[D2D1.1] CreateBitmapFromDxgiSurface failure Code: " << hexa(hr);
+    gfxCriticalError() << "[D2D1.1] CreateBitmapFromDxgiSurface failure Code: " << hexa(hr) << " format " << (int)aFormat;
     return false;
   }
 
   mFormat = aFormat;
   D3D11_TEXTURE2D_DESC desc;
   aTexture->GetDesc(&desc);
-  desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
   mSize.width = desc.Width;
   mSize.height = desc.Height;
-  props.pixelFormat.alphaMode = D2D1_ALPHA_MODE_PREMULTIPLIED;
-  props.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
-
-  hr = mDC->CreateBitmap(D2DIntSize(mSize), nullptr, 0, props, (ID2D1Bitmap1**)byRef(mTempBitmap));
-
-  if (FAILED(hr)) {
-    gfxCriticalError(CriticalLog::DefaultOptions(Factory::ReasonableSurfaceSize(mSize))) << "[D2D1.1] 2CreateBitmap failure " << mSize << " Code: " << hexa(hr);
-    return false;
-  }
 
   // This single solid color brush system is not very 'threadsafe', however,
   // issueing multiple drawing commands simultaneously to a single drawtarget
   // from multiple threads is unexpected since there's no way to guarantee
   // ordering in that situation anyway.
-  hr = mDC->CreateSolidColorBrush(D2D1::ColorF(0, 0), byRef(mSolidColorBrush));
+  hr = mDC->CreateSolidColorBrush(D2D1::ColorF(0, 0), getter_AddRefs(mSolidColorBrush));
 
   if (FAILED(hr)) {
     gfxCriticalError() << "[D2D1.1] Failure creating solid color brush.";
@@ -890,17 +895,17 @@ DrawTargetD2D1::Init(const IntSize &aSize, SurfaceFormat aFormat)
     return false;
   }
 
-  hr = device->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_ENABLE_MULTITHREADED_OPTIMIZATIONS, byRef(mDC));
+  hr = device->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_ENABLE_MULTITHREADED_OPTIMIZATIONS, getter_AddRefs(mDC));
 
   if (FAILED(hr)) {
-    gfxCriticalError() <<"[D2D1.1] 2Failed to create a DeviceContext, code: " << hexa(hr);
+    gfxCriticalError() <<"[D2D1.1] 2Failed to create a DeviceContext, code: " << hexa(hr) << " format " << (int)aFormat;
     return false;
   }
 
   if (mDC->GetMaximumBitmapSize() < UINT32(aSize.width) ||
       mDC->GetMaximumBitmapSize() < UINT32(aSize.height)) {
     // This is 'ok', so don't assert
-    gfxCriticalError(CriticalLog::DefaultOptions(false)) << "[D2D1.1] Attempt to use unsupported surface size " << aSize;
+    gfxCriticalNote << "[D2D1.1] Attempt to use unsupported surface size " << aSize;
     return false;
   }
 
@@ -910,26 +915,16 @@ DrawTargetD2D1::Init(const IntSize &aSize, SurfaceFormat aFormat)
   props.pixelFormat = D2DPixelFormat(aFormat);
   props.colorContext = nullptr;
   props.bitmapOptions = D2D1_BITMAP_OPTIONS_TARGET;
-  hr = mDC->CreateBitmap(D2DIntSize(aSize), nullptr, 0, props, (ID2D1Bitmap1**)byRef(mBitmap));
+  hr = mDC->CreateBitmap(D2DIntSize(aSize), nullptr, 0, props, (ID2D1Bitmap1**)getter_AddRefs(mBitmap));
 
   if (FAILED(hr)) {
-    gfxCriticalError() << "[D2D1.1] 3CreateBitmap failure " << aSize << " Code: " << hexa(hr);
-    return false;
-  }
-
-  props.pixelFormat.alphaMode = D2D1_ALPHA_MODE_PREMULTIPLIED;
-  props.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
-
-  hr = mDC->CreateBitmap(D2DIntSize(aSize), nullptr, 0, props, (ID2D1Bitmap1**)byRef(mTempBitmap));
-
-  if (FAILED(hr)) {
-    gfxCriticalError(CriticalLog::DefaultOptions(Factory::ReasonableSurfaceSize(aSize))) << "[D2D1.1] failed to create new TempBitmap " << aSize << " Code: " << hexa(hr);
+    gfxCriticalError() << "[D2D1.1] 3CreateBitmap failure " << aSize << " Code: " << hexa(hr) << " format " << (int)aFormat;
     return false;
   }
 
   mDC->SetTarget(mBitmap);
 
-  hr = mDC->CreateSolidColorBrush(D2D1::ColorF(0, 0), byRef(mSolidColorBrush));
+  hr = mDC->CreateSolidColorBrush(D2D1::ColorF(0, 0), getter_AddRefs(mSolidColorBrush));
 
   if (FAILED(hr)) {
     gfxCriticalError() << "[D2D1.1] Failure creating solid color brush.";
@@ -1033,8 +1028,8 @@ DrawTargetD2D1::PrepareForDrawing(CompositionOp aOp, const Pattern &aPattern)
 
   PopAllClips();
 
-  mDC->SetTarget(mTempBitmap);
-  mDC->Clear(D2D1::ColorF(0, 0));
+  mDC->CreateCommandList(getter_AddRefs(mCommandList));
+  mDC->SetTarget(mCommandList);
 
   PushAllClips();
   FlushTransformToDC();
@@ -1053,10 +1048,11 @@ DrawTargetD2D1::FinalizeDrawing(CompositionOp aOp, const Pattern &aPattern)
 
   PopAllClips();
 
-  RefPtr<ID2D1Image> image;
-  mDC->GetTarget(byRef(image));
-
   mDC->SetTarget(mBitmap);
+  mCommandList->Close();
+
+  RefPtr<ID2D1CommandList> source = mCommandList;
+  mCommandList = nullptr;
 
   mDC->SetTransform(D2D1::IdentityMatrix());
   mTransformDirty = true;
@@ -1070,9 +1066,9 @@ DrawTargetD2D1::FinalizeDrawing(CompositionOp aOp, const Pattern &aPattern)
 
       if (clipIsComplex) {
         if (!IsOperatorBoundByMask(aOp)) {
-          HRESULT hr = mDC->CreateBitmap(D2DIntSize(mSize), D2D1::BitmapProperties(D2DPixelFormat(mFormat)), byRef(tmpBitmap));
+          HRESULT hr = mDC->CreateBitmap(D2DIntSize(mSize), D2D1::BitmapProperties(D2DPixelFormat(mFormat)), getter_AddRefs(tmpBitmap));
           if (FAILED(hr)) {
-            gfxCriticalError(CriticalLog::DefaultOptions(Factory::ReasonableSurfaceSize(mSize))) << "[D2D1.1] 6CreateBitmap failure " << mSize << " Code: " << hexa(hr);
+            gfxCriticalError(CriticalLog::DefaultOptions(Factory::ReasonableSurfaceSize(mSize))) << "[D2D1.1] 6CreateBitmap failure " << mSize << " Code: " << hexa(hr) << " format " << (int)mFormat;
             // For now, crash in this scenario; this should happen because tmpBitmap is
             // null and CopyFromBitmap call below dereferences it.
             // return;
@@ -1084,12 +1080,12 @@ DrawTargetD2D1::FinalizeDrawing(CompositionOp aOp, const Pattern &aPattern)
       } else {
         PushAllClips();
       }
-      mDC->DrawImage(image, D2D1_INTERPOLATION_MODE_NEAREST_NEIGHBOR, D2DCompositionMode(aOp));
+      mDC->DrawImage(source, D2D1_INTERPOLATION_MODE_NEAREST_NEIGHBOR, D2DCompositionMode(aOp));
 
       if (tmpBitmap) {
         RefPtr<ID2D1BitmapBrush> brush;
         RefPtr<ID2D1Geometry> inverseGeom = GetInverseClippedGeometry();
-        mDC->CreateBitmapBrush(tmpBitmap, byRef(brush));
+        mDC->CreateBitmapBrush(tmpBitmap, getter_AddRefs(brush));
 
         mDC->SetPrimitiveBlend(D2D1_PRIMITIVE_BLEND_COPY);
         mDC->FillGeometry(inverseGeom, brush);
@@ -1099,7 +1095,7 @@ DrawTargetD2D1::FinalizeDrawing(CompositionOp aOp, const Pattern &aPattern)
     }
 
     if (!mBlendEffect) {
-      HRESULT hr = mDC->CreateEffect(CLSID_D2D1Blend, byRef(mBlendEffect));
+      HRESULT hr = mDC->CreateEffect(CLSID_D2D1Blend, getter_AddRefs(mBlendEffect));
 
       if (FAILED(hr) || !mBlendEffect) {
         gfxWarning() << "Failed to create blend effect!";
@@ -1108,12 +1104,10 @@ DrawTargetD2D1::FinalizeDrawing(CompositionOp aOp, const Pattern &aPattern)
     }
 
     RefPtr<ID2D1Bitmap> tmpBitmap;
-    HRESULT hr = mDC->CreateBitmap(D2DIntSize(mSize), D2D1::BitmapProperties(D2DPixelFormat(mFormat)), byRef(tmpBitmap));
+    HRESULT hr = mDC->CreateBitmap(D2DIntSize(mSize), D2D1::BitmapProperties(D2DPixelFormat(mFormat)), getter_AddRefs(tmpBitmap));
     if (FAILED(hr)) {
-      gfxCriticalError(CriticalLog::DefaultOptions(Factory::ReasonableSurfaceSize(mSize))) << "[D2D1.1] 5CreateBitmap failure " << mSize << " Code: " << hexa(hr);
-      // For now, crash in this scenario; this should happen because tmpBitmap is
-      // null and CopyFromBitmap call below dereferences it.
-      // return;
+      gfxCriticalError(CriticalLog::DefaultOptions(Factory::ReasonableSurfaceSize(mSize))) << "[D2D1.1] 5CreateBitmap failure " << mSize << " Code: " << hexa(hr) << " format " << (int)mFormat;
+      return;
     }
 
     // This flush is important since the copy method will not know about the context drawing to the surface.
@@ -1125,7 +1119,7 @@ DrawTargetD2D1::FinalizeDrawing(CompositionOp aOp, const Pattern &aPattern)
     tmpBitmap->CopyFromBitmap(nullptr, mBitmap, nullptr);
 
     mBlendEffect->SetInput(0, tmpBitmap);
-    mBlendEffect->SetInput(1, mTempBitmap);
+    mBlendEffect->SetInput(1, source);
     mBlendEffect->SetValue(D2D1_BLEND_PROP_MODE, D2DBlendMode(aOp));
 
     PushAllClips();
@@ -1144,7 +1138,7 @@ DrawTargetD2D1::FinalizeDrawing(CompositionOp aOp, const Pattern &aPattern)
 
   RefPtr<ID2D1Effect> radialGradientEffect;
 
-  HRESULT hr = mDC->CreateEffect(CLSID_RadialGradientEffect, byRef(radialGradientEffect));
+  HRESULT hr = mDC->CreateEffect(CLSID_RadialGradientEffect, getter_AddRefs(radialGradientEffect));
   if (FAILED(hr) || !radialGradientEffect) {
     gfxWarning() << "Failed to create radial gradient effect. Code: " << hexa(hr);
     return;
@@ -1158,7 +1152,7 @@ DrawTargetD2D1::FinalizeDrawing(CompositionOp aOp, const Pattern &aPattern)
   radialGradientEffect->SetValue(RADIAL_PROP_RADIUS_2, pat->mRadius2);
   radialGradientEffect->SetValue(RADIAL_PROP_RADIUS_2, pat->mRadius2);
   radialGradientEffect->SetValue(RADIAL_PROP_TRANSFORM, D2DMatrix(pat->mMatrix * mTransform));
-  radialGradientEffect->SetInput(0, image);
+  radialGradientEffect->SetInput(0, source);
 
   mDC->DrawImage(radialGradientEffect, D2D1_INTERPOLATION_MODE_NEAREST_NEIGHBOR, D2DCompositionMode(aOp));
 }
@@ -1266,10 +1260,10 @@ DrawTargetD2D1::GetClippedGeometry(IntRect *aClipBounds)
     }
 
     RefPtr<ID2D1PathGeometry> newGeom;
-    factory()->CreatePathGeometry(byRef(newGeom));
+    factory()->CreatePathGeometry(getter_AddRefs(newGeom));
 
     RefPtr<ID2D1GeometrySink> currentSink;
-    newGeom->Open(byRef(currentSink));
+    newGeom->Open(getter_AddRefs(currentSink));
 
     if (iter->mPath) {
       pathGeom->CombineWithGeometry(iter->mPath->GetGeometry(), D2D1_COMBINE_MODE_INTERSECT,
@@ -1306,10 +1300,10 @@ DrawTargetD2D1::GetInverseClippedGeometry()
   RefPtr<ID2D1RectangleGeometry> rectGeom;
   RefPtr<ID2D1PathGeometry> inverseGeom;
 
-  factory()->CreateRectangleGeometry(D2D1::RectF(0, 0, mSize.width, mSize.height), byRef(rectGeom));
-  factory()->CreatePathGeometry(byRef(inverseGeom));
+  factory()->CreateRectangleGeometry(D2D1::RectF(0, 0, mSize.width, mSize.height), getter_AddRefs(rectGeom));
+  factory()->CreatePathGeometry(getter_AddRefs(inverseGeom));
   RefPtr<ID2D1GeometrySink> sink;
-  inverseGeom->Open(byRef(sink));
+  inverseGeom->Open(getter_AddRefs(sink));
   rectGeom->CombineWithGeometry(geom, D2D1_COMBINE_MODE_EXCLUDE, D2D1::IdentityMatrix(), sink);
   sink->Close();
 
@@ -1413,7 +1407,7 @@ DrawTargetD2D1::CreateBrushForPattern(const Pattern &aPattern, Float aAlpha)
                                                                        D2DPoint(pat->mEnd)),
                                    D2D1::BrushProperties(aAlpha, D2DMatrix(pat->mMatrix)),
                                    stops->mStopCollection,
-                                   byRef(gradBrush));
+                                   getter_AddRefs(gradBrush));
 
     if (!gradBrush) {
       gfxWarning() << "Couldn't create gradient brush.";
@@ -1441,7 +1435,7 @@ DrawTargetD2D1::CreateBrushForPattern(const Pattern &aPattern, Float aAlpha)
                                           pat->mRadius2, pat->mRadius2),
       D2D1::BrushProperties(aAlpha, D2DMatrix(pat->mMatrix)),
                             stops->mStopCollection,
-                            byRef(gradBrush));
+                            getter_AddRefs(gradBrush));
 
     if (!gradBrush) {
       gfxWarning() << "Couldn't create gradient brush.";
@@ -1470,18 +1464,22 @@ DrawTargetD2D1::CreateBrushForPattern(const Pattern &aPattern, Float aAlpha)
       return CreateTransparentBlackBrush();
     }
 
-    bool useSamplingRect = false;
     if (pat->mSamplingRect.IsEmpty()) {
       RefPtr<ID2D1Bitmap> bitmap;
-      image->QueryInterface((ID2D1Bitmap**)byRef(bitmap));
+      image->QueryInterface((ID2D1Bitmap**)getter_AddRefs(bitmap));
       if (bitmap) {
+        /**
+         * Create the brush with the proper repeat modes.
+         */
         RefPtr<ID2D1BitmapBrush> bitmapBrush;
+        D2D1_EXTEND_MODE xRepeat = D2DExtend(pat->mExtendMode, Axis::X_AXIS);
+        D2D1_EXTEND_MODE yRepeat = D2DExtend(pat->mExtendMode, Axis::Y_AXIS);
+
         mDC->CreateBitmapBrush(bitmap,
-                               D2D1::BitmapBrushProperties(D2DExtend(pat->mExtendMode),
-                                                           D2DExtend(pat->mExtendMode),
+                               D2D1::BitmapBrushProperties(xRepeat, yRepeat,
                                                            D2DFilter(pat->mFilter)),
                                D2D1::BrushProperties(aAlpha, D2DMatrix(mat)),
-                               byRef(bitmapBrush));
+                               getter_AddRefs(bitmapBrush));
         if (!bitmapBrush) {
           gfxWarning() << "Couldn't create bitmap brush!";
           return CreateTransparentBlackBrush();
@@ -1502,13 +1500,17 @@ DrawTargetD2D1::CreateBrushForPattern(const Pattern &aPattern, Float aAlpha)
       // We will do a partial upload of the sampling restricted area from GetImageForSurface.
       samplingBounds = D2D1::RectF(0, 0, pat->mSamplingRect.width, pat->mSamplingRect.height);
     }
+
+    D2D1_EXTEND_MODE xRepeat = D2DExtend(pat->mExtendMode, Axis::X_AXIS);
+    D2D1_EXTEND_MODE yRepeat = D2DExtend(pat->mExtendMode, Axis::Y_AXIS);
+
     mDC->CreateImageBrush(image,
                           D2D1::ImageBrushProperties(samplingBounds,
-                                                     D2DExtend(pat->mExtendMode),
-                                                     D2DExtend(pat->mExtendMode),
+                                                     xRepeat,
+                                                     yRepeat,
                                                      D2DInterpolationMode(pat->mFilter)),
                           D2D1::BrushProperties(aAlpha, D2DMatrix(mat)),
-                          byRef(imageBrush));
+                          getter_AddRefs(imageBrush));
 
     if (!imageBrush) {
       gfxWarning() << "Couldn't create image brush!";
@@ -1571,10 +1573,10 @@ DrawTargetD2D1::OptimizeSourceSurface(SourceSurface* aSurface) const
 
     HRESULT hr = mDC->CreateBitmap(D2DIntSize(data->GetSize()), map.GetData(), map.GetStride(),
                                    D2D1::BitmapProperties1(D2D1_BITMAP_OPTIONS_NONE, D2DPixelFormat(data->GetFormat())),
-                                   byRef(bitmap));
+                                   getter_AddRefs(bitmap));
 
     if (FAILED(hr)) {
-      gfxCriticalError(CriticalLog::DefaultOptions(Factory::ReasonableSurfaceSize(data->GetSize()))) << "[D2D1.1] 4CreateBitmap failure " << data->GetSize() << " Code: " << hexa(hr);
+      gfxCriticalError(CriticalLog::DefaultOptions(Factory::ReasonableSurfaceSize(data->GetSize()))) << "[D2D1.1] 4CreateBitmap failure " << data->GetSize() << " Code: " << hexa(hr) << " format " << (int)data->GetFormat();
     }
   }
 

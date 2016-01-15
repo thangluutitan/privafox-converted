@@ -40,6 +40,13 @@ class IMEContentObserver final : public nsISelectionListener
                                , public nsIEditorObserver
 {
 public:
+  typedef ContentEventHandler::NodePosition NodePosition;
+  typedef ContentEventHandler::NodePositionBefore NodePositionBefore;
+  typedef widget::IMENotification::SelectionChangeData SelectionChangeData;
+  typedef widget::IMENotification::TextChangeData TextChangeData;
+  typedef widget::IMENotification::TextChangeDataBase TextChangeDataBase;
+  typedef widget::IMEMessage IMEMessage;
+
   IMEContentObserver();
 
   NS_DECL_CYCLE_COLLECTING_ISUPPORTS
@@ -61,6 +68,8 @@ public:
 
   bool OnMouseButtonEvent(nsPresContext* aPresContext,
                           WidgetMouseEvent* aMouseEvent);
+
+  nsresult HandleQueryContentEvent(WidgetQueryContentEvent* aEvent);
 
   void Init(nsIWidget* aWidget, nsPresContext* aPresContext,
             nsIContent* aContent, nsIEditor* aEditor);
@@ -90,64 +99,17 @@ public:
   }
   nsIWidget* GetWidget() const { return mWidget; }
   nsIEditor* GetEditor() const { return mEditor; }
-  void SuppressNotifyingIME() { mSuppressNotifications++; }
-  void UnsuppressNotifyingIME()
-  {
-    if (!mSuppressNotifications || --mSuppressNotifications) {
-      return;
-    }
-    FlushMergeableNotifications();
-  }
+  void SuppressNotifyingIME();
+  void UnsuppressNotifyingIME();
   nsPresContext* GetPresContext() const;
   nsresult GetSelectionAndRoot(nsISelection** aSelection,
                                nsIContent** aRoot) const;
 
-  struct TextChangeData
-  {
-    // mStartOffset is the start offset of modified or removed text in
-    // original content and inserted text in new content.
-    uint32_t mStartOffset;
-    // mRemovalEndOffset is the end offset of modified or removed text in
-    // original content.  If the value is same as mStartOffset, no text hasn't
-    // been removed yet.
-    uint32_t mRemovedEndOffset;
-    // mAddedEndOffset is the end offset of inserted text or same as
-    // mStartOffset if just removed.  The vlaue is offset in the new content.
-    uint32_t mAddedEndOffset;
-
-    bool mCausedOnlyByComposition;
-    bool mStored;
-
-    TextChangeData()
-      : mStartOffset(0)
-      , mRemovedEndOffset(0)
-      , mAddedEndOffset(0)
-      , mCausedOnlyByComposition(false)
-      , mStored(false)
-    {
-    }
-
-    TextChangeData(uint32_t aStartOffset,
-                   uint32_t aRemovedEndOffset,
-                   uint32_t aAddedEndOffset,
-                   bool aCausedByComposition)
-      : mStartOffset(aStartOffset)
-      , mRemovedEndOffset(aRemovedEndOffset)
-      , mAddedEndOffset(aAddedEndOffset)
-      , mCausedOnlyByComposition(aCausedByComposition)
-      , mStored(true)
-    {
-      MOZ_ASSERT(aRemovedEndOffset >= aStartOffset,
-                 "removed end offset must not be smaller than start offset");
-      MOZ_ASSERT(aAddedEndOffset >= aStartOffset,
-                 "added end offset must not be smaller than start offset");
-    }
-    // Positive if text is added. Negative if text is removed.
-    int64_t Difference() const 
-    {
-      return mAddedEndOffset - mRemovedEndOffset;
-    }
-  };
+  /**
+   * TryToFlushPendingNotifications() should be called when pending events
+   * should be flushed.  This tries to run the queued IMENotificationSender.
+   */
+  void TryToFlushPendingNotifications();
 
 private:
   ~IMEContentObserver() {}
@@ -159,35 +121,28 @@ private:
     eState_Observing
   };
   State GetState() const;
+  bool InitWithEditor(nsPresContext* aPresContext, nsIContent* aContent,
+                      nsIEditor* aEditor);
+  bool InitWithPlugin(nsPresContext* aPresContext, nsIContent* aContent);
+  bool IsInitializedWithPlugin() const { return !mEditor; }
+  void OnIMEReceivedFocus();
+  void Clear();
   bool IsObservingContent(nsPresContext* aPresContext,
                           nsIContent* aContent) const;
   bool IsReflowLocked() const;
   bool IsSafeToNotifyIME() const;
+  bool IsEditorComposing() const;
 
   void PostFocusSetNotification();
-  void MaybeNotifyIMEOfFocusSet()
-  {
-    PostFocusSetNotification();
-    FlushMergeableNotifications();
-  }
-  void PostTextChangeNotification(const TextChangeData& aTextChangeData);
-  void MaybeNotifyIMEOfTextChange(const TextChangeData& aTextChangeData)
-  {
-    PostTextChangeNotification(aTextChangeData);
-    FlushMergeableNotifications();
-  }
-  void PostSelectionChangeNotification(bool aCausedByComposition);
-  void MaybeNotifyIMEOfSelectionChange(bool aCausedByComposition)
-  {
-    PostSelectionChangeNotification(aCausedByComposition);
-    FlushMergeableNotifications();
-  }
+  void MaybeNotifyIMEOfFocusSet();
+  void PostTextChangeNotification();
+  void MaybeNotifyIMEOfTextChange(const TextChangeDataBase& aTextChangeData);
+  void PostSelectionChangeNotification();
+  void MaybeNotifyIMEOfSelectionChange(bool aCausedByComposition,
+                                       bool aCausedBySelectionEvent,
+                                       bool aOccurredDuringComposition);
   void PostPositionChangeNotification();
-  void MaybeNotifyIMEOfPositionChange()
-  {
-    PostPositionChangeNotification();
-    FlushMergeableNotifications();
-  }
+  void MaybeNotifyIMEOfPositionChange();
 
   void NotifyContentAdded(nsINode* aContainer, int32_t aStart, int32_t aEnd);
   void ObserveEditableNode();
@@ -199,26 +154,99 @@ private:
    *  UnregisterObservers() unregisters all listeners and observers.
    */
   void UnregisterObservers();
-  void StoreTextChangeData(const TextChangeData& aTextChangeData);
   void FlushMergeableNotifications();
   void ClearPendingNotifications()
   {
-    mIsFocusEventPending = false;
-    mIsSelectionChangeEventPending = false;
-    mIsPositionChangeEventPending = false;
-    mTextChangeData.mStored = false;
+    mNeedsToNotifyIMEOfFocusSet = false;
+    mNeedsToNotifyIMEOfTextChange = false;
+    mNeedsToNotifyIMEOfSelectionChange = false;
+    mNeedsToNotifyIMEOfPositionChange = false;
+    mTextChangeData.Clear();
+  }
+  bool NeedsToNotifyIMEOfSomething() const
+  {
+    return mNeedsToNotifyIMEOfFocusSet ||
+           mNeedsToNotifyIMEOfTextChange ||
+           mNeedsToNotifyIMEOfSelectionChange ||
+           mNeedsToNotifyIMEOfPositionChange;
   }
 
-#ifdef DEBUG
-  void TestMergingTextChangeData();
-#endif
+  /**
+   * UpdateSelectionCache() updates mSelectionData with the latest selection.
+   * This should be called only when IsSafeToNotifyIME() returns true.
+   *
+   * Note that this does nothing if mUpdatePreference.WantSelectionChange()
+   * returns false.
+   */
+  bool UpdateSelectionCache();
 
   nsCOMPtr<nsIWidget> mWidget;
+  // mFocusedWidget has the editor observed by the instance.  E.g., if the
+  // focused editor is in XUL panel, this should be the widget of the panel.
+  // On the other hand, mWidget is its parent which handles IME.
+  nsCOMPtr<nsIWidget> mFocusedWidget;
   nsCOMPtr<nsISelection> mSelection;
   nsCOMPtr<nsIContent> mRootContent;
   nsCOMPtr<nsINode> mEditableNode;
   nsCOMPtr<nsIDocShell> mDocShell;
   nsCOMPtr<nsIEditor> mEditor;
+
+  /**
+   * Helper classes to notify IME.
+   */
+
+  class AChangeEvent: public nsRunnable
+  {
+  protected:
+    enum ChangeEventType
+    {
+      eChangeEventType_Focus,
+      eChangeEventType_Selection,
+      eChangeEventType_Text,
+      eChangeEventType_Position,
+      eChangeEventType_FlushPendingEvents
+    };
+
+    explicit AChangeEvent(IMEContentObserver* aIMEContentObserver)
+      : mIMEContentObserver(aIMEContentObserver)
+    {
+      MOZ_ASSERT(mIMEContentObserver);
+    }
+
+    RefPtr<IMEContentObserver> mIMEContentObserver;
+
+    /**
+     * CanNotifyIME() checks if mIMEContentObserver can and should notify IME.
+     */
+    bool CanNotifyIME(ChangeEventType aChangeEventType) const;
+
+    /**
+     * IsSafeToNotifyIME() checks if it's safe to noitify IME.
+     */
+    bool IsSafeToNotifyIME(ChangeEventType aChangeEventType) const;
+  };
+
+  class IMENotificationSender: public AChangeEvent
+  {
+  public:
+    explicit IMENotificationSender(IMEContentObserver* aIMEContentObserver)
+      : AChangeEvent(aIMEContentObserver)
+      , mIsRunning(false)
+    {
+    }
+    NS_IMETHOD Run() override;
+
+  private:
+    void SendFocusSet();
+    void SendSelectionChange();
+    void SendTextChange();
+    void SendPositionChange();
+
+    bool mIsRunning;
+  };
+
+  // mQueuedSender is, it was put into the event queue but not run yet.
+  RefPtr<IMENotificationSender> mQueuedSender;
 
   /**
    * FlatTextCache stores flat text length from start of the content to
@@ -276,6 +304,11 @@ private:
 
   TextChangeData mTextChangeData;
 
+  // mSelectionData is the last selection data which was notified.  The
+  // selection information is modified by UpdateSelectionCache().  The reason
+  // of the selection change is modified by MaybeNotifyIMEOfSelectionChange().
+  SelectionChangeData mSelectionData;
+
   EventStateManager* mESM;
 
   nsIMEUpdatePreference mUpdatePreference;
@@ -283,116 +316,20 @@ private:
   uint32_t mSuppressNotifications;
   int64_t mPreCharacterDataChangeLength;
 
+  // mSendingNotification is a notification which is now sending from
+  // IMENotificationSender.  When the value is NOTIFY_IME_OF_NOTHING, it's
+  // not sending any notification.
+  IMEMessage mSendingNotification;
+
   bool mIsObserving;
   bool mIMEHasFocus;
-  bool mIsFocusEventPending;
-  bool mIsSelectionChangeEventPending;
-  bool mSelectionChangeCausedOnlyByComposition;
-  bool mIsPositionChangeEventPending;
-  bool mIsFlushingPendingNotifications;
-
-
-  /**
-   * Helper classes to notify IME.
-   */
-
-  class AChangeEvent: public nsRunnable
-  {
-  protected:
-    enum ChangeEventType
-    {
-      eChangeEventType_Focus,
-      eChangeEventType_Selection,
-      eChangeEventType_Text,
-      eChangeEventType_Position,
-      eChangeEventType_FlushPendingEvents
-    };
-
-    AChangeEvent(ChangeEventType aChangeEventType,
-                 IMEContentObserver* aIMEContentObserver)
-      : mIMEContentObserver(aIMEContentObserver)
-      , mChangeEventType(aChangeEventType)
-    {
-      MOZ_ASSERT(mIMEContentObserver);
-    }
-
-    nsRefPtr<IMEContentObserver> mIMEContentObserver;
-    ChangeEventType mChangeEventType;
-
-    /**
-     * CanNotifyIME() checks if mIMEContentObserver can and should notify IME.
-     */
-    bool CanNotifyIME() const;
-
-    /**
-     * IsSafeToNotifyIME() checks if it's safe to noitify IME.
-     */
-    bool IsSafeToNotifyIME() const;
-  };
-
-  class FocusSetEvent: public AChangeEvent
-  {
-  public:
-    explicit FocusSetEvent(IMEContentObserver* aIMEContentObserver)
-      : AChangeEvent(eChangeEventType_Focus, aIMEContentObserver)
-    {
-    }
-    NS_IMETHOD Run() override;
-  };
-
-  class SelectionChangeEvent : public AChangeEvent
-  {
-  public:
-    SelectionChangeEvent(IMEContentObserver* aIMEContentObserver,
-                         bool aCausedByComposition)
-      : AChangeEvent(eChangeEventType_Selection, aIMEContentObserver)
-      , mCausedByComposition(aCausedByComposition)
-    {
-    }
-    NS_IMETHOD Run() override;
-
-  private:
-    bool mCausedByComposition;
-  };
-
-  class TextChangeEvent : public AChangeEvent
-  {
-  public:
-    TextChangeEvent(IMEContentObserver* aIMEContentObserver,
-                    TextChangeData& aData)
-      : AChangeEvent(eChangeEventType_Text, aIMEContentObserver)
-      , mData(aData)
-    {
-      MOZ_ASSERT(mData.mStored);
-      // Reset mStored because this now consumes the data.
-      aData.mStored = false;
-    }
-    NS_IMETHOD Run() override;
-
-  private:
-    TextChangeData mData;
-  };
-
-  class PositionChangeEvent final : public AChangeEvent
-  {
-  public:
-    explicit PositionChangeEvent(IMEContentObserver* aIMEContentObserver)
-      : AChangeEvent(eChangeEventType_Position, aIMEContentObserver)
-    {
-    }
-    NS_IMETHOD Run() override;
-  };
-
-  class AsyncMergeableNotificationsFlusher : public AChangeEvent
-  {
-  public:
-    explicit AsyncMergeableNotificationsFlusher(
-      IMEContentObserver* aIMEContentObserver)
-      : AChangeEvent(eChangeEventType_FlushPendingEvents, aIMEContentObserver)
-    {
-    }
-    NS_IMETHOD Run() override;
-  };
+  bool mNeedsToNotifyIMEOfFocusSet;
+  bool mNeedsToNotifyIMEOfTextChange;
+  bool mNeedsToNotifyIMEOfSelectionChange;
+  bool mNeedsToNotifyIMEOfPositionChange;
+  // mIsHandlingQueryContentEvent is true when IMEContentObserver is handling
+  // WidgetQueryContentEvent with ContentEventHandler.
+  bool mIsHandlingQueryContentEvent;
 };
 
 } // namespace mozilla

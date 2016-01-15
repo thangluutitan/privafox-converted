@@ -44,6 +44,7 @@
 #include "mozilla/Services.h"
 #include "mozilla/TextEvents.h"
 #include "mozilla/dom/Element.h"
+#include "mozilla/dom/Event.h"
 #include <algorithm>
 
 using namespace mozilla;
@@ -94,24 +95,20 @@ public:
       domEventToFire.AssignLiteral("DOMMenuItemInactive");
     }
 
-    nsCOMPtr<nsIDOMEvent> event;
-    if (NS_SUCCEEDED(EventDispatcher::CreateEvent(mMenu, mPresContext, nullptr,
-                                                  NS_LITERAL_STRING("Events"),
-                                                  getter_AddRefs(event)))) {
-      event->InitEvent(domEventToFire, true, true);
+    RefPtr<Event> event = NS_NewDOMEvent(mMenu, mPresContext, nullptr);
+    event->InitEvent(domEventToFire, true, true);
 
-      event->SetTrusted(true);
+    event->SetTrusted(true);
 
-      EventDispatcher::DispatchDOMEvent(mMenu, nullptr, event,
-                                        mPresContext, nullptr);
-    }
+    EventDispatcher::DispatchDOMEvent(mMenu, nullptr, event,
+        mPresContext, nullptr);
 
     return NS_OK;
   }
 
 private:
   nsCOMPtr<nsIContent> mMenu;
-  nsRefPtr<nsPresContext> mPresContext;
+  RefPtr<nsPresContext> mPresContext;
   bool mIsActivate;
 };
 
@@ -128,7 +125,7 @@ public:
     nsMenuFrame* frame = static_cast<nsMenuFrame*>(mFrame.GetFrame());
     NS_ENSURE_STATE(frame);
     if (mAttr == nsGkAtoms::checked) {
-      frame->UpdateMenuSpecialState(frame->PresContext());
+      frame->UpdateMenuSpecialState();
     } else if (mAttr == nsGkAtoms::acceltext) {
       // someone reset the accelText attribute,
       // so clear the bit that says *we* set it
@@ -138,7 +135,7 @@ public:
     else if (mAttr == nsGkAtoms::key) {
       frame->BuildAcceleratorText(true);
     } else if (mAttr == nsGkAtoms::type || mAttr == nsGkAtoms::name) {
-      frame->UpdateMenuType(frame->PresContext());
+      frame->UpdateMenuType();
     }
     return NS_OK;
   }
@@ -214,7 +211,7 @@ public:
     bool shouldFlush = false;
     nsMenuFrame* menu = do_QueryFrame(mWeakFrame.GetFrame());
     if (menu) {
-      menu->UpdateMenuType(menu->PresContext());
+      menu->UpdateMenuType();
       shouldFlush = true;
     }
     delete this;
@@ -397,7 +394,7 @@ nsMenuFrame::HandleEvent(nsPresContext* aPresContext,
 
   bool onmenu = IsOnMenu();
 
-  if (aEvent->message == NS_KEY_PRESS && !IsDisabled()) {
+  if (aEvent->mMessage == eKeyPress && !IsDisabled()) {
     WidgetKeyboardEvent* keyEvent = aEvent->AsKeyboardEvent();
     uint32_t keyCode = keyEvent->keyCode;
 #ifdef XP_MACOSX
@@ -416,7 +413,7 @@ nsMenuFrame::HandleEvent(nsPresContext* aPresContext,
     }
 #endif
   }
-  else if (aEvent->message == NS_MOUSE_BUTTON_DOWN &&
+  else if (aEvent->mMessage == eMouseDown &&
            aEvent->AsMouseEvent()->button == WidgetMouseEvent::eLeftButton &&
            !IsDisabled() && IsMenu()) {
     // The menu item was selected. Bring up the menu.
@@ -428,16 +425,17 @@ nsMenuFrame::HandleEvent(nsPresContext* aPresContext,
     }
     else {
       if (!IsOpen()) {
+        menuParent->ChangeMenuItem(this, false, false);
         OpenMenu(false);
       }
     }
   }
   else if (
 #ifndef NSCONTEXTMENUISMOUSEUP
-           (aEvent->message == NS_MOUSE_BUTTON_UP &&
+           (aEvent->mMessage == eMouseUp &&
             aEvent->AsMouseEvent()->button == WidgetMouseEvent::eRightButton) &&
 #else
-           aEvent->message == NS_CONTEXTMENU &&
+           aEvent->mMessage == eContextMenu &&
 #endif
            onmenu && !IsMenu() && !IsDisabled()) {
     // if this menu is a context menu it accepts right-clicks...fire away!
@@ -455,14 +453,14 @@ nsMenuFrame::HandleEvent(nsPresContext* aPresContext,
       Execute(aEvent);
     }
   }
-  else if (aEvent->message == NS_MOUSE_BUTTON_UP &&
+  else if (aEvent->mMessage == eMouseUp &&
            aEvent->AsMouseEvent()->button == WidgetMouseEvent::eLeftButton &&
            !IsMenu() && !IsDisabled()) {
     // Execute the execute event handler.
     *aEventStatus = nsEventStatus_eConsumeNoDefault;
     Execute(aEvent);
   }
-  else if (aEvent->message == NS_MOUSE_OUT) {
+  else if (aEvent->mMessage == eMouseOut) {
     // Kill our timer if one is active.
     if (mOpenTimer) {
       mOpenTimer->Cancel();
@@ -482,7 +480,7 @@ nsMenuFrame::HandleEvent(nsPresContext* aPresContext,
       }
     }
   }
-  else if (aEvent->message == NS_MOUSE_MOVE &&
+  else if (aEvent->mMessage == eMouseMove &&
            (onmenu || (menuParent && menuParent->IsMenuBar()))) {
     if (gEatMouseMove) {
       gEatMouseMove = false;
@@ -915,7 +913,7 @@ nsMenuFrame::IsDisabled()
 }
 
 void
-nsMenuFrame::UpdateMenuType(nsPresContext* aPresContext)
+nsMenuFrame::UpdateMenuType()
 {
   static nsIContent::AttrValuesArray strings[] =
     {&nsGkAtoms::checkbox, &nsGkAtoms::radio, nullptr};
@@ -937,12 +935,12 @@ nsMenuFrame::UpdateMenuType(nsPresContext* aPresContext)
       mType = eMenuType_Normal;
       break;
   }
-  UpdateMenuSpecialState(aPresContext);
+  UpdateMenuSpecialState();
 }
 
 /* update checked-ness for type="checkbox" and type="radio" */
 void
-nsMenuFrame::UpdateMenuSpecialState(nsPresContext* aPresContext)
+nsMenuFrame::UpdateMenuSpecialState()
 {
   bool newChecked =
     mContent->AttrValueIs(kNameSpaceID_None, nsGkAtoms::checked,
@@ -1351,7 +1349,7 @@ nsMenuFrame::SizeToPopup(nsBoxLayoutState& aState, nsSize& aSize)
     bool widthSet, heightSet;
     nsSize tmpSize(-1, 0);
     nsIFrame::AddCSSPrefSize(this, tmpSize, widthSet, heightSet);
-    if (!widthSet && GetFlex(aState) == 0) {
+    if (!widthSet && GetFlex() == 0) {
       nsMenuPopupFrame* popupFrame = GetPopup();
       if (!popupFrame)
         return false;

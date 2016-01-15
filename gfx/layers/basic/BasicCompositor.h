@@ -46,16 +46,11 @@ protected:
   virtual ~BasicCompositor();
 
 public:
-  virtual bool Initialize() override { return true; };
+  virtual bool Initialize() override;
 
   virtual void Destroy() override;
 
-  virtual TextureFactoryIdentifier GetTextureFactoryIdentifier() override
-  {
-    return TextureFactoryIdentifier(LayersBackend::LAYERS_BASIC,
-                                    XRE_GetProcessType(),
-                                    GetMaxTextureSize());
-  }
+  virtual TextureFactoryIdentifier GetTextureFactoryIdentifier() override;
 
   virtual already_AddRefed<CompositingRenderTarget>
   CreateRenderTarget(const gfx::IntRect &aRect, SurfaceInitMode aInit) override;
@@ -95,10 +90,7 @@ public:
                           gfx::Rect *aClipRectOut = nullptr,
                           gfx::Rect *aRenderBoundsOut = nullptr) override;
   virtual void EndFrame() override;
-  virtual void EndFrameForExternalComposition(const gfx::Matrix& aTransform) override
-  {
-    NS_RUNTIMEABORT("We shouldn't ever hit this");
-  }
+  virtual void EndFrameForExternalComposition(const gfx::Matrix& aTransform) override;
 
   virtual bool SupportsPartialTextureUpdate() override { return true; }
   virtual bool CanUseCanvasLayerForSize(const gfx::IntSize &aSize) override { return true; }
@@ -109,8 +101,6 @@ public:
   }
 
   virtual void MakeCurrent(MakeCurrentFlags aFlags = 0) override { }
-
-  virtual void PrepareViewport(const gfx::IntSize& aSize) override { }
 
 #ifdef MOZ_DUMP_PAINTING
   virtual const char* Name() const override { return "Basic"; }
@@ -139,6 +129,7 @@ private:
 
   gfx::IntRect mInvalidRect;
   nsIntRegion mInvalidRegion;
+  bool mDidExternalComposition;
 
   uint32_t mMaxTextureSize;
 };

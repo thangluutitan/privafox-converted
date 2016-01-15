@@ -68,10 +68,12 @@
 #include "FrameLayerBuilder.h"
 #include "mozilla/dom/RequestSyncWifiService.h"
 #include "AnimationCommon.h"
+#include "LayerAnimationInfo.h"
 
 #include "AudioChannelService.h"
 #include "mozilla/dom/DataStoreService.h"
 #include "mozilla/dom/PromiseDebugging.h"
+#include "mozilla/dom/WebCryptoThreadPool.h"
 
 #ifdef MOZ_XUL
 #include "nsXULPopupManager.h"
@@ -95,10 +97,6 @@
 #include "AndroidMediaPluginHost.h"
 #endif
 
-#ifdef MOZ_GSTREAMER
-#include "GStreamerFormatHelper.h"
-#endif
-
 #ifdef MOZ_FFMPEG
 #include "FFmpegRuntimeLinker.h"
 #endif
@@ -109,7 +107,6 @@
 
 #ifdef MOZ_WIDGET_GONK
 #include "nsVolumeService.h"
-#include "SpeakerManagerService.h"
 using namespace mozilla::system;
 #endif
 
@@ -137,6 +134,7 @@ using namespace mozilla::system;
 #include "TouchManager.h"
 #include "MediaDecoder.h"
 #include "mozilla/layers/CompositorLRU.h"
+#include "mozilla/dom/devicestorage/DeviceStorageStatics.h"
 
 using namespace mozilla;
 using namespace mozilla::net;
@@ -285,7 +283,7 @@ nsLayoutStatics::Initialize()
 
   ProcessPriorityManager::Init();
 
-  nsPermissionManager::AppClearDataObserverInit();
+  nsPermissionManager::ClearOriginDataObserverInit();
   nsCookieService::AppClearDataObserverInit();
   nsApplicationCacheService::AppClearDataObserverInit();
 
@@ -311,7 +309,7 @@ nsLayoutStatics::Initialize()
 
 #ifdef DEBUG
   nsStyleContext::Initialize();
-  mozilla::css::CommonAnimationManager::Initialize();
+  mozilla::LayerAnimationInfo::Initialize();
 #endif
 
   MediaDecoder::InitStatics();
@@ -319,6 +317,10 @@ nsLayoutStatics::Initialize()
   PromiseDebugging::Init();
 
   layers::CompositorLRU::Init();
+
+  mozilla::dom::devicestorage::DeviceStorageStatics::Initialize();
+
+  mozilla::dom::WebCryptoThreadPool::Initialize();
 
   return NS_OK;
 }
@@ -391,10 +393,6 @@ nsLayoutStatics::Shutdown()
   AndroidMediaPluginHost::Shutdown();
 #endif
 
-#ifdef MOZ_GSTREAMER
-  GStreamerFormatHelper::Shutdown();
-#endif
-
 #ifdef MOZ_FFMPEG
   FFmpegRuntimeLinker::Unlink();
 #endif
@@ -405,7 +403,6 @@ nsLayoutStatics::Shutdown()
 
 #ifdef MOZ_WIDGET_GONK
   nsVolumeService::Shutdown();
-  SpeakerManagerService::Shutdown();
 #endif
 
 #ifdef MOZ_WEBSPEECH
@@ -434,8 +431,6 @@ nsLayoutStatics::Shutdown()
 
   nsHyphenationManager::Shutdown();
   nsDOMMutationObserver::Shutdown();
-
-  AudioChannelService::Shutdown();
 
   DataStoreService::Shutdown();
 

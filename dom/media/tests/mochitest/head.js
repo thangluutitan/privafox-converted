@@ -20,6 +20,150 @@ try {
   FAKE_ENABLED = true;
 }
 
+/**
+ * This class provides helpers around analysing the audio content in a stream
+ * using WebAudio AnalyserNodes.
+ *
+ * @constructor
+ * @param {object} stream
+ *                 A MediaStream object whose audio track we shall analyse.
+ */
+function AudioStreamAnalyser(ac, stream) {
+  this.audioContext = ac;
+  this.stream = stream;
+  this.sourceNode = this.audioContext.createMediaStreamSource(this.stream);
+  this.analyser = this.audioContext.createAnalyser();
+  // Setting values lower than default for speedier testing on emulators
+  this.analyser.smoothingTimeConstant = 0.2;
+  this.analyser.fftSize = 1024;
+  this.sourceNode.connect(this.analyser);
+  this.data = new Uint8Array(this.analyser.frequencyBinCount);
+}
+
+AudioStreamAnalyser.prototype = {
+  /**
+   * Get an array of frequency domain data for our stream's audio track.
+   *
+   * @returns {array} A Uint8Array containing the frequency domain data.
+   */
+  getByteFrequencyData: function() {
+    this.analyser.getByteFrequencyData(this.data);
+    return this.data;
+  },
+
+  /**
+   * Append a canvas to the DOM where the frequency data are drawn.
+   * Useful to debug tests.
+   */
+  enableDebugCanvas: function() {
+    var cvs = this.debugCanvas = document.createElement("canvas");
+    document.getElementById("content").appendChild(cvs);
+
+    // Easy: 1px per bin
+    cvs.width = this.analyser.frequencyBinCount;
+    cvs.height = 128;
+    cvs.style.border = "1px solid red";
+
+    var c = cvs.getContext('2d');
+    c.fillStyle = 'black';
+
+    var self = this;
+    function render() {
+      c.clearRect(0, 0, cvs.width, cvs.height);
+      var array = self.getByteFrequencyData();
+      for (var i = 0; i < array.length; i++) {
+        c.fillRect(i, (cvs.height - (array[i])), 1, cvs.height);
+      }
+      if (!cvs.stopDrawing) {
+        requestAnimationFrame(render);
+      }
+    }
+    requestAnimationFrame(render);
+  },
+
+  /**
+   * Stop drawing of and remove the debug canvas from the DOM if it was
+   * previously added.
+   */
+  disableDebugCanvas: function() {
+    if (!this.debugCanvas || !this.debugCanvas.parentElement) {
+      return;
+    }
+
+    this.debugCanvas.stopDrawing = true;
+    this.debugCanvas.parentElement.removeChild(this.debugCanvas);
+  },
+
+  /**
+   * Return a Promise, that will be resolved when the function passed as
+   * argument, when called, returns true (meaning the analysis was a
+   * success).
+   *
+   * @param {function} analysisFunction
+   *        A fonction that performs an analysis, and returns true if the
+   *        analysis was a success (i.e. it found what it was looking for)
+   */
+  waitForAnalysisSuccess: function(analysisFunction) {
+    var self = this;
+    return new Promise((resolve, reject) => {
+      function analysisLoop() {
+        var success = analysisFunction(self.getByteFrequencyData());
+        if (success) {
+          resolve();
+          return;
+        }
+        // else, we need more time
+        requestAnimationFrame(analysisLoop);
+      }
+      analysisLoop();
+    });
+  },
+
+  /**
+   * Return the FFT bin index for a given frequency.
+   *
+   * @param {double} frequency
+   *        The frequency for whicht to return the bin number.
+   * @returns {integer} the index of the bin in the FFT array.
+   */
+  binIndexForFrequency: function(frequency) {
+    return 1 + Math.round(frequency *
+                          this.analyser.fftSize /
+                          this.audioContext.sampleRate);
+  },
+
+  /**
+   * Reverse operation, get the frequency for a bin index.
+   *
+   * @param {integer} index an index in an FFT array
+   * @returns {double} the frequency for this bin
+   */
+  frequencyForBinIndex: function(index) {
+    return (index - 1) *
+           this.audioContext.sampleRate /
+           this.analyser.fftSize;
+  }
+};
+
+/**
+ * Creates a MediaStream with an audio track containing a sine tone at the
+ * given frequency.
+ *
+ * @param {AudioContext} ac
+ *        AudioContext in which to create the OscillatorNode backing the stream
+ * @param {double} frequency
+ *        The frequency in Hz of the generated sine tone
+ * @returns {MediaStream} the MediaStream containing sine tone audio track
+ */
+function createOscillatorStream(ac, frequency) {
+  var osc = ac.createOscillator();
+  osc.frequency.value = frequency;
+
+  var oscDest = ac.createMediaStreamDestination();
+  osc.connect(oscDest);
+  osc.start();
+  return oscDest.stream;
+}
 
 /**
  * Create the necessary HTML elements for head and body as used by Mochitests
@@ -99,19 +243,16 @@ function createMediaElement(type, label) {
 
 
 /**
- * Wrapper function for mozGetUserMedia to allow a singular area of control
- * for determining whether we run this with fake devices or not.
+ * Wrapper function for mediaDevices.getUserMedia used by some tests. Whether
+ * to use fake devices or not is now determined in pref further below instead.
  *
  * @param {Dictionary} constraints
  *        The constraints for this mozGetUserMedia callback
  */
 function getUserMedia(constraints) {
-  if (!("fake" in constraints) && FAKE_ENABLED) {
-    constraints["fake"] = FAKE_ENABLED;
-  }
-
   info("Call getUserMedia for " + JSON.stringify(constraints));
-  return navigator.mediaDevices.getUserMedia(constraints);
+  return navigator.mediaDevices.getUserMedia(constraints)
+    .then(stream => (checkMediaStreamTracks(constraints, stream), stream));
 }
 
 // These are the promises we use to track that the prerequisites for the test
@@ -130,16 +271,17 @@ function setupEnvironment() {
   window.finish = () => SimpleTest.finish();
   SpecialPowers.pushPrefEnv({
     'set': [
-      ['canvas.capturestream.enabled', true],
-      ['dom.messageChannel.enabled', true],
       ['media.peerconnection.enabled', true],
       ['media.peerconnection.identity.enabled', true],
       ['media.peerconnection.identity.timeout', 120000],
       ['media.peerconnection.ice.stun_client_maximum_transmits', 14],
       ['media.peerconnection.ice.trickle_grace_period', 30000],
       ['media.navigator.permission.disabled', true],
+      ['media.navigator.streams.fake', FAKE_ENABLED],
       ['media.getusermedia.screensharing.enabled', true],
-      ['media.getusermedia.screensharing.allowed_domains', "mochi.test"]
+      ['media.getusermedia.screensharing.allowed_domains', "mochi.test"],
+      ['media.getusermedia.audiocapture.enabled', true],
+      ['media.recorder.audio_node.enabled', true]
     ]
   }, setTestOptions);
 
@@ -151,13 +293,13 @@ function setupEnvironment() {
 // This is called by steeplechase; which provides the test configuration options
 // directly to the test through this function.  If we're not on steeplechase,
 // the test is configured directly and immediately.
-function run_test(is_initiator) {
+function run_test(is_initiator,timeout) {
   var options = { is_local: is_initiator,
                   is_remote: !is_initiator };
 
   setTimeout(() => {
-    unexpectedEventArrived(new Error("PeerConnectionTest timed out after 30s"));
-  }, 30000);
+    unexpectedEventArrived(new Error("PeerConnectionTest timed out after "+timeout+"s"));
+  }, timeout);
 
   // Also load the steeplechase test code.
   var s = document.createElement("script");
@@ -213,6 +355,22 @@ function checkMediaStreamTracks(constraints, mediaStream) {
     mediaStream.getVideoTracks());
 }
 
+/**
+ * Check that a media stream contains exactly a set of media stream tracks.
+ *
+ * @param {MediaStream} mediaStream the media stream being checked
+ * @param {Array} tracks the tracks that should exist in mediaStream
+ * @param {String} [message] an optional message to pass to asserts
+ */
+function checkMediaStreamContains(mediaStream, tracks, message) {
+  message = message ? (message + ": ") : "";
+  tracks.forEach(t => ok(mediaStream.getTracks().includes(t),
+                         message + "MediaStream " + mediaStream.id +
+                         " contains track " + t.id));
+  is(mediaStream.getTracks().length, tracks.length,
+     message + "MediaStream " + mediaStream.id + " contains no extra tracks");
+}
+
 /*** Utility methods */
 
 /** The dreadful setTimeout, use sparingly */
@@ -231,6 +389,22 @@ function waitUntil(func, time) {
     }, time || 200);
   });
 }
+
+/** Time out while waiting for a promise to get resolved or rejected. */
+var timeout = (promise, time, msg) =>
+  Promise.race([promise, wait(time).then(() => Promise.reject(new Error(msg)))]);
+
+/** Use event listener to call passed-in function on fire until it returns true */
+var listenUntil = (target, eventName, onFire) => {
+  return new Promise(resolve => target.addEventListener(eventName,
+                                                        function callback() {
+    var result = onFire();
+    if (result) {
+      target.removeEventListener(eventName, callback, false);
+      resolve(result);
+    }
+  }, false));
+};
 
 /*** Test control flow methods */
 
@@ -383,6 +557,14 @@ CommandChain.prototype = {
     return this.commands.indexOf(functionOrName, start);
   },
 
+  mustHaveIndexOf: function(functionOrName, start) {
+    var index = this.indexOf(functionOrName, start);
+    if (index == -1) {
+      throw new Error("Unknown test: " + functionOrName);
+    }
+    return index;
+  },
+
   /**
    * Inserts the new commands after the specified command.
    */
@@ -405,7 +587,7 @@ CommandChain.prototype = {
   },
 
   _insertHelper: function(functionOrName, commands, delta, all, start) {
-    var index = this.indexOf(functionOrName);
+    var index = this.mustHaveIndexOf(functionOrName);
     start = start || 0;
     for (; index !== -1; index = this.indexOf(functionOrName, index)) {
       if (!start) {
@@ -427,33 +609,21 @@ CommandChain.prototype = {
    * Removes the specified command, returns what was removed.
    */
   remove: function(functionOrName) {
-    var index = this.indexOf(functionOrName);
-    if (index >= 0) {
-      return this.commands.splice(index, 1);
-    }
-    return [];
+    return this.commands.splice(this.mustHaveIndexOf(functionOrName), 1);
   },
 
   /**
    * Removes all commands after the specified one, returns what was removed.
    */
   removeAfter: function(functionOrName, start) {
-    var index = this.indexOf(functionOrName, start);
-    if (index >= 0) {
-      return this.commands.splice(index + 1);
-    }
-    return [];
+    return this.commands.splice(this.mustHaveIndexOf(functionOrName, start) + 1);
   },
 
   /**
    * Removes all commands before the specified one, returns what was removed.
    */
   removeBefore: function(functionOrName) {
-    var index = this.indexOf(functionOrName);
-    if (index >= 0) {
-      return this.commands.splice(0, index);
-    }
-    return [];
+    return this.commands.splice(0, this.mustHaveIndexOf(functionOrName));
   },
 
   /**

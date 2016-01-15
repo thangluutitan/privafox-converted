@@ -7,7 +7,7 @@
 
 #ifdef USE_SKIA
 #include "PathSkia.h"
-#include "skia/SkPaint.h"
+#include "skia/include/core/SkPaint.h"
 #endif
 
 #ifdef USE_CAIRO
@@ -165,7 +165,7 @@ ScaledFontBase::CopyGlyphsToBuilder(const GlyphBuffer &aBuffer, PathBuilder *aBu
   }
 #endif
 
-  MOZ_CRASH("The specified backend type is not supported by CopyGlyphsToBuilder");
+  MOZ_CRASH("GFX: The specified backend type is not supported by CopyGlyphsToBuilder");
 }
 
 #ifdef USE_CAIRO_SCALED_FONT
@@ -185,5 +185,5 @@ ScaledFontBase::SetCairoScaledFont(cairo_scaled_font_t* font)
 }
 #endif
 
-}
-}
+} // namespace gfx
+} // namespace mozilla

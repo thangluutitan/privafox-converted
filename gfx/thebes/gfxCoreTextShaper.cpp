@@ -9,6 +9,7 @@
 #include "gfxFontUtils.h"
 #include "gfxTextRun.h"
 #include "mozilla/gfx/2D.h"
+#include "mozilla/UniquePtrExtensions.h"
 
 #include <algorithm>
 
@@ -183,11 +184,14 @@ gfxCoreTextShaper::ShapeText(gfxContext      *aContext,
             const void* font2 = ::CFDictionaryGetValue(runAttr, kCTFontAttributeName);
             if (font1 != font2) {
                 // ...except that if the fallback was only for a variation
-                // selector that is otherwise unsupported, we just ignore it.
-                if (range.length == 1 &&
-                    gfxFontUtils::IsVarSelector(aText[range.location -
-                                                      startOffset])) {
-                    continue;
+                // selector or join control that is otherwise unsupported,
+                // we just ignore it.
+                if (range.length == 1) {
+                    char16_t ch = aText[range.location - startOffset];
+                    if (gfxFontUtils::IsJoinControl(ch) ||
+                        gfxFontUtils::IsVarSelector(ch)) {
+                        continue;
+                    }
                 }
                 NS_WARNING("unexpected font fallback in Core Text");
                 success = false;
@@ -247,9 +251,9 @@ gfxCoreTextShaper::SetGlyphsFromRun(gfxShapedText *aShapedText,
     }
 
     // retrieve the laid-out glyph data from the CTRun
-    nsAutoArrayPtr<CGGlyph> glyphsArray;
-    nsAutoArrayPtr<CGPoint> positionsArray;
-    nsAutoArrayPtr<CFIndex> glyphToCharArray;
+    UniquePtr<CGGlyph[]> glyphsArray;
+    UniquePtr<CGPoint[]> positionsArray;
+    UniquePtr<CFIndex[]> glyphToCharArray;
     const CGGlyph* glyphs = nullptr;
     const CGPoint* positions = nullptr;
     const CFIndex* glyphToChar = nullptr;
@@ -264,7 +268,7 @@ gfxCoreTextShaper::SetGlyphsFromRun(gfxShapedText *aShapedText,
     // may become an attractive option.
     glyphs = ::CTRunGetGlyphsPtr(aCTRun);
     if (!glyphs) {
-        glyphsArray = new (std::nothrow) CGGlyph[numGlyphs];
+        glyphsArray = MakeUniqueFallible<CGGlyph[]>(numGlyphs);
         if (!glyphsArray) {
             return NS_ERROR_OUT_OF_MEMORY;
         }
@@ -274,7 +278,7 @@ gfxCoreTextShaper::SetGlyphsFromRun(gfxShapedText *aShapedText,
 
     positions = ::CTRunGetPositionsPtr(aCTRun);
     if (!positions) {
-        positionsArray = new (std::nothrow) CGPoint[numGlyphs];
+        positionsArray = MakeUniqueFallible<CGPoint[]>(numGlyphs);
         if (!positionsArray) {
             return NS_ERROR_OUT_OF_MEMORY;
         }
@@ -287,7 +291,7 @@ gfxCoreTextShaper::SetGlyphsFromRun(gfxShapedText *aShapedText,
     // or the stringRange of the glyph run
     glyphToChar = ::CTRunGetStringIndicesPtr(aCTRun);
     if (!glyphToChar) {
-        glyphToCharArray = new (std::nothrow) CFIndex[numGlyphs];
+        glyphToCharArray = MakeUniqueFallible<CFIndex[]>(numGlyphs);
         if (!glyphToCharArray) {
             return NS_ERROR_OUT_OF_MEMORY;
         }
@@ -299,7 +303,6 @@ gfxCoreTextShaper::SetGlyphsFromRun(gfxShapedText *aShapedText,
                                                   nullptr, nullptr, nullptr);
 
     nsAutoTArray<gfxShapedText::DetailedGlyph,1> detailedGlyphs;
-    gfxShapedText::CompressedGlyph g;
     gfxShapedText::CompressedGlyph *charGlyphs =
         aShapedText->GetCharacterGlyphs() + aOffset;
 
@@ -521,19 +524,20 @@ gfxCoreTextShaper::SetGlyphsFromRun(gfxShapedText *aShapedText,
                 advance = int32_t(toNextGlyph * appUnitsPerDevUnit);
             }
 
-            gfxTextRun::CompressedGlyph g;
-            g.SetComplex(charGlyphs[baseCharIndex].IsClusterStart(),
-                         true, detailedGlyphs.Length());
-            aShapedText->SetGlyphs(aOffset + baseCharIndex, g, detailedGlyphs.Elements());
+            gfxTextRun::CompressedGlyph textRunGlyph;
+            textRunGlyph.SetComplex(charGlyphs[baseCharIndex].IsClusterStart(),
+                                    true, detailedGlyphs.Length());
+            aShapedText->SetGlyphs(aOffset + baseCharIndex, textRunGlyph,
+                                   detailedGlyphs.Elements());
 
             detailedGlyphs.Clear();
         }
 
         // the rest of the chars in the group are ligature continuations, no associated glyphs
         while (++baseCharIndex != endCharIndex && baseCharIndex < wordLength) {
-            gfxShapedText::CompressedGlyph &g = charGlyphs[baseCharIndex];
-            NS_ASSERTION(!g.IsSimpleGlyph(), "overwriting a simple glyph");
-            g.SetComplex(inOrder && g.IsClusterStart(), false, 0);
+            gfxShapedText::CompressedGlyph &shapedTextGlyph = charGlyphs[baseCharIndex];
+            NS_ASSERTION(!shapedTextGlyph.IsSimpleGlyph(), "overwriting a simple glyph");
+            shapedTextGlyph.SetComplex(inOrder && shapedTextGlyph.IsClusterStart(), false, 0);
         }
 
         glyphStart = glyphEnd;

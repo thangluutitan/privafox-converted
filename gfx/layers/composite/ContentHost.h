@@ -14,6 +14,7 @@
 #include "mozilla/Attributes.h"         // for override
 #include "mozilla/RefPtr.h"             // for RefPtr
 #include "mozilla/gfx/BasePoint.h"      // for BasePoint
+#include "mozilla/gfx/MatrixFwd.h"      // for Matrix4x4
 #include "mozilla/gfx/Point.h"          // for Point
 #include "mozilla/gfx/Rect.h"           // for Rect
 #include "mozilla/gfx/Types.h"          // for Filter
@@ -34,9 +35,6 @@
 #include "nscore.h"                     // for nsACString
 
 namespace mozilla {
-namespace gfx {
-class Matrix4x4;
-}
 namespace layers {
 class Compositor;
 class ThebesBufferData;
@@ -112,9 +110,11 @@ public:
   explicit ContentHostTexture(const TextureInfo& aTextureInfo)
     : ContentHostBase(aTextureInfo)
     , mLocked(false)
+    , mReceivedNewHost(false)
   { }
 
-  virtual void Composite(EffectChain& aEffectChain,
+  virtual void Composite(LayerComposite* aLayer,
+                         EffectChain& aEffectChain,
                          float aOpacity,
                          const gfx::Matrix4x4& aTransform,
                          const gfx::Filter& aFilter,
@@ -131,7 +131,7 @@ public:
 
   virtual void PrintInfo(std::stringstream& aStream, const char* aPrefix) override;
 
-  virtual void UseTextureHost(TextureHost* aTexture) override;
+  virtual void UseTextureHost(const nsTArray<TimedTexture>& aTextures) override;
   virtual void UseComponentAlphaTextures(TextureHost* aTextureOnBlack,
                                          TextureHost* aTextureOnWhite) override;
 
@@ -170,6 +170,7 @@ protected:
   CompositableTextureSourceRef mTextureSource;
   CompositableTextureSourceRef mTextureSourceOnWhite;
   bool mLocked;
+  bool mReceivedNewHost;
 };
 
 /**
@@ -217,7 +218,7 @@ public:
                             nsIntRegion* aUpdatedRegionBack);
 };
 
-}
-}
+} // namespace layers
+} // namespace mozilla
 
 #endif

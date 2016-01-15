@@ -11,7 +11,8 @@
 #include "mozilla/unused.h"
 #include "nsIFile.h"
 #include "nsIUUIDGenerator.h"
-#include "nsNetUtil.h"
+#include "nsNetCID.h"
+#include "nsISimpleEnumerator.h"
 #include "nsServiceManagerUtils.h"
 #include "nsString.h"
 #include "nsThreadUtils.h"
@@ -36,7 +37,7 @@ nsresult
 BodyIdToFile(nsIFile* aBaseDir, const nsID& aId, BodyFileType aType,
              nsIFile** aBodyFileOut);
 
-} // anonymous namespace
+} // namespace
 
 // static
 nsresult
@@ -163,7 +164,7 @@ BodyStartWriteStream(const QuotaInfo& aQuotaInfo,
                              aQuotaInfo.mOrigin, tmpFile);
   if (NS_WARN_IF(!fileStream)) { return NS_ERROR_UNEXPECTED; }
 
-  nsRefPtr<SnappyCompressOutputStream> compressed =
+  RefPtr<SnappyCompressOutputStream> compressed =
     new SnappyCompressOutputStream(fileStream);
 
   nsCOMPtr<nsIEventTarget> target =
@@ -186,7 +187,7 @@ BodyCancelWrite(nsIFile* aBaseDir, nsISupports* aCopyContext)
   MOZ_ASSERT(aCopyContext);
 
   nsresult rv = NS_CancelAsyncCopy(aCopyContext, NS_ERROR_ABORT);
-  unused << NS_WARN_IF(NS_FAILED(rv));
+  Unused << NS_WARN_IF(NS_FAILED(rv));
 
   // The partially written file must be cleaned up after the async copy
   // makes its callback.
@@ -317,7 +318,7 @@ BodyIdToFile(nsIFile* aBaseDir, const nsID& aId, BodyFileType aType,
   return rv;
 }
 
-} // anonymous namespace
+} // namespace
 
 nsresult
 BodyDeleteOrphanedFiles(nsIFile* aBaseDir, nsTArray<nsID>& aKnownBodyIdList)
@@ -437,7 +438,7 @@ GetMarkerFileHandle(const QuotaInfo& aQuotaInfo, nsIFile** aFileOut)
   return rv;
 }
 
-} // anonymous namespace
+} // namespace
 
 nsresult
 CreateMarkerFile(const QuotaInfo& aQuotaInfo)

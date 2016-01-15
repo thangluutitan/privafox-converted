@@ -20,7 +20,7 @@ class GrallocTextureHostOGL : public TextureHost
   friend class GrallocBufferActor;
 public:
   GrallocTextureHostOGL(TextureFlags aFlags,
-                        const NewSurfaceDescriptorGralloc& aDescriptor);
+                        const SurfaceDescriptorGralloc& aDescriptor);
 
   virtual ~GrallocTextureHostOGL();
 
@@ -38,7 +38,7 @@ public:
 
   virtual gfx::SurfaceFormat GetFormat() const;
 
-  virtual gfx::IntSize GetSize() const override { return mDescriptorSize; }
+  virtual gfx::IntSize GetSize() const override { return mCropSize; }
 
   virtual LayerRenderState GetRenderState() override;
 
@@ -52,6 +52,8 @@ public:
 
   virtual void WaitAcquireFenceHandleSyncComplete() override;
 
+  virtual void SetCropRect(nsIntRect aCropRect) override;
+
   bool IsValid() const;
 
   virtual const char* Name() override { return "GrallocTextureHostOGL"; }
@@ -61,14 +63,14 @@ public:
 private:
   void DestroyEGLImage();
 
-  NewSurfaceDescriptorGralloc mGrallocHandle;
+  SurfaceDescriptorGralloc mGrallocHandle;
   RefPtr<GLTextureSource> mGLTextureSource;
   RefPtr<CompositorOGL> mCompositor;
   // Size reported by the GraphicBuffer
   gfx::IntSize mSize;
   // Size reported by TextureClient, can be different in some cases (video?),
   // used by LayerRenderState.
-  gfx::IntSize mDescriptorSize;
+  gfx::IntSize mCropSize;
   gfx::SurfaceFormat mFormat;
   EGLImage mEGLImage;
   bool mIsOpaque;

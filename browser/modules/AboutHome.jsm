@@ -4,9 +4,9 @@
 
 "use strict";
 
-let Cc = Components.classes;
-let Ci = Components.interfaces;
-let Cu = Components.utils;
+var Cc = Components.classes;
+var Ci = Components.interfaces;
+var Cu = Components.utils;
 
 this.EXPORTED_SYMBOLS = [ "AboutHomeUtils", "AboutHome" ];
 
@@ -89,7 +89,7 @@ XPCOMUtils.defineLazyGetter(AboutHomeUtils, "snippetsURL", function() {
  * about:home needs to do something chrome-privileged, it sends a
  * message that's handled here.
  */
-let AboutHome = {
+var AboutHome = {
   MESSAGES: [
     "AboutHome:RestorePreviousSession",
 	"AboutHome:setDefaultEngineFindx",
@@ -101,8 +101,6 @@ let AboutHome = {
     "AboutHome:Sync",
     "AboutHome:Settings",
     "AboutHome:RequestUpdate",
-    "AboutHome:Search",
-    "AboutHome:OpenSearchPanel",
   ],
 
   init: function() {
@@ -111,18 +109,15 @@ let AboutHome = {
     for (let msg of this.MESSAGES) {
       mm.addMessageListener(msg, this);
     }
-
-    Services.obs.addObserver(this, "browser-search-engine-modified", false);
+	Services.obs.addObserver(this, "browser-search-engine-modified", false);
   },
-
-  observe: function(aEngine, aTopic, aVerb) {
+   observe: function(aEngine, aTopic, aVerb) {
     switch (aTopic) {
       case "browser-search-engine-modified":
         this.sendAboutHomeData(null);
         break;
     }
-  },
-
+  }, 
   receiveMessage: function(aMessage) {
     let window = aMessage.target.ownerDocument.defaultView;
 
@@ -141,7 +136,6 @@ let AboutHome = {
         }
 		Services.search.currentEngine = engine;
         break;
-
       case "AboutHome:Downloads":
         window.BrowserDownloadsUI();
         break;
@@ -163,21 +157,7 @@ let AboutHome = {
         break;
 
       case "AboutHome:Sync":
-        let weave = Cc["@mozilla.org/weave/service;1"]
-                      .getService(Ci.nsISupports)
-                      .wrappedJSObject;
-
-        if (weave.fxAccountsEnabled) {
-          fxAccounts.getSignedInUser().then(userData => {
-            if (userData) {
-              window.openPreferences("paneSync");
-            } else {
-              window.loadURI("about:accounts?entrypoint=abouthome");
-            }
-          });
-        } else {
-          window.openPreferences("paneSync");
-        }
+        window.openPreferences("paneSync", { urlParams: { entrypoint: "abouthome" } });
         break;
 
       case "AboutHome:Settings":
@@ -187,79 +167,20 @@ let AboutHome = {
       case "AboutHome:RequestUpdate":
         this.sendAboutHomeData(aMessage.target);
         break;
-
-      case "AboutHome:Search":
-        let data;
-        try {
-          data = JSON.parse(aMessage.data.searchData);
-        } catch(ex) {
-          Cu.reportError(ex);
-          break;
-        }
-
-        Services.search.init(function(status) {
-          if (!Components.isSuccessCode(status)) {
-            return;
-          }
-
-          let engine = Services.search.currentEngine;
-          if (AppConstants.MOZ_SERVICES_HEALTHREPORT) {
-            window.BrowserSearch.recordSearchInHealthReport(engine, "abouthome", data.selection);
-          }
-
-          // Trigger a search through nsISearchEngine.getSubmission()
-          let submission = engine.getSubmission(data.searchTerms, null, "homepage");
-          let where = window.whereToOpenLink(data.originalEvent);
-
-          // There is a chance that by the time we receive the search message, the
-          // user has switched away from the tab that triggered the search. If,
-          // based on the event, we need to load the search in the same tab that
-          // triggered it (i.e. where == "current"), openUILinkIn will not work
-          // because that tab is no longer the current one. For this case we
-          // manually load the URI in the target browser.
-          if (where == "current") {
-            aMessage.target.loadURIWithFlags(submission.uri.spec,
-                                             Ci.nsIWebNavigation.LOAD_FLAGS_NONE,
-                                             null, null, submission.postData);
-          } else {
-            let params = {
-              postData: submission.postData,
-              inBackground: Services.prefs.getBoolPref("browser.tabs.loadInBackground"),
-            };
-            window.openLinkIn(submission.uri.spec, where, params);
-          }
-          // Used for testing
-          let mm = aMessage.target.messageManager;
-          mm.sendAsyncMessage("AboutHome:SearchTriggered", aMessage.data.searchData);
-        });
-
-        break;
-
-      case "AboutHome:OpenSearchPanel":
-        let panel = window.document.getElementById("abouthome-search-panel");
-        let anchor = aMessage.objects.anchor;
-        panel.hidden = false;
-        panel.openPopup(anchor);
-        anchor.setAttribute("active", "true");
-        panel.addEventListener("popuphidden", function onHidden() {
-          panel.removeEventListener("popuphidden", onHidden);
-          anchor.removeAttribute("active");
-        });
-        break;
     }
   },
 
   // Send all the chrome-privileged data needed by about:home. This
   // gets re-sent when the search engine changes.
   sendAboutHomeData: function(target) {
-	let wrapper = {};
+    let wrapper = {};
     Components.utils.import("resource:///modules/sessionstore/SessionStore.jsm",
       wrapper);
     let ss = wrapper.SessionStore;
-
+	// Privafox - modify
     ss.promiseInitialized.then(function() {
-      let deferred = Promise.defer();
-      Services.search.init(function (status){
+		let deferred = Promise.defer();
+        Services.search.init(function (status){
         if (!Components.isSuccessCode(status)) {
           deferred.reject(status);
         } else {
@@ -268,26 +189,28 @@ let AboutHome = {
       });
 
       return deferred.promise;
-    }).then(function(engineName) {
-        var current;
+	}).then(function(engineName) {	
+		 var current;
         if(engineName == Services.search.currentEngine.name){
             current = Services.search.getEngineByName(engineName);
         }else{
             current = Services.search.currentEngine;
         }
 		let url = current.getSubmission("foo", "text/html").uri.spec;
-		let sourceString = url.replace('http://','').replace('https://','').replace('www.','').split(/[/?#]/)[0];      
-      let data = {
+		let sourceString = url.replace('http://','').replace('https://','').replace('www.','').split(/[/?#]/)[0]; 
+		Services.prefs.setCharPref("titan.com", sourceString);		
+   let data = {
         showRestoreLastSession: ss.canRestoreLastSession,
         defaultEngineName: current.name,
-		domainSearchEngineName:sourceString
-      };
-
-      //if (AboutHomeUtils.showKnowYourRights) {
+		domainSearchEngineName:sourceString,
+      };		
+	
+	  // Privafox - remove
+      if (AboutHomeUtils.showKnowYourRights) {
         // Set pref to indicate we've shown the notification.
-       // let currentVersion = Services.prefs.getIntPref("browser.rights.version");
-       // Services.prefs.setBoolPref("browser.rights." + currentVersion + ".shown", true);
-      //}
+        let currentVersion = Services.prefs.getIntPref("browser.rights.version");
+        Services.prefs.setBoolPref("browser.rights." + currentVersion + ".shown", true);
+      }
 
       if (target && target.messageManager) {
         target.messageManager.sendAsyncMessage("AboutHome:Update", data);
@@ -298,14 +221,5 @@ let AboutHome = {
     }).then(null, function onError(x) {
       Cu.reportError("Error in AboutHome.sendAboutHomeData: " + x);
     });
-  },
-
-  /**
-   * Focuses the search input in the page with the given message manager.
-   * @param  messageManager
-   *         The MessageManager object of the selected browser.
-   */
-  focusInput: function (messageManager) {
-    messageManager.sendAsyncMessage("AboutHome:FocusInput");
   }
 };

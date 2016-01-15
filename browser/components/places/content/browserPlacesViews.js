@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+Components.utils.import("resource://gre/modules/AppConstants.jsm");
 Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
 Components.utils.import("resource://gre/modules/Services.jsm");
 
@@ -338,7 +339,7 @@ PlacesViewBase.prototype = {
         element.setAttribute("scheme",
                              PlacesUIUtils.guessUrlSchemeForUI(aPlacesNode.uri));
       }
-      else if (PlacesUtils.containerTypes.indexOf(type) != -1) {
+      else if (PlacesUtils.containerTypes.includes(type)) {
         element = document.createElement("menu");
         element.setAttribute("container", "true");
 
@@ -355,12 +356,12 @@ PlacesViewBase.prototype = {
           PlacesUtils.livemarks.getLivemark({ id: itemId })
             .then(aLivemark => {
               element.setAttribute("livemark", "true");
-#ifdef XP_MACOSX
-              // OS X native menubar doesn't track list-style-images since
-              // it doesn't have a frame (bug 733415).  Thus enforce updating.
-              element.setAttribute("image", "");
-              element.removeAttribute("image");
-#endif
+              if (AppConstants.platform === "macosx") {
+                // OS X native menubar doesn't track list-style-images since
+                // it doesn't have a frame (bug 733415).  Thus enforce updating.
+                element.setAttribute("image", "");
+                element.removeAttribute("image");
+              }
               this.controller.cacheLivemarkInfo(aPlacesNode, aLivemark);
             }, () => undefined);
         }
@@ -387,8 +388,7 @@ PlacesViewBase.prototype = {
 
       let icon = aPlacesNode.icon;
       if (icon)
-        element.setAttribute("image",
-                             PlacesUtils.getImageURLForResolution(window, icon));
+        element.setAttribute("image", icon);
     }
 
     element._placesNode = aPlacesNode;
@@ -526,8 +526,7 @@ PlacesViewBase.prototype = {
     if (!icon)
       elt.removeAttribute("image");
     else if (icon != elt.getAttribute("image"))
-      elt.setAttribute("image",
-                       PlacesUtils.getImageURLForResolution(window, icon));
+      elt.setAttribute("image", icon);
   },
 
   nodeAnnotationChanged:
@@ -540,12 +539,12 @@ PlacesViewBase.prototype = {
       let menu = elt.parentNode;
       if (!menu.hasAttribute("livemark")) {
         menu.setAttribute("livemark", "true");
-#ifdef XP_MACOSX
-        // OS X native menubar doesn't track list-style-images since
-        // it doesn't have a frame (bug 733415).  Thus enforce updating.
-        menu.setAttribute("image", "");
-        menu.removeAttribute("image");
-#endif
+        if (AppConstants.platform === "macosx") {
+          // OS X native menubar doesn't track list-style-images since
+          // it doesn't have a frame (bug 733415).  Thus enforce updating.
+          menu.setAttribute("image", "");
+          menu.removeAttribute("image");
+        }
       }
 
       PlacesUtils.livemarks.getLivemark({ id: aPlacesNode.itemId })
@@ -634,7 +633,7 @@ PlacesViewBase.prototype = {
     if (!parentElt._built)
       return;
 
-    let index = Array.indexOf(parentElt.childNodes, parentElt._startMarker) +
+    let index = Array.prototype.indexOf.call(parentElt.childNodes, parentElt._startMarker) +
                 aIndex + 1;
     this._insertNewItemToPopup(aPlacesNode, parentElt,
                                parentElt.childNodes[index]);
@@ -664,7 +663,7 @@ PlacesViewBase.prototype = {
     if (parentElt._built) {
       // Move the node.
       parentElt.removeChild(elt);
-      let index = Array.indexOf(parentElt.childNodes, parentElt._startMarker) +
+      let index = Array.prototype.indexOf.call(parentElt.childNodes, parentElt._startMarker) +
                   aNewIndex + 1;
       parentElt.insertBefore(elt, parentElt.childNodes[index]);
     }
@@ -908,6 +907,7 @@ PlacesViewBase.prototype = {
   _onPopupShowing: function PVB__onPopupShowing(aEvent) {
     // Avoid handling popupshowing of inner views.
     let popup = aEvent.originalTarget;
+
     this._ensureMarkers(popup);
 
     // Remove any delayed element, see _cleanPopup for details.
@@ -919,10 +919,10 @@ PlacesViewBase.prototype = {
 
     if (popup._placesNode && PlacesUIUtils.getViewForNode(popup) == this) {
       if (!popup._placesNode.containerOpen)
-          popup._placesNode.containerOpen = true;
-      
+        popup._placesNode.containerOpen = true;
       if (!popup._built)
-          this._rebuildPopup(popup);
+        this._rebuildPopup(popup);
+
       this._mayAddCommandsItems(popup);
     }
   },
@@ -1056,10 +1056,9 @@ PlacesToolbar.prototype = {
       button.setAttribute("label", aChild.title || "");
       let icon = aChild.icon;
       if (icon)
-        button.setAttribute("image",
-                            PlacesUtils.getImageURLForResolution(window, icon));
+        button.setAttribute("image", icon);
 
-      if (PlacesUtils.containerTypes.indexOf(type) != -1) {
+      if (PlacesUtils.containerTypes.includes(type)) {
         button.setAttribute("type", "menu");
         button.setAttribute("container", "true");
 
@@ -1182,7 +1181,7 @@ PlacesToolbar.prototype = {
   },
 
   updateOverflowStatus: function() {
-    if (this._rootElt.scrollLeftMax > 0) {
+    if (this._rootElt.scrollLeftMin != this._rootElt.scrollLeftMax) {
       this._onOverflow();
     } else {
       this._onUnderflow();
@@ -1412,7 +1411,7 @@ PlacesToolbar.prototype = {
     if (elt._placesNode && elt != this._rootElt &&
         elt.localName != "menupopup") {
       let eltRect = elt.getBoundingClientRect();
-      let eltIndex = Array.indexOf(this._rootElt.childNodes, elt);
+      let eltIndex = Array.prototype.indexOf.call(this._rootElt.childNodes, elt);
       if (PlacesUtils.nodeIsFolder(elt._placesNode) &&
           !PlacesUIUtils.isContentsReadOnly(elt._placesNode)) {
         // This is a folder.
@@ -1773,15 +1772,15 @@ function PlacesMenu(aPopupShowingEvent, aPlace, aOptions) {
   this._addEventListeners(this._rootElt, ["popupshowing", "popuphidden"], true);
   this._addEventListeners(window, ["unload"], false);
 
-#ifdef XP_MACOSX
-  // Must walk up to support views in sub-menus, like Bookmarks Toolbar menu.
-  for (let elt = this._viewElt.parentNode; elt; elt = elt.parentNode) {
-    if (elt.localName == "menubar") {
-      this._nativeView = true;
-      break;
+  if (AppConstants.platform === "macosx") {
+    // Must walk up to support views in sub-menus, like Bookmarks Toolbar menu.
+    for (let elt = this._viewElt.parentNode; elt; elt = elt.parentNode) {
+      if (elt.localName == "menubar") {
+        this._nativeView = true;
+        break;
+      }
     }
   }
-#endif
 
   PlacesViewBase.call(this, aPlace, aOptions);
   this._onPopupShowing(aPopupShowingEvent);
@@ -1800,7 +1799,7 @@ PlacesMenu.prototype = {
   _removeChild: function PM_removeChild(aChild) {
     PlacesViewBase.prototype._removeChild.apply(this, arguments);
   },
-  
+
   _refreshBookmarkMenu: function PM__refreshBookmarkMenu(aEvent , isHasMasterPassword){
       let aPopup = aEvent.originalTarget;
       let resultNode = aPopup._placesNode;
@@ -1819,7 +1818,7 @@ PlacesMenu.prototype = {
 
     PlacesViewBase.prototype.uninit.apply(this, arguments);
   },
-  
+
   handleEvent: function PM_handleEvent(aEvent) {
     switch (aEvent.type) {
       case "unload":
@@ -1895,10 +1894,9 @@ PlacesPanelMenuView.prototype = {
       button.setAttribute("label", aChild.title || "");
       let icon = aChild.icon;
       if (icon)
-        button.setAttribute("image",
-                            PlacesUtils.getImageURLForResolution(window, icon));
+        button.setAttribute("image", icon);
 
-      if (PlacesUtils.containerTypes.indexOf(type) != -1) {
+      if (PlacesUtils.containerTypes.includes(type)) {
         button.setAttribute("container", "true");
 
         if (PlacesUtils.nodeIsQuery(aChild)) {

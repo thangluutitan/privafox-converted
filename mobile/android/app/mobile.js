@@ -40,6 +40,14 @@ pref("browser.chromeURL", "chrome://browser/content/");
 // expiration (but low-memory conditions may still require the tab to be zombified).
 pref("browser.tabs.expireTime", 900);
 
+// Control whether tab content should try to load from disk cache when network
+// is offline.
+#ifdef NIGHTLY_BUILD
+pref("browser.tabs.useCache", true);
+#else
+pref("browser.tabs.useCache", false);
+#endif
+
 // From libpref/src/init/all.js, extended to allow a slightly wider zoom range.
 pref("zoom.minPercent", 20);
 pref("zoom.maxPercent", 400);
@@ -53,8 +61,13 @@ pref("browser.viewport.desktopWidth", 980);
 // the value is divided by 1000 and clamped to hard-coded min/max scale values.
 pref("browser.viewport.defaultZoom", -1);
 
-/* allow scrollbars to float above chrome ui */
-pref("ui.scrollbarsCanOverlapContent", 1);
+#ifdef MOZ_ANDROID_APZ
+// Show/Hide scrollbars when active/inactive
+pref("ui.showHideScrollbars", 1);
+pref("ui.useOverlayScrollbars", 1);
+pref("ui.scrollbarFadeBeginDelay", 450);
+pref("ui.scrollbarFadeDuration", 0);
+#endif
 
 /* turn off the caret blink after 10 cycles */
 pref("ui.caretBlinkCount", 10);
@@ -78,10 +91,8 @@ pref("browser.cache.memory_limit", 5120); // 5 MB
 
 /* image cache prefs */
 pref("image.cache.size", 1048576); // bytes
-pref("image.high_quality_downscaling.enabled", false);
 
 /* offline cache prefs */
-pref("browser.cache.offline.parent_directory", "/appCache");
 pref("browser.offline-apps.notify", true);
 pref("browser.cache.offline.enable", true);
 pref("browser.cache.offline.capacity", 5120); // kilobytes
@@ -164,7 +175,7 @@ pref("browser.helperApps.deleteTempFileOnExit", false);
 
 /* password manager */
 pref("signon.rememberSignons", true);
-pref("privacy.masterpassword.enabled",true);
+pref("privacy.masterpassword.enabled",true); <!-- Privafox add : default enable -->
 pref("signon.expireMasterPassword", false);
 pref("signon.debug", false);
 
@@ -188,15 +199,15 @@ pref("dom.forms.number", true);
 /* extension manager and xpinstall */
 pref("xpinstall.whitelist.directRequest", false);
 pref("xpinstall.whitelist.fileRequest", false);
-pref("xpinstall.whitelist.add", "addons.firefox.com");
-pref("xpinstall.whitelist.add.180", "marketplace.firefox.com");
+pref("xpinstall.whitelist.add", "https://addons.mozilla.org");
+pref("xpinstall.whitelist.add.180", "https://marketplace.firefox.com");
 
 pref("xpinstall.signatures.required", false);
 
 pref("extensions.enabledScopes", 1);
 pref("extensions.autoupdate.enabled", true);
 pref("extensions.autoupdate.interval", 86400);
-pref("extensions.update.enabled", false);
+pref("extensions.update.enabled", false);<!-- Privafox : change enable is false -->
 pref("extensions.update.interval", 86400);
 pref("extensions.dss.enabled", false);
 pref("extensions.dss.switchPending", false);
@@ -232,9 +243,11 @@ pref("extensions.compatability.locales.buildid", "0");
 
 /* blocklist preferences */
 pref("extensions.blocklist.enabled", true);
+// OneCRL freshness checking depends on this value, so if you change it,
+// please also update security.onecrl.maximum_staleness_in_seconds.
 pref("extensions.blocklist.interval", 86400);
 pref("extensions.blocklist.url", "https://blocklist.addons.mozilla.org/blocklist/3/%APP_ID%/%APP_VERSION%/%PRODUCT%/%BUILD_ID%/%BUILD_TARGET%/%LOCALE%/%CHANNEL%/%OS_VERSION%/%DISTRIBUTION%/%DISTRIBUTION_VERSION%/%PING_COUNT%/%TOTAL_PING_COUNT%/%DAYS_SINCE_LAST_PING%/");
-pref("extensions.blocklist.detailsURL", "https://www.mozilla.org/%LOCALE%/blocklist/");
+pref("extensions.blocklist.detailsURL", "https://www.mozilla.com/%LOCALE%/blocklist/");
 
 /* Don't let XPIProvider install distribution add-ons; we do our own thing on mobile. */
 pref("extensions.installDistroAddons", false);
@@ -276,8 +289,11 @@ pref("browser.search.order.1", "chrome://browser/locale/region.properties");
 pref("browser.search.order.2", "chrome://browser/locale/region.properties");
 pref("browser.search.order.3", "chrome://browser/locale/region.properties");
 
-// Market-specific search defaults (US market only)
+// Market-specific search defaults
 pref("browser.search.geoSpecificDefaults", true);
+pref("browser.search.geoSpecificDefaults.url", "https://search.services.mozilla.com/1/%APP%/%VERSION%/%CHANNEL%/%LOCALE%/%REGION%/%DISTRIBUTION%/%DISTRIBUTION_VERSION%");
+
+// US specific default (used as a fallback if the geoSpecificDefaults request fails).
 pref("browser.search.defaultenginename.US", "chrome://browser/locale/region.properties");
 pref("browser.search.order.US.1", "chrome://browser/locale/region.properties");
 pref("browser.search.order.US.2", "chrome://browser/locale/region.properties");
@@ -293,22 +309,15 @@ pref("privacy.trackingprotection.pbmode.enabled", true);
 pref("browser.search.suggest.enabled", false);
 pref("browser.search.suggest.prompted", false);
 
-// Tell the search service to load search plugins from the locale JAR
-pref("browser.search.loadFromJars", true);
-pref("browser.search.jarURIs", "chrome://browser/locale/searchplugins/");
-
 // tell the search service that we don't really expose the "current engine"
 pref("browser.search.noCurrentEngine", true);
 
 // Control media casting & mirroring features
 pref("browser.casting.enabled", true);
 #ifdef RELEASE_BUILD
-// Roku does not yet support mirroring in production
-pref("browser.mirroring.enabled.roku", false);
 // Chromecast mirroring is broken (bug 1131084)
 pref("browser.mirroring.enabled", false);
 #else
-pref("browser.mirroring.enabled.roku", true);
 pref("browser.mirroring.enabled", true);
 #endif
 
@@ -364,6 +373,10 @@ pref("browser.link.open_newwindow", 3);
 // 0=force all new windows to tabs, 1=don't force, 2=only force those with no features set
 pref("browser.link.open_newwindow.restriction", 0);
 
+// show images option
+// 0=never, 1=always, 2=cellular-only
+pref("browser.image_blocking", 1);
+
 // controls which bits of private data to clear. by default we clear them all.
 pref("privacy.item.cache", true);
 pref("privacy.item.cookies", true);
@@ -379,7 +392,7 @@ pref("privacy.item.siteSettings", true);
 pref("privacy.item.syncAccount", true);
 
 // enable geo
-pref("geo.enabled", false);
+pref("geo.enabled", true); <!-- Privafox : change false -->
 
 // content sink control -- controls responsiveness during page load
 // see https://bugzilla.mozilla.org/show_bug.cgi?id=481566#c9
@@ -391,6 +404,7 @@ pref("geo.enabled", false);
 // Disable the JS engine's gc on memory pressure, since we do one in the mobile
 // browser (bug 669346).
 pref("javascript.options.gc_on_memory_pressure", false);
+<!-- Privafox : Install ublock is first time -->
 pref("browser.extensions.uBlock.installed", false);
 
 #ifdef MOZ_PKG_SPECIAL
@@ -418,31 +432,38 @@ pref("devtools.errorconsole.enabled", false);
 // to communicate with a usb cable via adb forward.
 pref("devtools.debugger.unix-domain-socket", "/data/data/@ANDROID_PACKAGE_NAME@/firefox-debugger-socket");
 
+pref("devtools.remote.usb.enabled", false);
+pref("devtools.remote.wifi.enabled", false);
+
 pref("font.size.inflation.minTwips", 0);
 
 // When true, zooming will be enabled on all sites, even ones that declare user-scalable=no.
 pref("browser.ui.zoom.force-user-scalable", false);
 
-pref("ui.zoomedview.disabled", false);
-pref("ui.zoomedview.limitReadableSize", 8);  // value in layer pixels
+pref("ui.zoomedview.enabled", true);
+pref("ui.zoomedview.keepLimitSize", 16); // value in layer pixels, used to not keep the large elements in the cluster list (Bug 1191041)
+pref("ui.zoomedview.limitReadableSize", 8); // value in layer pixels
+pref("ui.zoomedview.defaultZoomFactor", 2);
+pref("ui.zoomedview.simplified", true); // Do not display all the zoomed view controls, do not use size heurisistic
 
 pref("ui.touch.radius.enabled", false);
-pref("ui.touch.radius.leftmm", 3);
-pref("ui.touch.radius.topmm", 5);
-pref("ui.touch.radius.rightmm", 3);
-pref("ui.touch.radius.bottommm", 2);
+pref("ui.touch.radius.leftmm", 8);
+pref("ui.touch.radius.topmm", 8);
+pref("ui.touch.radius.rightmm", 8);
+pref("ui.touch.radius.bottommm", 8);
 pref("ui.touch.radius.visitedWeight", 120);
 
 pref("ui.mouse.radius.enabled", true);
-pref("ui.mouse.radius.leftmm", 3);
-pref("ui.mouse.radius.topmm", 5);
-pref("ui.mouse.radius.rightmm", 3);
-pref("ui.mouse.radius.bottommm", 2);
+pref("ui.mouse.radius.leftmm", 8);
+pref("ui.mouse.radius.topmm", 8);
+pref("ui.mouse.radius.rightmm", 8);
+pref("ui.mouse.radius.bottommm", 8);
 pref("ui.mouse.radius.visitedWeight", 120);
 pref("ui.mouse.radius.reposition", true);
 
-// The percentage of the screen that needs to be scrolled before margins are exposed.
-pref("browser.ui.show-margins-threshold", 10);
+// The percentage of the screen that needs to be scrolled before toolbar
+// manipulation is allowed.
+pref("browser.ui.scroll-toolbar-threshold", 10);
 
 // Maximum distance from the point where the user pressed where we still
 // look for text to select
@@ -474,12 +495,8 @@ pref("app.releaseNotesURL", "http://www.privafox.com/mobile/releasenotes.html?v=
 #else
 pref("app.releaseNotesURL", "http://www.privafox.com/mobile/releasenotes.html?v=%VERSION%&l=%LOCALE%&os=%OS%");
 #endif
-#if MOZ_UPDATE_CHANNEL == beta
+
 pref("app.faqURL", "http://www.privafox.com/mobile/faq.html?l=%LOCALE%");
-#else
-pref("app.faqURL", "http://www.privafox.com/mobile/faq.html?l=%LOCALE%");
-#endif
-pref("app.marketplaceURL", "https://marketplace.firefox.com/");
 
 // Name of alternate about: page for certificate errors (when undefined, defaults to about:neterror)
 pref("security.alternate_certificate_error_page", "certerror");
@@ -491,6 +508,13 @@ pref("security.mixed_content.block_active_content", true);
 
 // Enable pinning
 pref("security.cert_pinning.enforcement_level", 1);
+
+// Allow SHA-1 certificates only before 2016-01-01
+pref("security.pki.sha1_enforcement_level", 2);
+
+// Required blocklist freshness for OneCRL OCSP bypass
+// (default is 1.25x extensions.blocklist.interval, or 30 hours)
+pref("security.onecrl.maximum_staleness_in_seconds", 108000);
 
 // Only fetch OCSP for EV certificates
 pref("security.OCSP.enabled", 2);
@@ -531,7 +555,7 @@ pref("app.update.timerMinimumDelay", 30); // seconds
 
 // used by update service to decide whether or not to
 // automatically download an update
-pref("app.update.autodownload", "disabled");
+pref("app.update.autodownload", "disabled"); <!-- Privafox : Change value is Disable -->
 pref("app.update.url.android", "https://updates.privafox.com/browser.html?v=%VERSION%&l=%LOCALE%&os=%OS");
 
 #ifdef MOZ_UPDATER
@@ -552,9 +576,22 @@ pref("ui.dragThresholdY", 25);
 pref("layers.acceleration.disabled", false);
 pref("layers.offmainthreadcomposition.enabled", true);
 pref("layers.async-video.enabled", true);
+
 #ifdef MOZ_ANDROID_APZ
 pref("layers.async-pan-zoom.enabled", true);
+// APZ prefs that are different from B2G
+pref("apz.allow_immediate_handoff", false);
+// APZ physics settings, copied from B2G
+pref("apz.axis_lock.mode", 2); // Use "sticky" axis locking
+pref("apz.fling_curve_function_x1", "0.41");
+pref("apz.fling_curve_function_y1", "0.0");
+pref("apz.fling_curve_function_x2", "0.80");
+pref("apz.fling_curve_function_y2", "1.0");
+pref("apz.fling_curve_threshold_inches_per_ms", "0.01");
+pref("apz.fling_friction", "0.0019");
+pref("apz.max_velocity_inches_per_ms", "0.07");
 #endif
+
 pref("layers.progressive-paint", true);
 pref("layers.low-precision-buffer", true);
 pref("layers.low-precision-resolution", "0.25");
@@ -565,10 +602,6 @@ pref("layers.low-precision-opacity", "1.0");
 // By limiting the number of layers on mobile we're making the main thread
 // work harder keep scrolling smooth and memory low.
 pref("layers.max-active", 20);
-
-// Temporarily disable support for offsetX/Y to work around Google Maps bug
-// (bug 1150284)
-pref("dom.mouseEvent.offsetXY.enabled", false);
 
 pref("notification.feature.enabled", true);
 pref("dom.webnotifications.enabled", true);
@@ -594,37 +627,38 @@ pref("media.cache_readahead_limit", 30);
 pref("media.video-queue.default-size", 3);
 
 // Enable the MediaCodec PlatformDecoderModule by default.
-pref("media.fragmented-mp4.exposed", true);
-pref("media.fragmented-mp4.enabled", true);
-pref("media.fragmented-mp4.android-media-codec.enabled", true);
-pref("media.fragmented-mp4.android-media-codec.preferred", true);
+pref("media.android-media-codec.enabled", true);
+pref("media.android-media-codec.preferred", true);
 
 // Enable MSE
 pref("media.mediasource.enabled", true);
 
 // optimize images memory usage
 pref("image.downscale-during-decode.enabled", true);
-pref("image.decode-only-on-draw.enabled", true);
 
 #ifdef NIGHTLY_BUILD
 // Shumway component (SWF player) is disabled by default. Also see bug 904346.
 pref("shumway.disabled", true);
 #endif
 
-// enable touch events interfaces
-pref("dom.w3c_touch_events.enabled", 1);
-
+<!-- Privafox : remove SafeBrowser -->
 #ifdef MOZ_SAFE_BROWSING
-pref("browser.safebrowsing.enabled", false);
-pref("browser.safebrowsing.malware.enabled", false);
+pref("browser.safebrowsing.enabled", false); <!-- Privafox : change false -->
+pref("browser.safebrowsing.malware.enabled", false); <!-- Privafox : change false -->
+pref("browser.safebrowsing.downloads.enabled", false);
+pref("browser.safebrowsing.downloads.remote.enabled", false);
+pref("browser.safebrowsing.downloads.remote.timeout_ms", 10000);
 pref("browser.safebrowsing.debug", false);
 
-pref("browser.safebrowsing.updateURL", "http://removed.in.privafox");
-pref("browser.safebrowsing.gethashURL", "http://removed.in.privafox");
+pref("browser.safebrowsing.provider.google.lists", "goog-badbinurl-shavar,goog-downloadwhite-digest256,goog-phish-shavar,goog-malware-shavar,goog-unwanted-shavar");
+pref("browser.safebrowsing.provider.google.updateURL", "http://removed.in.privafox");
+pref("browser.safebrowsing.provider.google.gethashURL", "http://removed.in.privafox");
+pref("browser.safebrowsing.provider.google.reportURL", "http://removed.in.privafox");
+pref("browser.safebrowsing.provider.google.appRepURL", "http://removed.in.privafox");
+
 pref("browser.safebrowsing.reportPhishMistakeURL", "http://removed.in.privafox");
 pref("browser.safebrowsing.reportPhishURL", "http://removed.in.privafox");
 pref("browser.safebrowsing.reportMalwareMistakeURL", "http://removed.in.privafox");
-pref("browser.safebrowsing.malware.reportURL", "http://removed.in.privafox");
 
 pref("browser.safebrowsing.id", @MOZ_APP_UA_NAME@);
 
@@ -642,11 +676,6 @@ pref("urlclassifier.gethash.timeout_ms", 5000);
 // a gethash request will be forced to check that the result is still in
 // the database.
 pref("urlclassifier.max-complete-age", 2700);
-#endif
-
-// URL for posting tiles metrics.
-#ifdef RELEASE_BUILD
-pref("browser.tiles.reportURL", "http://removed.in.privafox");
 #endif
 
 // True if this is the first time we are showing about:firstrun
@@ -694,8 +723,8 @@ pref("ui.scrolling.overscroll_snap_limit", -1);
 pref("ui.scrolling.min_scrollable_distance", -1);
 // The axis lock mode for panning behaviour - set between standard, free and sticky
 pref("ui.scrolling.axis_lock_mode", "standard");
-// Negate scrollY, true will make the mouse scroll wheel move the screen the same direction as with most desktops or laptops.
-pref("ui.scrolling.negate_wheel_scrollY", true);
+// Negate scroll, true will make the mouse scroll wheel move the screen the same direction as with most desktops or laptops.
+pref("ui.scrolling.negate_wheel_scroll", true);
 // Determine the dead zone for gamepad joysticks. Higher values result in larger dead zones; use a negative value to
 // auto-detect based on reported hardware values
 pref("ui.scrolling.gamepad_dead_zone", 115);
@@ -762,11 +791,6 @@ pref("layers.enable-tiles", true);
 // Enable the dynamic toolbar
 pref("browser.chrome.dynamictoolbar", true);
 
-// The mode of browser titlebar
-// 0: Show a current page title.
-// 1: Show a current page url.
-pref("browser.chrome.titlebarMode", 1);
-
 // Hide common parts of URLs like "www." or "http://"
 pref("browser.urlbar.trimURLs", true);
 
@@ -805,25 +829,18 @@ pref("dom.phonenumber.substringmatching.BR", 8);
 pref("dom.phonenumber.substringmatching.CO", 10);
 pref("dom.phonenumber.substringmatching.VE", 7);
 
-// Support for the mozAudioChannel attribute on media elements is disabled in non-webapps
-pref("media.useAudioChannelService", false);
-
 // Enable hardware-accelerated Skia canvas
 pref("gfx.canvas.azure.backends", "skia");
 pref("gfx.canvas.azure.accelerated", true);
 
 // See ua-update.json.in for the packaged UA override list
-// Disabling until we understand the cause of Bug 1178760
-pref("general.useragent.updates.enabled", false);
+pref("general.useragent.updates.enabled", true);
 /*
 * Privafox : link dynamic update custom useragent
 */
 pref("general.useragent.updates.url", "https://dynamicua.cdn.mozilla.net/0/%APP_ID%");
 pref("general.useragent.updates.interval", 604800); // 1 week
 pref("general.useragent.updates.retry", 86400); // 1 day
-
-// Youtube is broken with Android version in UA string. Bug 1174784.
-pref("general.useragent.override.youtube.com", "Android\\s\\d.+?;#Android;");
 
 // When true, phone number linkification is enabled.
 pref("browser.ui.linkify.phone", false);
@@ -846,8 +863,8 @@ pref("browser.snippets.geoUrl", "http://removed.in.privafox");
 pref("browser.snippets.statsUrl", "http://removed.in.privafox");
 
 // These prefs require a restart to take effect.
-pref("browser.snippets.enabled", false);
-pref("browser.snippets.syncPromo.enabled", false);
+pref("browser.snippets.enabled", false); <!-- Privafox :change value to false -->
+pref("browser.snippets.syncPromo.enabled", false); <!-- Privafox :change value to false -->
 pref("browser.snippets.firstrunHomepage.enabled", true);
 
 // The URL of the APK factory from which we obtain APKs for webapps.
@@ -873,7 +890,7 @@ pref("browser.webapps.checkForUpdates", 1);
 // To test updates, set this to http://apk-update-checker.paas.allizom.org,
 // which is a test server that always reports all apps as having updates.
 pref("browser.webapps.updateCheckUrl", "https://controller.apk.privafox.com/app_updates");
-pref("home.sync.removed", true);
+
 // The mode of home provider syncing.
 // 0: Sync always
 // 1: Sync only when on wifi
@@ -909,33 +926,22 @@ pref("browser.readinglist.enabled", true);
 // Whether to use the unified telemetry behavior, requires a restart.
 pref("toolkit.telemetry.unified", false);
 
-// Turn off selection caret by default
-pref("selectioncaret.enabled", false);
+// Unified AccessibleCarets (touch-caret and selection-carets).
+#ifdef NIGHTLY_BUILD
+pref("layout.accessiblecaret.enabled", true);
+#else
+pref("layout.accessiblecaret.enabled", false);
+#endif
+// Android generates long tap (mouse) events.
+pref("layout.accessiblecaret.use_long_tap_injector", false);
 
-// Selection carets never fall-back to internal LongTap detector.
-pref("selectioncaret.detects.longtap", false);
+// Android tries to maintain extended visibility of the AccessibleCarets
+// during Selection change notifications generated by Javascript,
+// or misc internal events.
+pref("layout.accessiblecaret.extendedvisibility", true);
 
-// Selection carets override caret visibility.
-pref("selectioncaret.visibility.affectscaret", true);
-
-// Selection caret visibility observes composition
-// selections generated by soft keyboard managers.
-pref("selectioncaret.observes.compositions", true);
-
-// Turn off touch caret by default.
-pref("touchcaret.enabled", false);
-
-// TouchCaret never auto-hides.
-pref("touchcaret.expiration.time", 0);
-
-// Touch caret stays visible under a wider range of conditions
-// than the default b2g. We can display the caret in empty editables
-// for example, and do not auto-hide until loss of focus.
-pref("touchcaret.extendedvisibility", true);
-
-// The TouchCaret and the SelectionCarets will indicate when the
-// TextSelection actionbar is to be openned or closed.
-pref("caret.manages-android-actionbar", true);
+// Optionally provide haptic feedback on longPress selection events.
+pref("layout.accessiblecaret.hapticfeedback", true);
 
 // Disable sending console to logcat on release builds.
 #ifdef RELEASE_BUILD
@@ -944,13 +950,27 @@ pref("consoleservice.logcat", false);
 pref("consoleservice.logcat", true);
 #endif
 
-// Enable Service Workers for Android on non-release builds
+// Enable Cardboard VR on mobile, assuming VR at all is enabled
+pref("dom.vr.cardboard.enabled", true);
+
 #ifndef RELEASE_BUILD
-pref("dom.serviceWorkers.enabled", true);
-pref("dom.serviceWorkers.interception.enabled", true);
+// Enable VR on mobile, making it enable by default.
+pref("dom.vr.enabled", true);
 #endif
 
-/*
-*Privafox : Auto Install uBlock
-*/
-pref("browser.extensions.uBlock.installed", false);
+pref("browser.tabs.showAudioPlayingIcon", true);
+
+pref("dom.serviceWorkers.enabled", true);
+pref("dom.serviceWorkers.interception.enabled", true);
+
+// The remote content URL where FxAccountsWebChannel messages originate.  Must use HTTPS.
+pref("identity.fxaccounts.remote.webchannel.uri", "https://accounts.firefox.com");
+
+// The remote URL of the Firefox Account profile server.
+pref("identity.fxaccounts.remote.profile.uri", "https://profile.accounts.firefox.com/v1");
+
+// The remote URL of the Firefox Account oauth server.
+pref("identity.fxaccounts.remote.oauth.uri", "https://oauth.accounts.firefox.com/v1");
+
+// Token server used by Firefox Account-authenticated Sync.
+pref("identity.sync.tokenserver.uri", "https://token.services.mozilla.com/1.0/sync/1.5");

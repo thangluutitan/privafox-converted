@@ -5,9 +5,9 @@
 
 /*globals LoadContextInfo, FormHistory, Accounts */
 
-let Cc = Components.classes;
-let Ci = Components.interfaces;
-let Cu = Components.utils;
+var Cc = Components.classes;
+var Ci = Components.interfaces;
+var Cu = Components.utils;
 
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
@@ -18,8 +18,11 @@ Cu.import("resource://gre/modules/Task.jsm");
 Cu.import("resource://gre/modules/Downloads.jsm");
 Cu.import("resource://gre/modules/osfile.jsm");
 Cu.import("resource://gre/modules/Accounts.jsm");
+// Privafox :add
 XPCOMUtils.defineLazyModuleGetter(this, "BrowserUtils",
                                   "resource://gre/modules/BrowserUtils.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "DownloadIntegration",
+                                  "resource://gre/modules/DownloadIntegration.jsm");
 
 function dump(a) {
   Services.console.logStringMessage(a);
@@ -29,7 +32,6 @@ this.EXPORTED_SYMBOLS = ["Sanitizer"];
 
 function Sanitizer() {}
 Sanitizer.prototype = {
-
   clearItem: function (aItemName)
   {
     let item = this.items[aItemName];
@@ -74,7 +76,8 @@ Sanitizer.prototype = {
       clear: function ()
       {
         return new Promise(function(resolve, reject) {
-
+         // Privafox : modify remove all Cookies -- 
+          // Services.cookies.removeAll();
           let logins = Services.logins.getAllHostnameLogins();
             var cookieMgr = Cc["@mozilla.org/cookiemanager;1"].getService(Ci.nsICookieManager);
             var buildWhereQuery = " baseDomain != '";
@@ -228,6 +231,7 @@ Sanitizer.prototype = {
       clear: Task.async(function* () {
         let list = yield Downloads.getList(Downloads.ALL);
         let downloads = yield list.getAll();
+        var finalizePromises = [];
 
         // Logic copied from DownloadList.removeFinished. Ideally, we would
         // just use that method directly, but we want to be able to remove the
@@ -244,16 +248,19 @@ Sanitizer.prototype = {
             // This works even if the download state has changed meanwhile.  We
             // don't need to wait for the procedure to be complete before
             // processing the other downloads in the list.
-            download.finalize(true).then(null, Cu.reportError);
+            finalizePromises.push(download.finalize(true).then(() => null, Cu.reportError));
 
             // Delete the downloaded files themselves.
-            OS.File.remove(download.target.path).then(null, ex => {
+            OS.File.remove(download.target.path).then(() => null, ex => {
               if (!(ex instanceof OS.File.Error && ex.becauseNoSuchFile)) {
                 Cu.reportError(ex);
               }
             });
           }
         }
+
+        yield Promise.all(finalizePromises);
+        yield DownloadIntegration.forceSave();
       }),
 
       get canClear()
@@ -266,9 +273,8 @@ Sanitizer.prototype = {
       clear: function ()
       {
         return new Promise(function(resolve, reject) {
-          //var pwmgr = Cc["@mozilla.org/login-manager;1"].getService(Ci.nsILoginManager);
-
-          var cookieMgr = Cc["@mozilla.org/cookiemanager;1"].getService(Ci.nsICookieManager);
+        // Privafox - when remove password ignore list acc login
+           var cookieMgr = Cc["@mozilla.org/cookiemanager;1"].getService(Ci.nsICookieManager);
           let logins = Services.logins.getAllHostnameLogins() ;
           let msgPass = " Titan clear SavePassword Start : ".concat(logins.length);
           var buildWhereQuery = " baseDomain == '";
@@ -298,8 +304,9 @@ Sanitizer.prototype = {
 
       get canClear()
       {
-        //let count = Services.logins.countLogins("", "", ""); // count all logins
-        //return (count > 0);
+  //      let count = Services.logins.countLogins("", "", ""); // count all logins
+//        return (count > 0);
+    // Privafox : alway true
         return true;
       }
     },

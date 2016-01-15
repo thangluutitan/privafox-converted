@@ -58,7 +58,7 @@ interface nsILoginManagerStorage : nsISupports {
   void addLogin(in nsILoginInfo aLogin);
 
   /**
-  * Store importlogin in the storage module.
+  * Privafox : Store importlogin in the storage module.
   *
   * @param aLogin
   *        The login to be added.
@@ -126,7 +126,7 @@ interface nsILoginManagerStorage : nsISupports {
    */
   void getAllLogins([optional] out unsigned long count,
                     [retval, array, size_is(count)] out nsILoginInfo logins);
-
+ // Privafox
   void getAllHostnameLogins([optional] out unsigned long count,
                     [retval, array, size_is(count)] out wstring hostnames);
   /**

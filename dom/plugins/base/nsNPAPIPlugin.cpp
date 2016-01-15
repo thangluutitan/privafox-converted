@@ -72,6 +72,7 @@
 #include "nsIDocShell.h"
 
 #include "nsNetUtil.h"
+#include "nsNetCID.h"
 
 #include "mozilla/Mutex.h"
 #include "mozilla/PluginLibrary.h"
@@ -104,6 +105,8 @@ using mozilla::plugins::PluginModuleContentParent;
 #undef LOG
 #define LOG(args...)  __android_log_print(ANDROID_LOG_INFO, "GeckoPlugins" , ## args)
 #endif
+
+#include "nsIAudioChannelAgent.h"
 
 using namespace mozilla;
 using namespace mozilla::plugins::parent;
@@ -166,7 +169,10 @@ static NPNetscapeFuncs sBrowserFuncs = {
   _convertpoint,
   nullptr, // handleevent, unimplemented
   nullptr, // unfocusinstance, unimplemented
-  _urlredirectresponse
+  _urlredirectresponse,
+  _initasyncsurface,
+  _finalizeasyncsurface,
+  _setcurrentasyncsurface
 };
 
 static Mutex *sPluginThreadAsyncCallLock = nullptr;
@@ -242,158 +248,17 @@ void
 nsNPAPIPlugin::PluginCrashed(const nsAString& pluginDumpID,
                              const nsAString& browserDumpID)
 {
-  nsRefPtr<nsPluginHost> host = nsPluginHost::GetInst();
+  RefPtr<nsPluginHost> host = nsPluginHost::GetInst();
   host->PluginCrashed(this, pluginDumpID, browserDumpID);
 }
 
 bool
 nsNPAPIPlugin::RunPluginOOP(const nsPluginTag *aPluginTag)
 {
-  if (XRE_GetProcessType() == GeckoProcessType_Content) {
-    return true;
-  }
-
-#if (MOZ_WIDGET_GTK == 3)
-  // We force OOP on Linux/GTK3 because some plugins use GTK2 and both GTK
-  // libraries can't be loaded in the same process.
+#ifdef MOZ_WIDGET_ANDROID
+  return false;
+#else
   return true;
-#else
-  if (PR_GetEnv("MOZ_DISABLE_OOP_PLUGINS")) {
-    return false;
-  }
-
-  if (!aPluginTag) {
-    return false;
-  }
-
-#ifdef ACCESSIBILITY
-  // Certain assistive technologies don't want oop Flash, thus we have a special
-  // pref for them to disable oop Flash (refer to bug 785047 for details).
-  bool useA11yPref = false;
-#ifdef XP_WIN
-  useA11yPref =  a11y::Compatibility::IsJAWS();
-#endif
-#endif
-
-#ifdef XP_WIN
-  // On Windows Vista+, we force Flash to run in OOPP mode because Adobe
-  // doesn't test Flash in-process and there are known stability bugs.
-  if (aPluginTag->mIsFlashPlugin && IsVistaOrLater()) {
-#ifdef ACCESSIBILITY
-    if (!useA11yPref)
-      return true;
-#else
-    return true;
-#endif
-  }
-#endif
-
-  nsIPrefBranch* prefs = Preferences::GetRootBranch();
-  if (!prefs) {
-    return false;
-  }
-
-  // Get per-library whitelist/blacklist pref string
-  // "dom.ipc.plugins.enabled.filename.dll" and fall back to the default value
-  // of "dom.ipc.plugins.enabled"
-  // The "filename.dll" part can contain shell wildcard pattern
-
-  nsAutoCString prefFile(aPluginTag->mFullPath.get());
-  int32_t slashPos = prefFile.RFindCharInSet("/\\");
-  if (kNotFound == slashPos)
-    return false;
-  prefFile.Cut(0, slashPos + 1);
-  ToLowerCase(prefFile);
-
-#ifdef XP_MACOSX
-#if defined(__i386__)
-  nsAutoCString prefGroupKey("dom.ipc.plugins.enabled.i386.");
-#elif defined(__x86_64__)
-  nsAutoCString prefGroupKey("dom.ipc.plugins.enabled.x86_64.");
-#elif defined(__ppc__)
-  nsAutoCString prefGroupKey("dom.ipc.plugins.enabled.ppc.");
-#endif
-#else
-  nsAutoCString prefGroupKey("dom.ipc.plugins.enabled.");
-#endif
-
-#ifdef ACCESSIBILITY
-  if (useA11yPref)
-    prefGroupKey.AssignLiteral("dom.ipc.plugins.enabled.a11y.");
-#endif
-
-  if (BrowserTabsRemoteAutostart()) {
-    // dom.ipc.plugins.java.enabled is obsolete in Nightly w/e10s, we've
-    // flipped the default to ON and now have a force-disable pref. This
-    // way we don't break non-e10s browsers.
-    if (aPluginTag->mIsJavaPlugin &&
-        Preferences::GetBool("dom.ipc.plugins.java.force-disable", false)) {
-      return false;
-    }
-  } else {
-    // Java plugins include a number of different file names,
-    // so use the mime type (mIsJavaPlugin) and a special pref.
-    if (aPluginTag->mIsJavaPlugin &&
-        !Preferences::GetBool("dom.ipc.plugins.java.enabled", true)) {
-      return false;
-    }
-  }
-
-  uint32_t prefCount;
-  char** prefNames;
-  nsresult rv = prefs->GetChildList(prefGroupKey.get(),
-                                    &prefCount, &prefNames);
-
-  bool oopPluginsEnabled = false;
-  bool prefSet = false;
-
-  if (NS_SUCCEEDED(rv) && prefCount > 0) {
-    uint32_t prefixLength = prefGroupKey.Length();
-    for (uint32_t currentPref = 0; currentPref < prefCount; currentPref++) {
-      // Get the mask
-      const char* maskStart = prefNames[currentPref] + prefixLength;
-      bool match = false;
-
-      int valid = NS_WildCardValid(maskStart);
-      if (valid == INVALID_SXP) {
-         continue;
-      }
-      else if(valid == NON_SXP) {
-        // mask is not a shell pattern, compare it as normal string
-        match = (strcmp(prefFile.get(), maskStart) == 0);
-      }
-      else {
-        match = (NS_WildCardMatch(prefFile.get(), maskStart, 0) == MATCH);
-      }
-
-      if (match && NS_SUCCEEDED(Preferences::GetBool(prefNames[currentPref],
-                                                     &oopPluginsEnabled))) {
-        prefSet = true;
-        break;
-      }
-    }
-    NS_FREE_XPCOM_ALLOCATED_POINTER_ARRAY(prefCount, prefNames);
-  }
-
-  if (!prefSet) {
-    oopPluginsEnabled =
-#ifdef XP_MACOSX
-#if defined(__i386__)
-    Preferences::GetBool("dom.ipc.plugins.enabled.i386", false);
-#elif defined(__x86_64__)
-    Preferences::GetBool("dom.ipc.plugins.enabled.x86_64", false);
-#elif defined(__ppc__)
-    Preferences::GetBool("dom.ipc.plugins.enabled.ppc", false);
-#endif
-#else
-#ifdef ACCESSIBILITY
-    useA11yPref ? Preferences::GetBool("dom.ipc.plugins.enabled.a11y", false) :
-#endif
-    Preferences::GetBool("dom.ipc.plugins.enabled", false);
-#endif
-  }
-
-  return oopPluginsEnabled;
 #endif
 }
 
@@ -404,8 +269,8 @@ GetNewPluginLibrary(nsPluginTag *aPluginTag)
     return nullptr;
   }
 
-  if (XRE_GetProcessType() == GeckoProcessType_Content) {
-    return PluginModuleContentParent::LoadModule(aPluginTag->mId);
+  if (XRE_IsContentProcess()) {
+    return PluginModuleContentParent::LoadModule(aPluginTag->mId, aPluginTag);
   }
 
   if (nsNPAPIPlugin::RunPluginOOP(aPluginTag)) {
@@ -426,7 +291,7 @@ nsNPAPIPlugin::CreatePlugin(nsPluginTag *aPluginTag, nsNPAPIPlugin** aResult)
 
   CheckClassInitialized();
 
-  nsRefPtr<nsNPAPIPlugin> plugin = new nsNPAPIPlugin();
+  RefPtr<nsNPAPIPlugin> plugin = new nsNPAPIPlugin();
 
   PluginLibrary* pluginLib = GetNewPluginLibrary(aPluginTag);
   if (!pluginLib) {
@@ -559,7 +424,7 @@ MakeNewNPAPIStreamInternal(NPP npp, const char *relativeURL, const char *target,
     return NPERR_GENERIC_ERROR;
   }
 
-  nsRefPtr<nsNPAPIPluginStreamListener> listener;
+  RefPtr<nsNPAPIPluginStreamListener> listener;
   // Set aCallNotify here to false.  If pluginHost->GetURL or PostURL fail,
   // the listener's destructor will do the notification while we are about to
   // return a failure code.
@@ -650,7 +515,7 @@ GetDocumentFromNPP(NPP npp)
 
   PluginDestructionGuard guard(inst);
 
-  nsRefPtr<nsPluginInstanceOwner> owner = inst->GetOwner();
+  RefPtr<nsPluginInstanceOwner> owner = inst->GetOwner();
   NS_ENSURE_TRUE(owner, nullptr);
 
   nsCOMPtr<nsIDocument> doc;
@@ -831,7 +696,6 @@ AsyncCallbackAutoLock::~AsyncCallbackAutoLock()
   }
 }
 
-
 NPP NPPStack::sCurrentNPP = nullptr;
 
 const char *
@@ -882,9 +746,8 @@ _geturl(NPP npp, const char* relativeURL, const char* target)
       (strncmp(relativeURL, "ftp:", 4) != 0)) {
     nsNPAPIPluginInstance *inst = (nsNPAPIPluginInstance *) npp->ndata;
 
-
     const char *name = nullptr;
-    nsRefPtr<nsPluginHost> host = nsPluginHost::GetInst();
+    RefPtr<nsPluginHost> host = nsPluginHost::GetInst();
     host->GetPluginName(inst, &name);
 
     if (name && strstr(name, "Adobe") && strstr(name, "Acrobat")) {
@@ -1035,7 +898,7 @@ NPError
 _destroystream(NPP npp, NPStream *pstream, NPError reason)
 {
   if (!NS_IsMainThread()) {
-    NPN_PLUGIN_LOG(PLUGIN_LOG_ALWAYS,("NPN_write called from the wrong thread\n"));
+    NPN_PLUGIN_LOG(PLUGIN_LOG_ALWAYS,("NPN_destroystream called from the wrong thread\n"));
     return NPERR_INVALID_PARAM;
   }
   NPN_PLUGIN_LOG(PLUGIN_LOG_NORMAL,
@@ -1391,11 +1254,22 @@ _retainobject(NPObject* npobj)
 void
 _releaseobject(NPObject* npobj)
 {
+  // If nothing is passed, just return, even if we're on the wrong thread.
+  if (!npobj) {
+    return;
+  }
+
+  // THIS IS A KNOWN LEAK. SEE BUG 1221448.
+  // If releaseobject is called off the main thread and we have a valid pointer,
+  // we at least know it was created on the main thread (see _createobject
+  // implementation). However, forwarding the deletion back to the main thread
+  // without careful checking could cause bad memory management races. So, for
+  // now, we leak by warning and then just returning early. But it should fix
+  // java 7 crashes.
   if (!NS_IsMainThread()) {
     NPN_PLUGIN_LOG(PLUGIN_LOG_ALWAYS,("NPN_releaseobject called from the wrong thread\n"));
-  }
-  if (!npobj)
     return;
+  }
 
   int32_t refCnt = PR_ATOMIC_DECREMENT((int32_t*)&npobj->referenceCount);
   NS_LOG_RELEASE(npobj, refCnt, "BrowserNPObject");
@@ -1478,6 +1352,7 @@ _evaluate(NPP npp, NPObject* npobj, NPString *script, NPVariant *result)
     return false;
   }
 
+  nsAutoMicroTask mt;
   dom::AutoEntryScript aes(win, "NPAPI NPN_evaluate");
   aes.TakeOwnershipOfErrorReporting();
   JSContext* cx = aes.cx();
@@ -1488,10 +1363,8 @@ _evaluate(NPP npp, NPObject* npobj, NPString *script, NPVariant *result)
     return false;
   }
 
-  obj = JS_ObjectToInnerObject(cx, obj);
-  MOZ_ASSERT(obj,
-             "JS_ObjectToInnerObject should never return null with non-null "
-             "input.");
+  obj = js::ToWindowIfWindowProxy(obj);
+  MOZ_ASSERT(obj, "ToWindowIfWindowProxy should never return null");
 
   if (result) {
     // Initialize the out param to void
@@ -1593,7 +1466,7 @@ _getproperty(NPP npp, NPObject* npobj, NPIdentifier property,
   nsNPAPIPlugin* plugin = inst->GetPlugin();
   if (!plugin)
     return false;
-  nsRefPtr<nsPluginHost> host = nsPluginHost::GetInst();
+  RefPtr<nsPluginHost> host = nsPluginHost::GetInst();
   nsPluginTag* pluginTag = host->TagForPlugin(plugin);
   if (!pluginTag->mIsJavaPlugin)
     return true;
@@ -1942,7 +1815,7 @@ _getvalue(NPP npp, NPNVariable variable, void *result)
 
     nsNPAPIPluginInstance *inst = (nsNPAPIPluginInstance *) npp->ndata;
 
-    nsRefPtr<nsPluginInstanceOwner> owner = inst->GetOwner();
+    RefPtr<nsPluginInstanceOwner> owner = inst->GetOwner();
     NS_ENSURE_TRUE(owner, NPERR_NO_ERROR);
 
     if (NS_SUCCEEDED(owner->GetNetscapeWindow(result))) {
@@ -2094,9 +1967,7 @@ _getvalue(NPP npp, NPNVariable variable, void *result)
         return NPERR_NO_ERROR;
       }
     }
-    else {
-      return NPERR_GENERIC_ERROR;
-    }
+    return NPERR_GENERIC_ERROR;
   }
 
 #ifndef NP_NO_QUICKDRAW
@@ -2325,14 +2196,13 @@ _getvalue(NPP npp, NPNVariable variable, void *result)
 
   // we no longer hand out any XPCOM objects
   case NPNVDOMElement:
-    // fall through
   case NPNVDOMWindow:
-    // fall through
   case NPNVserviceManager:
     // old XPCOM objects, no longer supported, but null out the out
     // param to avoid crashing plugins that still try to use this.
     *(nsISupports**)result = nullptr;
-    // fall through
+    MOZ_FALLTHROUGH;
+
   default:
     NPN_PLUGIN_LOG(PLUGIN_LOG_NORMAL, ("NPN_getvalue unhandled get value: %d\n", variable));
     return NPERR_GENERIC_ERROR;
@@ -2398,6 +2268,47 @@ _setvalue(NPP npp, NPPVariable variable, void *result)
     case NPPVpluginUsesDOMForCursorBool: {
       bool useDOMForCursor = (result != nullptr);
       return inst->SetUsesDOMForCursor(useDOMForCursor);
+    }
+
+    case NPPVpluginIsPlayingAudio: {
+      bool isMuted = !result;
+
+      nsNPAPIPluginInstance* inst = (nsNPAPIPluginInstance*) npp->ndata;
+      MOZ_ASSERT(inst);
+
+      if (isMuted && !inst->HasAudioChannelAgent()) {
+        return NPERR_NO_ERROR;
+      }
+
+      nsCOMPtr<nsIAudioChannelAgent> agent;
+      nsresult rv = inst->GetOrCreateAudioChannelAgent(getter_AddRefs(agent));
+      if (NS_WARN_IF(NS_FAILED(rv))) {
+        return NPERR_NO_ERROR;
+      }
+
+      MOZ_ASSERT(agent);
+
+      if (isMuted) {
+        rv = agent->NotifyStoppedPlaying();
+        if (NS_WARN_IF(NS_FAILED(rv))) {
+          return NPERR_NO_ERROR;
+        }
+      } else {
+        float volume = 0.0;
+        bool muted = true;
+        rv = agent->NotifyStartedPlaying(nsIAudioChannelAgent::AUDIO_AGENT_NOTIFY,
+                                         &volume, &muted);
+        if (NS_WARN_IF(NS_FAILED(rv))) {
+          return NPERR_NO_ERROR;
+        }
+
+        rv = inst->WindowVolumeChanged(volume, muted);
+        if (NS_WARN_IF(NS_FAILED(rv))) {
+          return NPERR_NO_ERROR;
+        }
+      }
+
+      return NPERR_NO_ERROR;
     }
 
 #ifndef MOZ_WIDGET_ANDROID
@@ -2567,7 +2478,7 @@ _pluginthreadasynccall(NPP instance, PluginThreadCallback func, void *userData)
   } else {
     NPN_PLUGIN_LOG(PLUGIN_LOG_NOISY,("NPN_pluginthreadasynccall called from a non main thread\n"));
   }
-  nsRefPtr<nsPluginThreadRunnable> evt =
+  RefPtr<nsPluginThreadRunnable> evt =
     new nsPluginThreadRunnable(instance, func, userData);
 
   if (evt && evt->IsValid()) {
@@ -2579,6 +2490,11 @@ NPError
 _getvalueforurl(NPP instance, NPNURLVariable variable, const char *url,
                 char **value, uint32_t *len)
 {
+  if (!NS_IsMainThread()) {
+    NPN_PLUGIN_LOG(PLUGIN_LOG_ALWAYS,("NPN_getvalueforurl called from the wrong thread\n"));
+    return NPERR_GENERIC_ERROR;
+  }
+
   if (!instance) {
     return NPERR_INVALID_PARAM;
   }
@@ -2625,7 +2541,6 @@ _getvalueforurl(NPP instance, NPNURLVariable variable, const char *url,
       return NPERR_NO_ERROR;
     }
 
-    break;
   default:
     // Fall through and return an error...
     ;
@@ -2638,6 +2553,11 @@ NPError
 _setvalueforurl(NPP instance, NPNURLVariable variable, const char *url,
                 const char *value, uint32_t len)
 {
+  if (!NS_IsMainThread()) {
+    NPN_PLUGIN_LOG(PLUGIN_LOG_ALWAYS,("NPN_setvalueforurl called from the wrong thread\n"));
+    return NPERR_GENERIC_ERROR;
+  }
+
   if (!instance) {
     return NPERR_INVALID_PARAM;
   }
@@ -2649,7 +2569,7 @@ _setvalueforurl(NPP instance, NPNURLVariable variable, const char *url,
   switch (variable) {
   case NPNURLVCookie:
     {
-      if (!url || !value || (0 >= len))
+      if (!value || 0 == len)
         return NPERR_INVALID_PARAM;
 
       nsresult rv = NS_ERROR_FAILURE;
@@ -2694,6 +2614,11 @@ _getauthenticationinfo(NPP instance, const char *protocol, const char *host,
                        char **username, uint32_t *ulen, char **password,
                        uint32_t *plen)
 {
+  if (!NS_IsMainThread()) {
+    NPN_PLUGIN_LOG(PLUGIN_LOG_ALWAYS,("NPN_getauthenticationinfo called from the wrong thread\n"));
+    return NPERR_GENERIC_ERROR;
+  }
+
   if (!instance || !protocol || !host || !scheme || !realm || !username ||
       !ulen || !password || !plen)
     return NPERR_INVALID_PARAM;
@@ -2750,6 +2675,11 @@ _getauthenticationinfo(NPP instance, const char *protocol, const char *host,
 uint32_t
 _scheduletimer(NPP instance, uint32_t interval, NPBool repeat, PluginTimerFunc timerFunc)
 {
+  if (!NS_IsMainThread()) {
+    NPN_PLUGIN_LOG(PLUGIN_LOG_ALWAYS,("NPN_scheduletimer called from the wrong thread\n"));
+    return 0;
+  }
+
   nsNPAPIPluginInstance *inst = (nsNPAPIPluginInstance *)instance->ndata;
   if (!inst)
     return 0;
@@ -2760,6 +2690,11 @@ _scheduletimer(NPP instance, uint32_t interval, NPBool repeat, PluginTimerFunc t
 void
 _unscheduletimer(NPP instance, uint32_t timerID)
 {
+  if (!NS_IsMainThread()) {
+    NPN_PLUGIN_LOG(PLUGIN_LOG_ALWAYS,("NPN_unscheduletimer called from the wrong thread\n"));
+    return;
+  }
+
 #ifdef MOZ_WIDGET_ANDROID
   // Sometimes Flash calls this with a dead NPP instance. Ensure the one we have
   // here is valid and maps to a nsNPAPIPluginInstance.
@@ -2776,6 +2711,11 @@ _unscheduletimer(NPP instance, uint32_t timerID)
 NPError
 _popupcontextmenu(NPP instance, NPMenu* menu)
 {
+  if (!NS_IsMainThread()) {
+    NPN_PLUGIN_LOG(PLUGIN_LOG_ALWAYS,("NPN_popupcontextmenu called from the wrong thread\n"));
+    return 0;
+  }
+
 #ifdef MOZ_WIDGET_COCOA
   nsNPAPIPluginInstance *inst = (nsNPAPIPluginInstance *)instance->ndata;
 
@@ -2825,6 +2765,11 @@ _popupcontextmenu(NPP instance, NPMenu* menu)
 NPBool
 _convertpoint(NPP instance, double sourceX, double sourceY, NPCoordinateSpace sourceSpace, double *destX, double *destY, NPCoordinateSpace destSpace)
 {
+  if (!NS_IsMainThread()) {
+    NPN_PLUGIN_LOG(PLUGIN_LOG_ALWAYS,("NPN_convertpoint called from the wrong thread\n"));
+    return 0;
+  }
+
   nsNPAPIPluginInstance *inst = (nsNPAPIPluginInstance *)instance->ndata;
   if (!inst)
     return false;
@@ -2835,12 +2780,50 @@ _convertpoint(NPP instance, double sourceX, double sourceY, NPCoordinateSpace so
 void
 _urlredirectresponse(NPP instance, void* notifyData, NPBool allow)
 {
+  if (!NS_IsMainThread()) {
+    NPN_PLUGIN_LOG(PLUGIN_LOG_ALWAYS,("NPN_convertpoint called from the wrong thread\n"));
+    return;
+  }
+
   nsNPAPIPluginInstance *inst = (nsNPAPIPluginInstance *)instance->ndata;
   if (!inst) {
     return;
   }
 
   inst->URLRedirectResponse(notifyData, allow);
+}
+
+NPError
+_initasyncsurface(NPP instance, NPSize *size, NPImageFormat format, void *initData, NPAsyncSurface *surface)
+{
+  nsNPAPIPluginInstance *inst = (nsNPAPIPluginInstance *)instance->ndata;
+  if (!inst) {
+    return NPERR_GENERIC_ERROR;
+  }
+
+  return inst->InitAsyncSurface(size, format, initData, surface);
+}
+
+NPError
+_finalizeasyncsurface(NPP instance, NPAsyncSurface *surface)
+{
+  nsNPAPIPluginInstance *inst = (nsNPAPIPluginInstance *)instance->ndata;
+  if (!inst) {
+    return NPERR_GENERIC_ERROR;
+  }
+
+  return inst->FinalizeAsyncSurface(surface);
+}
+
+void
+_setcurrentasyncsurface(NPP instance, NPAsyncSurface *surface, NPRect *changed)
+{
+  nsNPAPIPluginInstance *inst = (nsNPAPIPluginInstance *)instance->ndata;
+  if (!inst) {
+    return;
+  }
+
+  inst->SetCurrentAsyncSurface(surface, changed);
 }
 
 } /* namespace parent */

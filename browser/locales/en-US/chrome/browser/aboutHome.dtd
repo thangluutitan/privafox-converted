@@ -11,22 +11,20 @@
 
 <!ENTITY abouthome.pageTitle "&brandFullName; Start Page">
 
-<!ENTITY abouthome.searchEngineButton.label "Search">
-
 <!-- LOCALIZATION NOTE (abouthome.defaultSnippet1.v1):
      text in <a/> will be linked to the Privafox features page on mozilla.com
 -->
+
 <!ENTITY abouthome.defaultSnippet1.v1 "Your default search engine is not Findx.com, but &brandFullName;. We cannot guarantee your privacy. <a>Click here to restore</a>">
 <!--<!ENTITY abouthome.defaultSnippet.searchEngine "Your default search engine is not Findx.com, but &brandFullName; we cannot guarantee your privacy. <label>Click here to restore</label>">-->
 <!ENTITY abouthome.defaultSnippet.searchEngine "Your default search engine is not Findx.com, but <label>currentSearchEngine</label>. We cannot guarantee your privacy. <button>&abouthome.defaultSearchEngine.label;</button>">
-
 <!-- LOCALIZATION NOTE (abouthome.defaultSnippet2.v1):
      text in <a/> will be linked to the featured add-ons on addons.mozilla.org
 -->
 <!ENTITY abouthome.defaultSearchEngine.label "Click here to restore">
 <!ENTITY abouthome.defaultSnippet2.v1 "It's easy to customize your Privafox exactly the way you want it. <a>Choose from thousands of add-ons</a>.">
 <!-- LOCALIZATION NOTE (abouthome.rightsSnippet): text in <a/> will be linked to about:rights -->
-<!ENTITY abouthome.rightsSnippet "&brandFullName; is free and open source software from the non-profit Privacore ApS. <a>Know your rights…</a>">
+<!ENTITY abouthome.rightsSnippet "&brandFullName; is free and open source software from the non-profit Mozilla Foundation. <a>Know your rights…</a>">
 
 <!ENTITY abouthome.bookmarksButton.label "Bookmarks">
 <!ENTITY abouthome.historyButton.label   "History">

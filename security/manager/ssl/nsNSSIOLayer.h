@@ -10,6 +10,7 @@
 #include "TransportSecurityInfo.h"
 #include "nsISSLSocketControl.h"
 #include "nsIClientAuthDialogs.h"
+#include "nsIProxyInfo.h"
 #include "nsNSSCertificate.h"
 #include "nsDataHashtable.h"
 #include "nsTHashtable.h"
@@ -19,8 +20,8 @@
 namespace mozilla {
 namespace psm {
 class SharedSSLState;
-}
-}
+} // namespace psm
+} // namespace mozilla
 
 class nsIObserver;
 
@@ -184,12 +185,9 @@ public:
   static PRIOMethods nsSSLPlaintextLayerMethods;
 
   bool mTreatUnsafeNegotiationAsBroken;
-  int32_t mWarnLevelMissingRFC5746;
 
   void setTreatUnsafeNegotiationAsBroken(bool broken);
   bool treatUnsafeNegotiationAsBroken();
-  void setWarnLevelMissingRFC5746(int32_t level);
-  int32_t getWarnLevelMissingRFC5746();
 
 private:
   struct IntoleranceEntry
@@ -229,13 +227,12 @@ public:
   void clearStoredData();
   void loadVersionFallbackLimit();
   void setInsecureFallbackSites(const nsCString& str);
-  bool isInsecureFallbackSite(const nsACString& hostname);
+  void initInsecureFallbackSites();
+  bool isPublic() const;
+  void addInsecureFallbackSite(const nsCString& hostname, bool temporary);
+  void removeInsecureFallbackSite(const nsACString& hostname, uint16_t port);
 
   bool mFalseStartRequireNPN;
-  // Use the static list of sites that require insecure fallback
-  // to TLS 1.0 if true, set by the pref
-  // security.tls.insecure_fallback_hosts.use_static_list.
-  bool mUseStaticFallbackList;
   bool mUnrestrictedRC4Fallback;
   uint16_t mVersionFallbackLimit;
 private:
@@ -246,8 +243,7 @@ private:
 nsresult nsSSLIOLayerNewSocket(int32_t family,
                                const char* host,
                                int32_t port,
-                               const char* proxyHost,
-                               int32_t proxyPort,
+                               nsIProxyInfo *proxy,
                                PRFileDesc** fd,
                                nsISupports** securityInfo,
                                bool forSTARTTLS,
@@ -256,8 +252,7 @@ nsresult nsSSLIOLayerNewSocket(int32_t family,
 nsresult nsSSLIOLayerAddToSocket(int32_t family,
                                  const char* host,
                                  int32_t port,
-                                 const char* proxyHost,
-                                 int32_t proxyPort,
+                                 nsIProxyInfo *proxy,
                                  PRFileDesc* fd,
                                  nsISupports** securityInfo,
                                  bool forSTARTTLS,

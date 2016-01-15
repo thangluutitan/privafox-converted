@@ -11,7 +11,6 @@
 #include "MP3FrameParser.h"
 #include "MPAPI.h"
 #include "MediaOmxCommonReader.h"
-#include "MediaResource.h"
 #include "AbstractMediaDecoder.h"
 #include "OMXCodecProxy.h"
 
@@ -21,7 +20,7 @@ class OmxDecoder;
 
 namespace android {
 
-class OmxDecoder : public OMXCodecProxy::CodecResourceListener {
+class OmxDecoder : public RefBase {
   typedef MPAPI::AudioFrame AudioFrame;
   typedef MPAPI::VideoFrame VideoFrame;
   typedef mozilla::MP3FrameParser MP3FrameParser;
@@ -42,7 +41,6 @@ class OmxDecoder : public OMXCodecProxy::CodecResourceListener {
   };
 
   AbstractMediaDecoder *mDecoder;
-  nsRefPtr<MediaResource> mResource;
   sp<GonkNativeWindow> mNativeWindow;
   sp<GonkNativeWindowClient> mNativeWindowClient;
   sp<MediaSource> mVideoTrack;
@@ -121,7 +119,10 @@ class OmxDecoder : public OMXCodecProxy::CodecResourceListener {
   // 'true' if a read from the audio stream was done while reading the metadata
   bool mAudioMetadataRead;
 
-  mozilla::MediaPromiseHolder<MediaResourcePromise> mMediaResourcePromise;
+  RefPtr<mozilla::TaskQueue> mTaskQueue;
+
+  mozilla::MozPromiseRequestHolder<OMXCodecProxy::CodecPromise> mVideoCodecRequest;
+  mozilla::MozPromiseHolder<MediaResourcePromise> mMediaResourcePromise;
 
   void ReleaseVideoBuffer();
   void ReleaseAudioBuffer();
@@ -140,13 +141,14 @@ class OmxDecoder : public OMXCodecProxy::CodecResourceListener {
   bool mAudioPaused;
   bool mVideoPaused;
 
-public:
-  OmxDecoder(MediaResource *aResource, AbstractMediaDecoder *aDecoder);
-  ~OmxDecoder();
+  mozilla::TaskQueue* OwnerThread() const
+  {
+    return mTaskQueue;
+  }
 
-  // OMXCodecProxy::CodecResourceListener
-  virtual void codecReserved();
-  virtual void codecCanceled();
+public:
+  explicit OmxDecoder(AbstractMediaDecoder *aDecoder, mozilla::TaskQueue* aTaskQueue);
+  ~OmxDecoder();
 
   // The MediaExtractor provides essential information for creating OMXCodec
   // instance. Such as video/audio codec, we can retrieve them through the
@@ -162,7 +164,7 @@ public:
   // mDurationUs and video/audio metadata.
   bool EnsureMetadata();
 
-  nsRefPtr<MediaResourcePromise> AllocateMediaResources();
+  RefPtr<MediaResourcePromise> AllocateMediaResources();
   void ReleaseMediaResources();
   bool SetVideoFormat();
   bool SetAudioFormat();
@@ -198,10 +200,6 @@ public:
                  bool aKeyframeSkip = false,
                  bool aDoSeek = false);
   bool ReadAudio(AudioFrame *aFrame, int64_t aSeekTimeUs);
-
-  MediaResource *GetResource() {
-    return mResource;
-  }
 
   //Change decoder into a playing state
   nsresult Play();

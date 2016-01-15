@@ -7,6 +7,7 @@
 #define nsTextFrame_h__
 
 #include "mozilla/Attributes.h"
+#include "mozilla/EventForwards.h"
 #include "mozilla/gfx/2D.h"
 #include "nsFrame.h"
 #include "nsSplittableFrame.h"
@@ -39,8 +40,11 @@ public:
 };
 
 class nsTextFrame : public nsTextFrameBase {
+  typedef mozilla::TextRangeStyle TextRangeStyle;
   typedef mozilla::gfx::DrawTarget DrawTarget;
+  typedef mozilla::gfx::Point Point;
   typedef mozilla::gfx::Rect Rect;
+  typedef mozilla::gfx::Size Size;
 
 public:
   NS_DECL_QUERYFRAME_TARGET(nsTextFrame)
@@ -259,11 +263,12 @@ public:
     nscoord      mDeltaWidth;
   };
   TrimOutput TrimTrailingWhiteSpace(nsRenderingContext* aRC);
-  virtual nsresult GetRenderedText(nsAString* aString = nullptr,
-                                   gfxSkipChars* aSkipChars = nullptr,
-                                   gfxSkipCharsIterator* aSkipIter = nullptr,
-                                   uint32_t aSkippedStartOffset = 0,
-                                   uint32_t aSkippedMaxLength = UINT32_MAX) override;
+  virtual RenderedText GetRenderedText(uint32_t aStartOffset = 0,
+                                       uint32_t aEndOffset = UINT32_MAX,
+                                       TextOffsetType aOffsetType =
+                                           TextOffsetType::OFFSETS_IN_CONTENT_TEXT,
+                                       TrailingWhitespace aTrimTrailingWhitespace =
+                                           TrailingWhitespace::TRIM_TRAILING_WHITESPACE) override;
 
   nsOverflowAreas RecomputeOverflow(nsIFrame* aBlockFrame);
 
@@ -391,7 +396,8 @@ public:
   void PaintText(nsRenderingContext* aRenderingContext, nsPoint aPt,
                  const nsRect& aDirtyRect, const nsCharClipDisplayItem& aItem,
                  gfxTextContextPaint* aContextPaint = nullptr,
-                 DrawPathCallbacks* aCallbacks = nullptr);
+                 DrawPathCallbacks* aCallbacks = nullptr,
+                 float aOpacity = 1.0f);
   // helper: paint text frame when we're impacted by at least one selection.
   // Return false if the text was not painted and we should continue with
   // the fast path.
@@ -435,6 +441,13 @@ public:
                                      SelectionDetails* aDetails,
                                      SelectionType aSelectionType,
                                      DrawPathCallbacks* aCallbacks);
+
+  void DrawEmphasisMarks(gfxContext* aContext,
+                         mozilla::WritingMode aWM,
+                         const gfxPoint& aTextBaselinePt,
+                         uint32_t aOffset, uint32_t aLength,
+                         const nscolor* aDecorationOverrideColor,
+                         PropertyProvider& aProvider);
 
   virtual nscolor GetCaretColorAt(int32_t aOffset) override;
 
@@ -580,6 +593,11 @@ protected:
                                PropertyProvider& aProvider,
                                nsRect* aVisualOverflowRect,
                                bool aIncludeTextDecorations);
+
+  // Update information of emphasis marks, and return the visial
+  // overflow rect of the emphasis marks.
+  nsRect UpdateTextEmphasis(mozilla::WritingMode aWM,
+                            PropertyProvider& aProvider);
 
   void PaintOneShadow(uint32_t aOffset,
                       uint32_t aLength,
@@ -729,6 +747,75 @@ protected:
   bool CombineSelectionUnderlineRect(nsPresContext* aPresContext,
                                        nsRect& aRect);
 
+  /**
+   * Utility methods to paint selection.
+   */
+  void DrawSelectionDecorations(gfxContext* aContext,
+                                const gfxRect& aDirtyRect,
+                                SelectionType aType,
+                                nsTextPaintStyle& aTextPaintStyle,
+                                const TextRangeStyle &aRangeStyle,
+                                const Point& aPt,
+                                gfxFloat aICoordInFrame,
+                                gfxFloat aWidth,
+                                gfxFloat aAscent,
+                                const gfxFont::Metrics& aFontMetrics,
+                                DrawPathCallbacks* aCallbacks,
+                                bool aVertical,
+                                gfxFloat aDecorationOffsetDir,
+                                uint8_t aDecoration);
+  enum DecorationType
+  {
+    eNormalDecoration,
+    eSelectionDecoration
+  };
+  void PaintDecorationLine(gfxContext* const aCtx,
+                           const gfxRect& aDirtyRect,
+                           nscolor aColor,
+                           const nscolor* aOverrideColor,
+                           const Point& aPt,
+                           gfxFloat aICoordInFrame,
+                           const Size& aLineSize,
+                           gfxFloat aAscent,
+                           gfxFloat aOffset,
+                           uint8_t aDecoration,
+                           uint8_t aStyle,
+                           DecorationType aDecorationType,
+                           DrawPathCallbacks* aCallbacks,
+                           bool aVertical,
+                           gfxFloat aDescentLimit = -1.0);
+  /**
+   * ComputeDescentLimitForSelectionUnderline() computes the most far position
+   * where we can put selection underline.
+   *
+   * @return The maximum underline offset from the baseline (positive value
+   *         means that the underline can put below the baseline).
+   */
+  gfxFloat ComputeDescentLimitForSelectionUnderline(
+             nsPresContext* aPresContext,
+             const gfxFont::Metrics& aFontMetrics);
+  /**
+   * This function encapsulates all knowledge of how selections affect
+   * foreground and background colors.
+   * @param aForeground the foreground color to use
+   * @param aBackground the background color to use, or RGBA(0,0,0,0) if no
+   *                    background should be painted
+   * @return            true if the selection affects colors, false otherwise
+   */
+  static bool GetSelectionTextColors(SelectionType aType,
+                                     nsTextPaintStyle& aTextPaintStyle,
+                                     const TextRangeStyle &aRangeStyle,
+                                     nscolor* aForeground,
+                                     nscolor* aBackground);
+  /**
+   * ComputeSelectionUnderlineHeight() computes selection underline height of
+   * the specified selection type from the font metrics.
+   */
+  static gfxFloat ComputeSelectionUnderlineHeight(
+                    nsPresContext* aPresContext,
+                    const gfxFont::Metrics& aFontMetrics,
+                    SelectionType aSelectionType);
+
   ContentOffsets GetCharacterOffsetAtFramePointInternal(nsPoint aPoint,
                    bool aForInsertionPoint);
 
@@ -739,6 +826,14 @@ protected:
   void ClearMetrics(nsHTMLReflowMetrics& aMetrics);
 
   NS_DECLARE_FRAME_PROPERTY(JustificationAssignment, nullptr)
+
+  struct EmphasisMarkInfo
+  {
+    nsAutoPtr<gfxTextRun> textRun;
+    gfxFloat advance;
+    gfxFloat baselineOffset;
+  };
+  NS_DECLARE_FRAME_PROPERTY(EmphasisMarkProperty, DeleteValue<EmphasisMarkInfo>)
 };
 
 #endif

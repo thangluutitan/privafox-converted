@@ -12,7 +12,7 @@ namespace mozilla {
 
 namespace layout {
 class VsyncParent;
-}
+} // namespace layout
 
 namespace ipc {
 
@@ -50,11 +50,23 @@ protected:
   DeallocPBackgroundIDBFactoryParent(PBackgroundIDBFactoryParent* aActor)
                                      override;
 
+  virtual PBackgroundIndexedDBUtilsParent*
+  AllocPBackgroundIndexedDBUtilsParent() override;
+
+  virtual bool
+  DeallocPBackgroundIndexedDBUtilsParent(
+                                        PBackgroundIndexedDBUtilsParent* aActor)
+                                        override;
+
   virtual PBlobParent*
   AllocPBlobParent(const BlobConstructorParams& aParams) override;
 
   virtual bool
   DeallocPBlobParent(PBlobParent* aActor) override;
+
+  virtual bool
+  RecvPBlobConstructor(PBlobParent* aActor,
+                       const BlobConstructorParams& params) override;
 
   virtual PFileDescriptorSetParent*
   AllocPFileDescriptorSetParent(const FileDescriptor& aFileDescriptor)
@@ -72,25 +84,40 @@ protected:
 
   virtual PBroadcastChannelParent*
   AllocPBroadcastChannelParent(const PrincipalInfo& aPrincipalInfo,
-                               const nsString& aOrigin,
+                               const nsCString& aOrigin,
                                const nsString& aChannel,
                                const bool& aPrivateBrowsing) override;
 
   virtual bool
   RecvPBroadcastChannelConstructor(PBroadcastChannelParent* actor,
                                    const PrincipalInfo& aPrincipalInfo,
-                                   const nsString& origin,
+                                   const nsCString& origin,
                                    const nsString& channel,
                                    const bool& aPrivateBrowsing) override;
 
   virtual bool
   DeallocPBroadcastChannelParent(PBroadcastChannelParent* aActor) override;
 
+  virtual PNuwaParent*
+  AllocPNuwaParent() override;
+
+  virtual bool
+  RecvPNuwaConstructor(PNuwaParent* aActor) override;
+
+  virtual bool
+  DeallocPNuwaParent(PNuwaParent* aActor) override;
+
   virtual PServiceWorkerManagerParent*
   AllocPServiceWorkerManagerParent() override;
 
   virtual bool
   DeallocPServiceWorkerManagerParent(PServiceWorkerManagerParent* aActor) override;
+
+  virtual PCamerasParent*
+  AllocPCamerasParent() override;
+
+  virtual bool
+  DeallocPCamerasParent(PCamerasParent* aActor) override;
 
   virtual bool
   RecvShutdownServiceWorkerRegistrar() override;
@@ -142,6 +169,20 @@ protected:
   RecvMessagePortForceClose(const nsID& aUUID,
                             const nsID& aDestinationUUID,
                             const uint32_t& aSequenceID) override;
+
+  virtual PAsmJSCacheEntryParent*
+  AllocPAsmJSCacheEntryParent(const dom::asmjscache::OpenMode& aOpenMode,
+                              const dom::asmjscache::WriteParams& aWriteParams,
+                              const PrincipalInfo& aPrincipalInfo) override;
+
+  virtual bool
+  DeallocPAsmJSCacheEntryParent(PAsmJSCacheEntryParent* aActor) override;
+
+  virtual PQuotaParent*
+  AllocPQuotaParent() override;
+
+  virtual bool
+  DeallocPQuotaParent(PQuotaParent* aActor) override;
 };
 
 } // namespace ipc

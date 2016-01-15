@@ -18,7 +18,7 @@
 namespace mozilla {
 namespace plugins {
 class PluginWidgetChild;
-}
+} // namespace plugins
 namespace widget {
 
 class PluginWidgetProxy final : public PuppetWidget
@@ -35,7 +35,7 @@ public:
 
   // nsIWidget
   NS_IMETHOD Create(nsIWidget* aParent, nsNativeWidget aNativeParent,
-                    const nsIntRect& aRect,
+                    const LayoutDeviceIntRect& aRect,
                     nsWidgetInitData* aInitData = nullptr) override;
   NS_IMETHOD Destroy() override;
   NS_IMETHOD SetFocus(bool aRaise = false) override;
@@ -48,7 +48,7 @@ public:
 #endif
   virtual nsTransparencyMode GetTransparencyMode() override
   { return eTransparencyOpaque; }
-  virtual void GetWindowClipRegion(nsTArray<nsIntRect>* aRects) override;
+  virtual void GetWindowClipRegion(nsTArray<LayoutDeviceIntRect>* aRects) override;
 
 public:
   /**
@@ -68,6 +68,7 @@ private:
   nsCOMPtr<nsIWidget> mParent;
 };
 
-}  // namespace widget
-}  // namespace mozilla
+} // namespace widget
+} // namespace mozilla
+
 #endif

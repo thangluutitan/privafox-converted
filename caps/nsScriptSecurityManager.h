@@ -8,10 +8,14 @@
 #define nsScriptSecurityManager_h__
 
 #include "nsIScriptSecurityManager.h"
+
+#include "nsIAddonPolicyService.h"
+#include "mozilla/Maybe.h"
+#include "nsIAddonPolicyService.h"
 #include "nsIPrincipal.h"
 #include "nsCOMPtr.h"
-#include "nsIChannelEventSink.h"
 #include "nsIObserver.h"
+#include "nsServiceManagerUtils.h"
 #include "plstr.h"
 #include "js/TypeDecls.h"
 
@@ -23,8 +27,8 @@ class nsIStringBundle;
 class nsSystemPrincipal;
 
 namespace mozilla {
-class OriginAttributes;
-}
+class PrincipalOriginAttributes;
+} // namespace mozilla
 
 /////////////////////////////
 // nsScriptSecurityManager //
@@ -34,7 +38,6 @@ class OriginAttributes;
 { 0xba, 0x18, 0x00, 0x60, 0xb0, 0xf1, 0x99, 0xa2 }}
 
 class nsScriptSecurityManager final : public nsIScriptSecurityManager,
-                                      public nsIChannelEventSink,
                                       public nsIObserver
 {
 public:
@@ -44,7 +47,6 @@ public:
 
     NS_DECL_ISUPPORTS
     NS_DECL_NSISCRIPTSECURITYMANAGER
-    NS_DECL_NSICHANNELEVENTSINK
     NS_DECL_NSIOBSERVER
 
     static nsScriptSecurityManager*
@@ -115,6 +117,9 @@ private:
     inline void
     AddSitesToFileURIWhitelist(const nsCString& aSiteList);
 
+    // If aURI is a moz-extension:// URI, set mAddonId to the associated addon.
+    nsresult MaybeSetAddonIdFromURI(mozilla::PrincipalOriginAttributes& aAttrs, nsIURI* aURI);
+
     nsCOMPtr<nsIPrincipal> mSystemPrincipal;
     bool mPrefInitialized;
     bool mIsJavaScriptEnabled;
@@ -123,6 +128,17 @@ private:
     // This machinery controls new-style domain policies. The old-style
     // policy machinery will be removed soon.
     nsCOMPtr<nsIDomainPolicy> mDomainPolicy;
+
+    // Cached addon policy service. We can't generate this in Init() because
+    // that's too early to get a service.
+    mozilla::Maybe<nsCOMPtr<nsIAddonPolicyService>> mAddonPolicyService;
+    nsIAddonPolicyService* GetAddonPolicyService()
+    {
+        if (mAddonPolicyService.isNothing()) {
+            mAddonPolicyService.emplace(do_GetService("@mozilla.org/addons/policy-service;1"));
+        }
+        return mAddonPolicyService.ref();
+    }
 
     static bool sStrictFileOriginPolicy;
 

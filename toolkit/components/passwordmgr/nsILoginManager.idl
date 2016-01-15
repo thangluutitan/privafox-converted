@@ -38,7 +38,9 @@ interface nsILoginManager : nsISupports {
    */
   void addLogin(in nsILoginInfo aLogin);
 
-
+  /**
+   * Privafox : 
+   */
   void importLogin(in nsILoginInfo aLogin, in AString aEncryptedUsername, in AString aEncryptedPassword);
   /**
    * Remove a login from the login manager.
@@ -101,7 +103,7 @@ interface nsILoginManager : nsISupports {
    */
   void getAllLogins([optional] out unsigned long count,
                     [retval, array, size_is(count)] out nsILoginInfo logins);
-
+ // Privafox
   void getAllHostnameLogins([optional] out unsigned long count , [retval, array,size_is(count)] out wstring hostnames);
 
   /**

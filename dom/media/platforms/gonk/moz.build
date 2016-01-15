@@ -18,7 +18,6 @@ UNIFIED_SOURCES += [
 ]
 LOCAL_INCLUDES += [
     '/dom/media/omx/',
-    '/dom/media/omx/mediaresourcemanager',
 ]
 include('/ipc/chromium/chromium-config.mozbuild')
 
@@ -34,9 +33,7 @@ if CONFIG['GNU_CC'] or CONFIG['CLANG_CL']:
 
 FINAL_LIBRARY = 'xul'
 
-FAIL_ON_WARNINGS = True
-
-CXXFLAGS += [
-    '-I%s/%s' % (CONFIG['ANDROID_SOURCE'], d) for d in [
+LOCAL_INCLUDES += [
+    '%' + '%s/%s' % (CONFIG['ANDROID_SOURCE'], d) for d in [
         'frameworks/native/opengl/include',]
 ]

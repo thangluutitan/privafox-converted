@@ -175,7 +175,12 @@ class ObjectElements
         // before being copied: when setting the CONVERT_DOUBLE_ELEMENTS flag
         // the shared elements may change (from ints to doubles) without
         // making a copy first.
-        COPY_ON_WRITE               = 0x4
+        COPY_ON_WRITE               = 0x4,
+
+        // For TypedArrays only: this TypedArray's storage is mapping shared
+        // memory.  This is a static property of the TypedArray, set when it
+        // is created and never changed.
+        SHARED_MEMORY               = 0x8
     };
 
   private:
@@ -238,6 +243,14 @@ class ObjectElements
       : flags(0), initializedLength(0), capacity(capacity), length(length)
     {}
 
+    enum class SharedMemory {
+        IsShared
+    };
+
+    MOZ_CONSTEXPR ObjectElements(uint32_t capacity, uint32_t length, SharedMemory shmem)
+      : flags(SHARED_MEMORY), initializedLength(0), capacity(capacity), length(length)
+    {}
+
     HeapSlot* elements() {
         return reinterpret_cast<HeapSlot*>(uintptr_t(this) + sizeof(ObjectElements));
     }
@@ -246,6 +259,10 @@ class ObjectElements
     }
     static ObjectElements * fromElements(HeapSlot* elems) {
         return reinterpret_cast<ObjectElements*>(uintptr_t(elems) - sizeof(ObjectElements));
+    }
+
+    bool isSharedMemory() const {
+        return flags & SHARED_MEMORY;
     }
 
     HeapPtrNativeObject& ownerObject() const {
@@ -277,8 +294,13 @@ class ObjectElements
 static_assert(ObjectElements::VALUES_PER_HEADER * sizeof(HeapSlot) == sizeof(ObjectElements),
               "ObjectElements doesn't fit in the given number of slots");
 
-/* Shared singleton for objects with no elements. */
+/*
+ * Shared singletons for objects with no elements.
+ * emptyObjectElementsShared is used only for TypedArrays, when the TA
+ * maps shared memory.
+ */
 extern HeapSlot* const emptyObjectElements;
+extern HeapSlot* const emptyObjectElementsShared;
 
 struct Class;
 class GCMarker;
@@ -324,9 +346,10 @@ enum class DenseElementResult {
  * 'slots_' member is nullptr.
  *
  * Elements are indexed via the 'elements_' member. This member can point to
- * either the shared emptyObjectElements singleton, into the inline value array
- * (the address of the third value, to leave room for a ObjectElements header;
- * in this case numFixedSlots() is zero) or to a dynamically allocated array.
+ * either the shared emptyObjectElements and emptyObjectElementsShared singletons,
+ * into the inline value array (the address of the third value, to leave room
+ * for a ObjectElements header;in this case numFixedSlots() is zero) or to
+ * a dynamically allocated array.
  *
  * Slots and elements may both be non-empty. The slots may be either names or
  * indexes; no indexed property will be in both the slots and elements.
@@ -404,6 +427,10 @@ class NativeObject : public JSObject
         return getElementsHeader()->capacity;
     }
 
+    bool isSharedMemory() const {
+        return getElementsHeader()->isSharedMemory();
+    }
+
     // Update the last property, keeping the number of allocated slots in sync
     // with the object's new slot span.
     bool setLastProperty(ExclusiveContext* cx, Shape* shape);
@@ -423,6 +450,14 @@ class NativeObject : public JSObject
     // object to a native one. The object's type has already been changed, and
     // this brings the shape into sync with it.
     void setLastPropertyMakeNative(ExclusiveContext* cx, Shape* shape);
+
+    // Newly-created TypedArrays that map a SharedArrayBuffer are
+    // marked as shared by giving them an ObjectElements that has the
+    // ObjectElements::SHARED_MEMORY flag set.
+    void setIsSharedMemory() {
+        MOZ_ASSERT(elements_ == emptyObjectElements);
+        elements_ = emptyObjectElementsShared;
+    }
 
   protected:
 #ifdef DEBUG
@@ -556,8 +591,13 @@ class NativeObject : public JSObject
     bool shadowingShapeChange(ExclusiveContext* cx, const Shape& shape);
     bool clearFlag(ExclusiveContext* cx, BaseShape::Flag flag);
 
+    // The maximum number of slots in an object.
+    // |MAX_SLOTS_COUNT * sizeof(JS::Value)| shouldn't overflow
+    // int32_t (see slotsSizeMustNotOverflow).
+    static const uint32_t MAX_SLOTS_COUNT = (1 << 28) - 1;
+
     static void slotsSizeMustNotOverflow() {
-        static_assert((NativeObject::NELEMENTS_LIMIT - 1) <= INT32_MAX / sizeof(JS::Value),
+        static_assert(NativeObject::MAX_SLOTS_COUNT <= INT32_MAX / sizeof(JS::Value),
                       "every caller of this method requires that a slot "
                       "number (or slot count) count multiplied by "
                       "sizeof(Value) can't overflow uint32_t (and sometimes "
@@ -660,9 +700,9 @@ class NativeObject : public JSObject
 
   private:
     static Shape* getChildPropertyOnDictionary(ExclusiveContext* cx, HandleNativeObject obj,
-                                               HandleShape parent, StackShape& child);
+                                               HandleShape parent, MutableHandle<StackShape> child);
     static Shape* getChildProperty(ExclusiveContext* cx, HandleNativeObject obj,
-                                   HandleShape parent, StackShape& child);
+                                   HandleShape parent, MutableHandle<StackShape> child);
 
   public:
     /* Add a property whose id is not yet in this scope. */
@@ -713,7 +753,7 @@ class NativeObject : public JSObject
                         JSGetterOp getter, JSSetterOp setter, uint32_t slot, unsigned attrs,
                         unsigned flags, ShapeTable::Entry* entry, bool allowDictionary);
 
-    void fillInAfterSwap(JSContext* cx, const Vector<Value>& values, void* priv);
+    bool fillInAfterSwap(JSContext* cx, const Vector<Value>& values, void* priv);
 
   public:
     // Return true if this object has been converted from shared-immutable
@@ -882,11 +922,19 @@ class NativeObject : public JSObject
 
     /* Elements accessors. */
 
-    /* Upper bound on the number of elements in an object. */
-    static const uint32_t NELEMENTS_LIMIT = JS_BIT(28);
+    // The maximum size, in sizeof(Value), of the allocation used for an
+    // object's dense elements.  (This includes space used to store an
+    // ObjectElements instance.)
+    // |MAX_DENSE_ELEMENTS_ALLOCATION * sizeof(JS::Value)| shouldn't overflow
+    // int32_t (see elementsSizeMustNotOverflow).
+    static const uint32_t MAX_DENSE_ELEMENTS_ALLOCATION = (1 << 28) - 1;
+
+    // The maximum number of usable dense elements in an object.
+    static const uint32_t MAX_DENSE_ELEMENTS_COUNT =
+        MAX_DENSE_ELEMENTS_ALLOCATION - ObjectElements::VALUES_PER_HEADER;
 
     static void elementsSizeMustNotOverflow() {
-        static_assert((NativeObject::NELEMENTS_LIMIT - 1) <= INT32_MAX / sizeof(JS::Value),
+        static_assert(NativeObject::MAX_DENSE_ELEMENTS_COUNT <= INT32_MAX / sizeof(JS::Value),
                       "every caller of this method require that an element "
                       "count multiplied by sizeof(Value) can't overflow "
                       "uint32_t (and sometimes int32_t ,too)");
@@ -904,7 +952,8 @@ class NativeObject : public JSObject
         return true;
     }
 
-    static uint32_t goodAllocated(uint32_t n, uint32_t length);
+    static bool goodElementsAllocationAmount(ExclusiveContext* cx, uint32_t reqAllocated,
+                                             uint32_t length, uint32_t* goodAmount);
     bool growElements(ExclusiveContext* cx, uint32_t newcap);
     void shrinkElements(ExclusiveContext* cx, uint32_t cap);
     void setDynamicElements(ObjectElements* header) {
@@ -932,8 +981,8 @@ class NativeObject : public JSObject
             const Value& v = elements_[start + i];
             if (v.isObject() && IsInsideNursery(&v.toObject())) {
                 JS::shadow::Runtime* shadowRuntime = shadowRuntimeFromMainThread();
-                shadowRuntime->gcStoreBufferPtr()->putSlotFromAnyThread(this, HeapSlot::Element,
-                                                                        start + i, count - i);
+                shadowRuntime->gcStoreBufferPtr()->putSlot(this, HeapSlot::Element,
+                                                           start + i, count - i);
                 return;
             }
         }
@@ -1130,7 +1179,7 @@ class NativeObject : public JSObject
     }
 
     inline bool hasEmptyElements() const {
-        return elements_ == emptyObjectElements;
+        return elements_ == emptyObjectElements || elements_ == emptyObjectElementsShared;
     }
 
     /*
@@ -1148,7 +1197,7 @@ class NativeObject : public JSObject
         MOZ_ASSERT(*cellp);
         gc::StoreBuffer* storeBuffer = (*cellp)->storeBuffer();
         if (storeBuffer)
-            storeBuffer->putCellFromAnyThread(cellp);
+            storeBuffer->putCell(cellp);
     }
 
     /* Private data accessors. */
@@ -1288,31 +1337,33 @@ extern bool
 NativeHasProperty(JSContext* cx, HandleNativeObject obj, HandleId id, bool* foundp);
 
 extern bool
-NativeGetProperty(JSContext* cx, HandleNativeObject obj, HandleObject receiver, HandleId id,
+NativeGetProperty(JSContext* cx, HandleNativeObject obj, HandleValue receiver, HandleId id,
                   MutableHandleValue vp);
 
 extern bool
-NativeGetPropertyNoGC(JSContext* cx, NativeObject* obj, JSObject* receiver, jsid id, Value* vp);
+NativeGetPropertyNoGC(JSContext* cx, NativeObject* obj, const Value& receiver, jsid id, Value* vp);
 
 extern bool
-NativeGetElement(JSContext* cx, HandleNativeObject obj, HandleObject receiver, uint32_t index,
+NativeGetElement(JSContext* cx, HandleNativeObject obj, HandleValue receiver, uint32_t index,
                  MutableHandleValue vp);
 
 inline bool
 NativeGetProperty(JSContext* cx, HandleNativeObject obj, HandleId id, MutableHandleValue vp)
 {
-    return NativeGetProperty(cx, obj, obj, id, vp);
+    RootedValue receiver(cx, ObjectValue(*obj));
+    return NativeGetProperty(cx, obj, receiver, id, vp);
 }
 
 inline bool
 NativeGetElement(JSContext* cx, HandleNativeObject obj, uint32_t index, MutableHandleValue vp)
 {
-    return NativeGetElement(cx, obj, obj, index, vp);
+    RootedValue receiver(cx, ObjectValue(*obj));
+    return NativeGetElement(cx, obj, receiver, index, vp);
 }
 
 bool
-SetPropertyByDefining(JSContext* cx, HandleObject obj, HandleId id, HandleValue v,
-                      HandleValue receiver, bool objHasOwn, ObjectOpResult& result);
+SetPropertyByDefining(JSContext* cx, HandleId id, HandleValue v, HandleValue receiver,
+                      ObjectOpResult& result);
 
 bool
 SetPropertyOnProto(JSContext* cx, HandleObject obj, HandleId id, HandleValue v,
@@ -1409,7 +1460,7 @@ js::HasProperty(JSContext* cx, HandleObject obj, HandleId id, bool* foundp)
 }
 
 inline bool
-js::GetProperty(JSContext* cx, HandleObject obj, HandleObject receiver, HandleId id,
+js::GetProperty(JSContext* cx, HandleObject obj, HandleValue receiver, HandleId id,
                 MutableHandleValue vp)
 {
     if (GetPropertyOp op = obj->getOps()->getProperty)
@@ -1418,7 +1469,7 @@ js::GetProperty(JSContext* cx, HandleObject obj, HandleObject receiver, HandleId
 }
 
 inline bool
-js::GetPropertyNoGC(JSContext* cx, JSObject* obj, JSObject* receiver, jsid id, Value* vp)
+js::GetPropertyNoGC(JSContext* cx, JSObject* obj, const Value& receiver, jsid id, Value* vp)
 {
     if (obj->getOps()->getProperty)
         return false;

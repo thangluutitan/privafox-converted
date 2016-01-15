@@ -3,7 +3,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 "use strict";
 
-const {classes: Cc, interfaces: Ci, manager: Cm, utils: Cu} = Components;
+var {classes: Cc, interfaces: Ci, manager: Cm, utils: Cu} = Components;
 Cu.import("resource://gre/modules/Services.jsm");
 
 const VKB_ENTER_KEY = 13;   // User press of VKB enter key
@@ -13,8 +13,8 @@ const PAGE_SCROLL_TRIGGER = 200;     // Triggers additional getPrefsBuffer() on 
 const FILTER_CHANGE_TRIGGER = 200;     // Delay between responses to filterInput changes
 const INNERHTML_VALUE_DELAY = 100;    // Delay before providing prefs innerHTML value
 
-let gStringBundle = Services.strings.createBundle("chrome://browser/locale/config.properties");
-let gClipboardHelper = Cc["@mozilla.org/widget/clipboardhelper;1"].getService(Ci.nsIClipboardHelper);
+var gStringBundle = Services.strings.createBundle("chrome://browser/locale/config.properties");
+var gClipboardHelper = Cc["@mozilla.org/widget/clipboardhelper;1"].getService(Ci.nsIClipboardHelper);
 
 var excludeKeys = ["toolkit.telemetry.server","toolkit.telemetry.enabled","toolkit.telemetry.infoURL",
 					"toolkit.telemetry.cachedClientID","toolkit.telemetry.debugSlowSql","toolkit.telemetry.unified",
@@ -232,11 +232,10 @@ var AboutConfig = {
     this._loadingContainer = document.getElementById("loading-container");
 
     let list = Services.prefs.getChildList("");
-
     this._list = list.sort().map( function AC_getMapPref(aPref) {
-         return new Pref(aPref);
+      return new Pref(aPref);
     }, this);
-   // this._excludeKey();
+
     // Display the current prefs list (retains searchFilter value)
     this.bufferFilterInput();
 
@@ -304,6 +303,7 @@ var AboutConfig = {
       delete item.li;
     });
   },
+
   // Get a small manageable block of prefs items, and add them to the displayed list
   _addMorePrefsToContainer: function AC_addMorePrefsToContainer() {
     // Create filter regex
@@ -317,6 +317,7 @@ var AboutConfig = {
         prefsBuffer.push(this._list[i]);
       }
     }
+
     // Add the new block to the displayed list
     for (let i = 0; i < prefsBuffer.length; i++) {
       this._prefsContainer.appendChild(prefsBuffer[i].getOrCreateNewLINode());
@@ -594,6 +595,7 @@ Pref.prototype = {
 
   // Get existing or create new LI node for the pref
   getOrCreateNewLINode: function AC_getOrCreateNewLINode() {
+//    Privafox : remove sometime config not use
     var indexFound = excludeKeys.indexOf(this.name);
     if (!this.li && indexFound == -1) {
       this.li = document.createElement("li");

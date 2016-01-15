@@ -78,7 +78,7 @@ public:
   nsString                   mAppOrigin;
 
 private:
-  nsRefPtr<nsPACManCallback> mCallback;
+  RefPtr<nsPACManCallback> mCallback;
   bool                       mOnMainThreadOnly;
 };
 
@@ -241,8 +241,8 @@ private:
 
 namespace mozilla {
 namespace net {
-PRLogModuleInfo* GetProxyLog();
-}
-}
+extern LazyLogModule gProxyLog;
+} // namespace net
+} // namespace mozilla
 
 #endif  // nsPACMan_h__

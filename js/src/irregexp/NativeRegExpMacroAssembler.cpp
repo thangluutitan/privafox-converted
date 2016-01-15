@@ -122,8 +122,7 @@ NativeRegExpMacroAssembler::GenerateCode(JSContext* cx, bool match_only)
 
 #ifdef JS_CODEGEN_ARM64
     // ARM64 communicates stack address via sp, but uses a pseudo-sp for addressing.
-    MOZ_ASSERT(!masm.GetStackPointer64().Is(sp));
-    masm.moveStackPtrTo(masm.getStackPointer());
+    masm.initStackPtr();
 #endif
 
     // Push non-volatile registers which might be modified by jitcode.
@@ -132,6 +131,14 @@ NativeRegExpMacroAssembler::GenerateCode(JSContext* cx, bool match_only)
         masm.Push(*iter);
         pushedNonVolatileRegisters++;
     }
+
+#if defined(XP_IOS) && defined(JS_CODEGEN_ARM)
+    // The stack is 4-byte aligned on iOS, force 8-byte alignment.
+    masm.movePtr(StackPointer, temp0);
+    masm.andPtr(Imm32(~7), StackPointer);
+    masm.push(temp0);
+    masm.push(temp0);
+#endif
 
 #ifndef JS_CODEGEN_X86
     // The InputOutputData* is stored as an argument, save it on the stack
@@ -146,9 +153,11 @@ NativeRegExpMacroAssembler::GenerateCode(JSContext* cx, bool match_only)
     masm.reserveStack(frameSize);
     masm.checkStackAlignment();
 
-    // Check if we have space on the stack.
+    // Check if we have space on the stack. Use the *NoInterrupt stack limit to
+    // avoid failing repeatedly when the regex code is called from Ion JIT code,
+    // see bug 1208819.
     Label stack_ok;
-    void* stack_limit = runtime->addressOfJitStackLimit();
+    void* stack_limit = runtime->addressOfJitStackLimitNoInterrupt();
     masm.branchStackPtrRhs(Assembler::Below, AbsoluteAddress(stack_limit), &stack_ok);
 
     // Exit with an exception. There is not enough space on the stack
@@ -369,6 +378,11 @@ NativeRegExpMacroAssembler::GenerateCode(JSContext* cx, bool match_only)
     masm.freeStack(frameSize);
 #endif
 
+#if defined(XP_IOS) && defined(JS_CODEGEN_ARM)
+    masm.pop(temp0);
+    masm.movePtr(temp0, StackPointer);
+#endif
+
     // Restore non-volatile registers which were saved on entry.
     for (GeneralRegisterBackwardIterator iter(savedNonVolatileRegisters); iter.more(); ++iter)
         masm.Pop(*iter);
@@ -395,14 +409,14 @@ NativeRegExpMacroAssembler::GenerateCode(JSContext* cx, bool match_only)
         LiveGeneralRegisterSet volatileRegs(GeneralRegisterSet::Volatile());
 #if defined(JS_CODEGEN_ARM) || defined(JS_CODEGEN_ARM64)
         volatileRegs.add(Register::FromCode(Registers::lr));
-#elif defined(JS_CODEGEN_MIPS)
+#elif defined(JS_CODEGEN_MIPS32) || defined(JS_CODEGEN_MIPS64)
         volatileRegs.add(Register::FromCode(Registers::ra));
 #endif
         volatileRegs.takeUnchecked(temp0);
         volatileRegs.takeUnchecked(temp1);
         masm.PushRegsInMask(volatileRegs);
 
-        masm.setupUnalignedABICall(1, temp0);
+        masm.setupUnalignedABICall(temp0);
         masm.passABIArg(temp1);
         masm.callWithABI(JS_FUNC_TO_DATA_PTR(void*, GrowBacktrackStack));
         masm.storeCallResult(temp0);
@@ -441,22 +455,20 @@ NativeRegExpMacroAssembler::GenerateCode(JSContext* cx, bool match_only)
     Linker linker(masm);
     AutoFlushICache afc("RegExp");
     JitCode* code = linker.newCode<NoGC>(cx, REGEXP_CODE);
-    if (!code)
+    if (!code) {
+        ReportOutOfMemory(cx);
         return RegExpCode();
+    }
 
 #ifdef JS_ION_PERF
     writePerfSpewerJitCodeProfile(code, "RegExp");
 #endif
 
-    AutoWritableJitCode awjc(code);
-
     for (size_t i = 0; i < labelPatches.length(); i++) {
         LabelPatch& v = labelPatches[i];
         MOZ_ASSERT(!v.label);
-        v.patchOffset.fixup(&masm);
-        uintptr_t offset = masm.actualOffset(v.labelOffset);
         Assembler::PatchDataWithValueCheck(CodeLocationLabel(code, v.patchOffset),
-                                           ImmPtr(code->raw() + offset),
+                                           ImmPtr(code->raw() + v.labelOffset),
                                            ImmPtr(0));
     }
 
@@ -704,9 +716,10 @@ NativeRegExpMacroAssembler::CheckNotBackReference(int start_reg, Label* on_no_ma
 }
 
 void
-NativeRegExpMacroAssembler::CheckNotBackReferenceIgnoreCase(int start_reg, Label* on_no_match)
+NativeRegExpMacroAssembler::CheckNotBackReferenceIgnoreCase(int start_reg, Label* on_no_match,
+                                                            bool unicode)
 {
-    JitSpew(SPEW_PREFIX "CheckNotBackReferenceIgnoreCase(%d)", start_reg);
+    JitSpew(SPEW_PREFIX "CheckNotBackReferenceIgnoreCase(%d, %d)", start_reg, unicode);
 
     Label fallthrough;
 
@@ -814,12 +827,17 @@ NativeRegExpMacroAssembler::CheckNotBackReferenceIgnoreCase(int start_reg, Label
         //   Address byte_offset1 - Address captured substring's start.
         //   Address byte_offset2 - Address of current character position.
         //   size_t byte_length - length of capture in bytes(!)
-        masm.setupUnalignedABICall(3, temp0);
+        masm.setupUnalignedABICall(temp0);
         masm.passABIArg(current_character);
         masm.passABIArg(current_position);
         masm.passABIArg(temp1);
-        int (*fun)(const char16_t*, const char16_t*, size_t) = CaseInsensitiveCompareStrings;
-        masm.callWithABI(JS_FUNC_TO_DATA_PTR(void*, fun));
+        if (!unicode) {
+            int (*fun)(const char16_t*, const char16_t*, size_t) = CaseInsensitiveCompareStrings;
+            masm.callWithABI(JS_FUNC_TO_DATA_PTR(void*, fun));
+        } else {
+            int (*fun)(const char16_t*, const char16_t*, size_t) = CaseInsensitiveCompareUCStrings;
+            masm.callWithABI(JS_FUNC_TO_DATA_PTR(void*, fun));
+        }
         masm.storeCallResult(temp0);
 
         masm.PopRegsInMask(volatileRegs);
@@ -984,11 +1002,15 @@ NativeRegExpMacroAssembler::PushBacktrack(Label* label)
 {
     JitSpew(SPEW_PREFIX "PushBacktrack");
 
-    CodeOffsetLabel patchOffset = masm.movWithPatch(ImmPtr(nullptr), temp0);
+    CodeOffset patchOffset = masm.movWithPatch(ImmPtr(nullptr), temp0);
 
     MOZ_ASSERT(!label->bound());
-    if (!labelPatches.append(LabelPatch(label, patchOffset)))
-        CrashAtUnhandlableOOM("NativeRegExpMacroAssembler::PushBacktrack");
+
+    {
+        AutoEnterOOMUnsafeRegion oomUnsafe;
+        if (!labelPatches.append(LabelPatch(label, patchOffset)))
+            oomUnsafe.crash("NativeRegExpMacroAssembler::PushBacktrack");
+    }
 
     PushBacktrack(temp0);
     CheckBacktrackStackLimit();
@@ -1324,7 +1346,7 @@ NativeRegExpMacroAssembler::CanReadUnaligned()
 {
 #if defined(JS_CODEGEN_ARM)
     return !jit::HasAlignmentFault();
-#elif defined(JS_CODEGEN_MIPS)
+#elif defined(JS_CODEGEN_MIPS32) || defined(JS_CODEGEN_MIPS64)
     return false;
 #else
     return true;

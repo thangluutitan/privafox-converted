@@ -51,9 +51,10 @@ enum RegExpFlag
     GlobalFlag      = 0x02,
     MultilineFlag   = 0x04,
     StickyFlag      = 0x08,
+    UnicodeFlag     = 0x10,
 
     NoFlags         = 0x00,
-    AllFlags        = 0x0f
+    AllFlags        = 0x1f
 };
 
 enum RegExpRunStatus
@@ -63,28 +64,15 @@ enum RegExpRunStatus
     RegExpRunStatus_Success_NotFound
 };
 
-class RegExpObjectBuilder
-{
-    ExclusiveContext* cx;
-    Rooted<RegExpObject*> reobj_;
+extern RegExpObject*
+RegExpAlloc(ExclusiveContext* cx, HandleObject proto = nullptr);
 
-    bool getOrCreate();
-    bool getOrCreateClone(HandleObjectGroup group);
+// |regexp| is under-typed because this function's used in the JIT.
+extern JSObject*
+CloneRegExpObject(JSContext* cx, JSObject* regexp);
 
-  public:
-    explicit RegExpObjectBuilder(ExclusiveContext* cx, RegExpObject* reobj = nullptr);
-
-    RegExpObject* reobj() { return reobj_; }
-
-    RegExpObject* build(HandleAtom source, RegExpFlag flags);
-    RegExpObject* build(HandleAtom source, RegExpShared& shared);
-
-    /* Perform a VM-internal clone. */
-    RegExpObject* clone(Handle<RegExpObject*> other);
-};
-
-JSObject*
-CloneRegExpObject(JSContext* cx, JSObject* obj);
+extern JSObject*
+CreateRegExpPrototype(JSContext* cx, JSProtoKey key);
 
 /*
  * A RegExpShared is the compiled representation of a regexp. A RegExpShared is
@@ -199,6 +187,7 @@ class RegExpShared
     bool global() const                 { return flags & GlobalFlag; }
     bool multiline() const              { return flags & MultilineFlag; }
     bool sticky() const                 { return flags & StickyFlag; }
+    bool unicode() const                { return flags & UnicodeFlag; }
 
     bool isCompiled(CompilationMode mode, bool latin1,
                     ForceByteCodeEnum force = DontForceByteCode) const {
@@ -353,12 +342,17 @@ class RegExpObject : public NativeObject
     static const unsigned IGNORE_CASE_FLAG_SLOT    = 3;
     static const unsigned MULTILINE_FLAG_SLOT      = 4;
     static const unsigned STICKY_FLAG_SLOT         = 5;
+    static const unsigned UNICODE_FLAG_SLOT        = 6;
 
   public:
-    static const unsigned RESERVED_SLOTS = 6;
+    static const unsigned RESERVED_SLOTS = 7;
     static const unsigned PRIVATE_SLOT = 7;
 
     static const Class class_;
+
+    // The maximum number of pairs a MatchResult can have, without having to
+    // allocate a bigger MatchResult.
+    static const size_t MaxPairCount = 14;
 
     /*
      * Note: The regexp statics flags are OR'd into the provided flags,
@@ -413,6 +407,7 @@ class RegExpObject : public NativeObject
         flags |= ignoreCase() ? IgnoreCaseFlag : 0;
         flags |= multiline() ? MultilineFlag : 0;
         flags |= sticky() ? StickyFlag : 0;
+        flags |= unicode() ? UnicodeFlag : 0;
         return RegExpFlag(flags);
     }
 
@@ -438,10 +433,15 @@ class RegExpObject : public NativeObject
         setSlot(STICKY_FLAG_SLOT, BooleanValue(enabled));
     }
 
+    void setUnicode(bool enabled) {
+        setSlot(UNICODE_FLAG_SLOT, BooleanValue(enabled));
+    }
+
     bool ignoreCase() const { return getFixedSlot(IGNORE_CASE_FLAG_SLOT).toBoolean(); }
     bool global() const     { return getFixedSlot(GLOBAL_FLAG_SLOT).toBoolean(); }
     bool multiline() const  { return getFixedSlot(MULTILINE_FLAG_SLOT).toBoolean(); }
     bool sticky() const     { return getFixedSlot(STICKY_FLAG_SLOT).toBoolean(); }
+    bool unicode() const    { return getFixedSlot(UNICODE_FLAG_SLOT).toBoolean(); }
 
     bool getShared(JSContext* cx, RegExpGuard* g);
 
@@ -452,9 +452,10 @@ class RegExpObject : public NativeObject
 
     static void trace(JSTracer* trc, JSObject* obj);
 
-  private:
-    friend class RegExpObjectBuilder;
+    static bool initFromAtom(ExclusiveContext* cx, Handle<RegExpObject*> regexp, HandleAtom source,
+                             RegExpFlag flags);
 
+  private:
     bool init(ExclusiveContext* cx, HandleAtom source, RegExpFlag flags);
 
     /*
@@ -470,6 +471,10 @@ class RegExpObject : public NativeObject
     void setPrivate(void* priv) = delete;
 };
 
+JSString*
+str_replace_regexp_raw(JSContext* cx, HandleString string, Handle<RegExpObject*> regexp,
+                       HandleString replacement);
+
 /*
  * Parse regexp flags. Report an error and return false if an invalid
  * sequence of flags is encountered (repeat/invalid flag).
@@ -479,13 +484,13 @@ class RegExpObject : public NativeObject
 bool
 ParseRegExpFlags(JSContext* cx, JSString* flagStr, RegExpFlag* flagsOut);
 
-/* Assuming ObjectClassIs(obj, ESClass_RegExp), return a RegExpShared for obj. */
+/* Assuming GetBuiltinClass(obj) is ESClass_RegExp, return a RegExpShared for obj. */
 inline bool
 RegExpToShared(JSContext* cx, HandleObject obj, RegExpGuard* g)
 {
     if (obj->is<RegExpObject>())
         return obj->as<RegExpObject>().getShared(cx, g);
-    MOZ_ASSERT(Proxy::objectClassIs(obj, ESClass_RegExp, cx));
+
     return Proxy::regexp_toShared(cx, obj, g);
 }
 

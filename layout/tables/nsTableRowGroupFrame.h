@@ -155,8 +155,7 @@ public:
    * @param aHeaderFooterFrame the original header or footer row group frame
    * that was repeated
    */
-  nsresult  InitRepeatedFrame(nsPresContext*        aPresContext,
-                              nsTableRowGroupFrame* aHeaderFooterFrame);
+  nsresult  InitRepeatedFrame(nsTableRowGroupFrame* aHeaderFooterFrame);
 
 
   /**
@@ -355,7 +354,7 @@ protected:
                   nsIFrame*              aKidFrame,
                   mozilla::WritingMode   aWM,
                   const mozilla::LogicalPoint& aKidPosition,
-                  nscoord                aContainerWidth,
+                  const nsSize&          aContainerSize,
                   nsHTMLReflowMetrics&   aDesiredSize,
                   const nsRect&          aOriginalKidRect,
                   const nsRect&          aOriginalKidVisualOverflow);

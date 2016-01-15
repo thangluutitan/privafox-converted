@@ -6,17 +6,17 @@
 EXTRA_COMPONENTS += [
     'Push.js',
     'Push.manifest',
-    'PushNotificationService.js',
-]
-
-EXTRA_PP_JS_MODULES += [
-    'PushServiceWebSocket.jsm',
+    'PushComponents.js',
 ]
 
 EXTRA_JS_MODULES += [
+    'PushCrypto.jsm',
     'PushDB.jsm',
+    'PushRecord.jsm',
     'PushService.jsm',
+    'PushServiceChildPreload.jsm',
     'PushServiceHttp2.jsm',
+    'PushServiceWebSocket.jsm',
 ]
 
 MOCHITEST_MANIFESTS += [
@@ -26,3 +26,20 @@ MOCHITEST_MANIFESTS += [
 XPCSHELL_TESTS_MANIFESTS += [
     'test/xpcshell/xpcshell.ini',
 ]
+
+EXPORTS.mozilla.dom += [
+    'PushManager.h',
+]
+
+UNIFIED_SOURCES += [
+    'PushManager.cpp',
+]
+
+if CONFIG['GNU_CXX']:
+    CXXFLAGS += ['-Wshadow']
+
+LOCAL_INCLUDES += [
+    '../workers',
+]
+
+FINAL_LIBRARY = 'xul'

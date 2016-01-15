@@ -16,7 +16,6 @@ XPIDL_SOURCES += [
     'nsIDOMDOMCursor.idl',
     'nsIDOMDOMRequest.idl',
     'nsIDOMFileList.idl',
-    'nsIDOMFileReader.idl',
     'nsIDOMFormData.idl',
     'nsIDOMParser.idl',
     'nsIDOMSerializer.idl',
@@ -26,6 +25,7 @@ XPIDL_SOURCES += [
     'nsIImageLoadingContent.idl',
     'nsIMessageManager.idl',
     'nsIObjectLoadingContent.idl',
+    'nsIRemoteWindowContext.idl',
     'nsIScriptChannel.idl',
     'nsIScriptLoaderObserver.idl',
     'nsISelection.idl',
@@ -84,6 +84,7 @@ EXPORTS += [
     'nsHostObjectURI.h',
     'nsIAnimationObserver.h',
     'nsIAttribute.h',
+    'nsIConsoleReportCollector.h',
     'nsIContent.h',
     'nsIContentInlines.h',
     'nsIContentIterator.h',
@@ -142,6 +143,7 @@ if CONFIG['MOZ_WEBRTC']:
     ]
 
 EXPORTS.mozilla += [
+    'ConsoleReportCollector.h',
     'CORSMode.h',
     'FeedWriterEnabled.h',
     'TextInputProcessor.h',
@@ -154,6 +156,7 @@ EXPORTS.mozilla.dom += [
     'BarProps.h',
     'BlobSet.h',
     'ChildIterator.h',
+    'ChromeNodeList.h',
     'ChromeUtils.h',
     'Comment.h',
     'Console.h',
@@ -175,6 +178,8 @@ EXPORTS.mozilla.dom += [
     'ElementInlines.h',
     'EventSource.h',
     'File.h',
+    'FileList.h',
+    'FileReader.h',
     'FragmentOrElement.h',
     'FromParser.h',
     'ImageEncoder.h',
@@ -185,9 +190,13 @@ EXPORTS.mozilla.dom += [
     'NodeInfo.h',
     'NodeInfoInlines.h',
     'NodeIterator.h',
+    'PerformanceCompositeTiming.h',
     'PerformanceEntry.h',
     'PerformanceMark.h',
     'PerformanceMeasure.h',
+    'PerformanceObserver.h',
+    'PerformanceObserverEntryList.h',
+    'PerformanceRenderTiming.h',
     'PerformanceResourceTiming.h',
     'ProcessGlobal.h',
     'ResponsiveImageSelector.h',
@@ -195,6 +204,7 @@ EXPORTS.mozilla.dom += [
     'ScreenOrientation.h',
     'ScriptSettings.h',
     'ShadowRoot.h',
+    'StructuredCloneHolder.h',
     'StructuredCloneTags.h',
     'StyleSheetList.h',
     'SubtleCrypto.h',
@@ -203,6 +213,7 @@ EXPORTS.mozilla.dom += [
     'URL.h',
     'URLSearchParams.h',
     'WebSocket.h',
+    'WindowOrientationObserver.h',
 ]
 
 UNIFIED_SOURCES += [
@@ -210,9 +221,11 @@ UNIFIED_SOURCES += [
     'Attr.cpp',
     'BarProps.cpp',
     'ChildIterator.cpp',
+    'ChromeNodeList.cpp',
     'ChromeUtils.cpp',
     'Comment.cpp',
     'Console.cpp',
+    'ConsoleReportCollector.cpp',
     'Crypto.cpp',
     'DirectionalityUtils.cpp',
     'DocumentFragment.cpp',
@@ -231,7 +244,8 @@ UNIFIED_SOURCES += [
     'Element.cpp',
     'EventSource.cpp',
     'File.cpp',
-    'FileIOObject.cpp',
+    'FileList.cpp',
+    'FileReader.cpp',
     'FragmentOrElement.cpp',
     'ImageEncoder.cpp',
     'ImportManager.cpp',
@@ -258,7 +272,6 @@ UNIFIED_SOURCES += [
     'nsDOMAttributeMap.cpp',
     'nsDOMCaretPosition.cpp',
     'nsDOMClassInfo.cpp',
-    'nsDOMFileReader.cpp',
     'nsDOMMutationObserver.cpp',
     'nsDOMNavigationTiming.cpp',
     'nsDOMScriptObjectFactory.cpp',
@@ -322,16 +335,22 @@ UNIFIED_SOURCES += [
     'nsXMLContentSerializer.cpp',
     'nsXMLHttpRequest.cpp',
     'nsXMLNameSpaceMap.cpp',
+    'PerformanceCompositeTiming.cpp',
     'PerformanceEntry.cpp',
     'PerformanceMark.cpp',
     'PerformanceMeasure.cpp',
+    'PerformanceObserver.cpp',
+    'PerformanceObserverEntryList.cpp',
+    'PerformanceRenderTiming.cpp',
     'PerformanceResourceTiming.cpp',
     'PostMessageEvent.cpp',
     'ProcessGlobal.cpp',
     'ResponsiveImageSelector.cpp',
     'SameProcessMessageQueue.cpp',
+    'ScreenOrientation.cpp',
     'ScriptSettings.cpp',
     'ShadowRoot.cpp',
+    'StructuredCloneHolder.cpp',
     'StyleSheetList.cpp',
     'SubtleCrypto.cpp',
     'Text.cpp',
@@ -342,6 +361,7 @@ UNIFIED_SOURCES += [
     'URLSearchParams.cpp',
     'WebSocket.cpp',
     'WindowNamedPropertiesHandler.cpp',
+    'WindowOrientationObserver.cpp',
 ]
 
 if CONFIG['MOZ_WEBRTC']:
@@ -396,11 +416,10 @@ EXTRA_JS_MODULES += [
     'IndexedDBHelper.jsm',
 ]
 
-FAIL_ON_WARNINGS = True
-
 LOCAL_INCLUDES += [
     '../battery',
-    '../bluetooth',
+    '../bluetooth/common',
+    '../bluetooth/common/webapi',
     '../events',
     '../media',
     '../network',
@@ -428,18 +447,10 @@ LOCAL_INCLUDES += [
     '/layout/svg',
     '/layout/xul',
     '/netwerk/base',
+    '/security/manager/ssl',
     '/widget',
     '/xpcom/ds',
 ]
-
-if CONFIG['MOZ_B2G_BT_API_V1']:
-    LOCAL_INCLUDES += [
-        '../bluetooth/bluetooth1',
-    ]
-else:
-    LOCAL_INCLUDES += [
-        '../bluetooth/bluetooth2',
-    ]
 
 if CONFIG['MOZ_WIDGET_TOOLKIT'] == 'gonk':
     LOCAL_INCLUDES += [

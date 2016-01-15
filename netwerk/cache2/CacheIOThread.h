@@ -88,7 +88,7 @@ private:
 
   mozilla::Monitor mMonitor;
   PRThread* mThread;
-  nsCOMPtr<nsIThread> mXPCOMThread;
+  Atomic<nsIThread *> mXPCOMThread;
   Atomic<uint32_t, Relaxed> mLowestLevelWaiting;
   uint32_t mCurrentlyExecutingLevel;
   nsTArray<nsCOMPtr<nsIRunnable> > mEventQueue[LAST_LEVEL];
@@ -99,7 +99,7 @@ private:
   DebugOnly<bool> mInsideLoop;
 };
 
-} // net
-} // mozilla
+} // namespace net
+} // namespace mozilla
 
 #endif

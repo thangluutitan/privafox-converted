@@ -10,7 +10,7 @@ function $_(formNum, name) {
     return null;
   }
 
-  var element = form.elements.namedItem(name);
+  var element = form.children.namedItem(name);
   if (!element) {
     logWarning("$_ couldn't find requested element " + name);
     return null;
@@ -45,7 +45,7 @@ function checkForm(formNum, val1, val2, val3) {
     ok(form, "Locating form " + formNum);
 
     var numToCheck = arguments.length - 1;
-    
+
     if (!numToCheck--)
         return;
     e = form.elements[0];
@@ -259,6 +259,13 @@ function dumpLogin(label, login) {
     ok(true, label + loginText);
 }
 
+function getRecipeParent() {
+  var { LoginManagerParent } = SpecialPowers.Cu.import("resource://gre/modules/LoginManagerParent.jsm", {});
+  return LoginManagerParent.recipeParentPromise.then((recipeParent) => {
+    return SpecialPowers.wrap(recipeParent);
+  });
+}
+
 /**
  * Resolves when a specified number of forms have been processed.
  */
@@ -305,9 +312,6 @@ if (this.addMessageListener) {
 } else {
   // Code to only run in the mochitest pages (not in the chrome script).
   SimpleTest.registerCleanupFunction(() => {
-    var { LoginManagerParent } = SpecialPowers.Cu.import("resource://gre/modules/LoginManagerParent.jsm", {});
-    return LoginManagerParent.recipeParentPromise.then((recipeParent) => {
-      SpecialPowers.wrap(recipeParent).reset();
-    });
+    getRecipeParent().then(recipeParent => recipeParent.reset());
   });
 }

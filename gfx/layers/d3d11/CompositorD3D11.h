@@ -129,7 +129,9 @@ public:
    * Setup the viewport and projection matrix for rendering
    * to a window of the given dimensions.
    */
-  virtual void PrepareViewport(const gfx::IntSize& aSize) override;
+  virtual void PrepareViewport(const gfx::IntSize& aSize);
+  virtual void PrepareViewport(const gfx::IntSize& aSize, const gfx::Matrix4x4& aProjection,
+                               float aZNear, float aZFar);
 
   virtual bool SupportsPartialTextureUpdate() override { return true; }
 
@@ -155,14 +157,15 @@ private:
   };
 
   void HandleError(HRESULT hr, Severity aSeverity = DebugAssert);
-  bool Failed(HRESULT hr, Severity aSeverity = DebugAssert);
-  bool Succeeded(HRESULT hr, Severity aSeverity = DebugAssert);
+
+  // Same as Failed(), except the severity is critical (with no abort) and
+  // a string prefix must be provided.
+  bool Failed(HRESULT hr, const char* aContext);
 
   // ensure mSize is up to date with respect to mWidget
   void EnsureSize();
   bool VerifyBufferSize();
-  void UpdateRenderTarget();
-  bool CreateShaders();
+  bool UpdateRenderTarget();
   bool UpdateConstantBuffers();
   void SetSamplerForFilter(gfx::Filter aFilter);
   void SetPSForEffect(Effect *aEffect, MaskType aMaskType, gfx::SurfaceFormat aFormat);
@@ -194,6 +197,8 @@ private:
   // This is the clip rect applied to the default DrawTarget (i.e. the window)
   gfx::IntRect mCurrentClip;
   nsIntRegion mInvalidRegion;
+
+  bool mVerifyBuffersFailed;
 };
 
 }

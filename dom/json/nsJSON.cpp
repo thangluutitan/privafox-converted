@@ -17,6 +17,8 @@
 #include "nsIUnicodeDecoder.h"
 #include "nsXPCOMStrings.h"
 #include "nsNetUtil.h"
+#include "nsIURI.h"
+#include "nsComponentManagerUtils.h"
 #include "nsContentUtils.h"
 #include "nsIScriptError.h"
 #include "nsCRTGlue.h"
@@ -296,8 +298,6 @@ nsJSONWriter::Write(const char16_t *aBuffer, uint32_t aLength)
 
   if (!mDidWrite) {
     mBuffer = new char16_t[JSON_STREAM_BUFSIZE];
-    if (!mBuffer)
-      return NS_ERROR_OUT_OF_MEMORY;
     mDidWrite = true;
   }
 
@@ -425,7 +425,7 @@ nsJSON::DecodeInternal(JSContext* cx,
   if (!jsonChannel || NS_FAILED(rv))
     return NS_ERROR_FAILURE;
 
-  nsRefPtr<nsJSONListener> jsonListener =
+  RefPtr<nsJSONListener> jsonListener =
     new nsJSONListener(cx, aRetval.address(), aNeedsConverter);
 
   //XXX this stream pattern should be consolidated in netwerk
@@ -479,9 +479,6 @@ nsresult
 NS_NewJSON(nsISupports* aOuter, REFNSIID aIID, void** aResult)
 {
   nsJSON* json = new nsJSON();
-  if (!json)
-    return NS_ERROR_OUT_OF_MEMORY;
-
   NS_ADDREF(json);
   *aResult = json;
 

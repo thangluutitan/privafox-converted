@@ -7,11 +7,11 @@
 #define _MOZILLA_GFX_SOURCESURFACESKIA_H
 
 #ifdef USE_SKIA_GPU
-#include "skia/GrContext.h"
-#include "skia/GrGLInterface.h"
+#include "skia/include/gpu/GrContext.h"
+#include "skia/include/gpu/gl/GrGLInterface.h"
 #endif
 
-#include "skia/SkCanvas.h"
+#include "skia/include/core/SkCanvas.h"
 
 #include "2D.h"
 #include "HelpersSkia.h"
@@ -117,6 +117,11 @@ public:
                          SurfaceFormat aFormat) override;
 #endif
 
+  // Skia assumes that texture sizes fit in 16-bit signed integers.
+  static size_t GetMaxSurfaceSize() {
+    return 32767;
+  }
+
   operator std::string() const {
     std::stringstream stream;
     stream << "DrawTargetSkia(" << this << ")";
@@ -137,7 +142,7 @@ private:
 
 #ifdef USE_SKIA_GPU
   RefPtrSkia<GrContext> mGrContext;
-  uint32_t mTexture;
+  GrGLuint mTexture;
 #endif
 
   IntSize mSize;
@@ -145,7 +150,7 @@ private:
   SourceSurfaceSkia* mSnapshot;
 };
 
-}
-}
+} // namespace gfx
+} // namespace mozilla
 
 #endif // _MOZILLA_GFX_SOURCESURFACESKIA_H

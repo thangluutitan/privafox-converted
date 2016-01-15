@@ -41,6 +41,7 @@ public:
                                     nsACString& aOutVersion) override;
   NS_IMETHOD GetNodeId(const nsAString& aOrigin,
                        const nsAString& aTopLevelOrigin,
+                       const nsAString& aGMPName,
                        bool aInPrivateBrowsingMode,
                        UniquePtr<GetNodeIdCallback>&& aCallback) override;
 
@@ -49,9 +50,11 @@ public:
 
   void AsyncShutdownNeeded(GMPParent* aParent);
   void AsyncShutdownComplete(GMPParent* aParent);
-  void AbortAsyncShutdown();
 
   int32_t AsyncShutdownTimeoutMs();
+#ifdef MOZ_CRASHREPORTER
+  void SetAsyncShutdownPluginState(GMPParent* aGMPParent, char aId, const nsCString& aState);
+#endif // MOZ_CRASHREPORTER
 
 private:
   friend class GMPServiceParent;
@@ -69,6 +72,7 @@ private:
                                   size_t* aOutPluginIndex);
 
   nsresult GetNodeId(const nsAString& aOrigin, const nsAString& aTopLevelOrigin,
+                     const nsAString& aGMPName,
                      bool aInPrivateBrowsing, nsACString& aOutId);
 
   void UnloadPlugins();
@@ -91,14 +95,15 @@ private:
     ~DirectoryFilter() {}
   };
   void ClearNodeIdAndPlugin(DirectoryFilter& aFilter);
-
+  void ClearNodeIdAndPlugin(nsIFile* aPluginStorageDir,
+                            DirectoryFilter& aFilter);
   void ForgetThisSiteOnGMPThread(const nsACString& aOrigin);
   void ClearRecentHistoryOnGMPThread(PRTime aSince);
 
 protected:
   friend class GMPParent;
-  void ReAddOnGMPThread(const nsRefPtr<GMPParent>& aOld);
-  void PluginTerminated(const nsRefPtr<GMPParent>& aOld);
+  void ReAddOnGMPThread(const RefPtr<GMPParent>& aOld);
+  void PluginTerminated(const RefPtr<GMPParent>& aOld);
   virtual void InitializePlugins() override;
   virtual bool GetContentParentFrom(const nsACString& aNodeId,
                                     const nsCString& aAPI,
@@ -130,16 +135,31 @@ private:
     NS_DECL_NSIRUNNABLE
 
   private:
-    nsRefPtr<GeckoMediaPluginServiceParent> mService;
+    RefPtr<GeckoMediaPluginServiceParent> mService;
     nsString mPath;
     EOperation mOperation;
     bool mDefer;
   };
 
   // Protected by mMutex from the base class.
-  nsTArray<nsRefPtr<GMPParent>> mPlugins;
+  nsTArray<RefPtr<GMPParent>> mPlugins;
   bool mShuttingDown;
-  nsTArray<nsRefPtr<GMPParent>> mAsyncShutdownPlugins;
+  nsTArray<RefPtr<GMPParent>> mAsyncShutdownPlugins;
+
+#ifdef MOZ_CRASHREPORTER
+  Mutex mAsyncShutdownPluginStatesMutex; // Protects mAsyncShutdownPluginStates.
+  class AsyncShutdownPluginStates
+  {
+  public:
+    void Update(const nsCString& aPlugin, const nsCString& aInstance,
+                char aId, const nsCString& aState);
+  private:
+    struct State { nsCString mStateSequence; nsCString mLastStateDescription; };
+    typedef nsClassHashtable<nsCStringHashKey, State> StatesByInstance;
+    typedef nsClassHashtable<nsCStringHashKey, StatesByInstance> StateInstancesByPlugin;
+    StateInstancesByPlugin mStates;
+  } mAsyncShutdownPluginStates;
+#endif // MOZ_CRASHREPORTER
 
   // True if we've inspected MOZ_GMP_PATH on the GMP thread and loaded any
   // plugins found there into mPlugins.
@@ -196,19 +216,19 @@ public:
                            uint32_t* aPluginId) override;
   virtual bool RecvGetGMPNodeId(const nsString& aOrigin,
                                 const nsString& aTopLevelOrigin,
+                                const nsString& aGMPName,
                                 const bool& aInPrivateBrowsing,
                                 nsCString* aID) override;
   static bool RecvGetGMPPluginVersionForAPI(const nsCString& aAPI,
                                             nsTArray<nsCString>&& aTags,
                                             bool* aHasPlugin,
                                             nsCString* aVersion);
-
   virtual void ActorDestroy(ActorDestroyReason aWhy) override;
 
   static PGMPServiceParent* Create(Transport* aTransport, ProcessId aOtherPid);
 
 private:
-  nsRefPtr<GeckoMediaPluginServiceParent> mService;
+  RefPtr<GeckoMediaPluginServiceParent> mService;
 };
 
 } // namespace gmp

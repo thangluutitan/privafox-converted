@@ -31,7 +31,7 @@ NS_DEFINE_CID(kBufferedInputStreamCID, NS_BUFFEREDINPUTSTREAM_CID);
 NS_DEFINE_CID(kMIMEInputStreamCID, NS_MIMEINPUTSTREAM_CID);
 NS_DEFINE_CID(kMultiplexInputStreamCID, NS_MULTIPLEXINPUTSTREAM_CID);
 
-} // anonymous namespace
+} // namespace
 
 namespace mozilla {
 namespace ipc {
@@ -106,13 +106,13 @@ DeserializeInputStream(const InputStreamParams& aParams,
     // When the input stream already exists in this process, all we need to do
     // is retrieve the original instead of sending any data over the wire.
     case InputStreamParams::TRemoteInputStreamParams: {
-      if (NS_WARN_IF(XRE_GetProcessType() != GeckoProcessType_Default)) {
+      if (NS_WARN_IF(!XRE_IsParentProcess())) {
         return nullptr;
       }
 
       const nsID& id = aParams.get_RemoteInputStreamParams().id();
 
-      nsRefPtr<BlobImpl> blobImpl = BlobParent::GetBlobImplForID(id);
+      RefPtr<BlobImpl> blobImpl = BlobParent::GetBlobImplForID(id);
 
       MOZ_ASSERT(blobImpl, "Invalid blob contents");
 

@@ -710,6 +710,7 @@ var gCookiesWindow = {
     }
     else {
         //this._cm.removeAll();
+        // Privafox : custom
         this._cm.forceRemoveAll();
     }
     this._updateRemoveAllButton();

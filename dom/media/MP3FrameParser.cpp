@@ -308,7 +308,7 @@ ParseXing(const char *aBuffer)
 }
 
 static int64_t
-FindNumVBRFrames(const nsAutoCString& aFrame)
+FindNumVBRFrames(const nsCString& aFrame)
 {
   const char *buffer = aFrame.get();
   const char *bufferEnd = aFrame.get() + aFrame.Length();
@@ -588,4 +588,4 @@ bool MP3FrameParser::NeedsData()
   return IsMP3() && !HasExactDuration();
 }
 
-}
+} // namespace mozilla

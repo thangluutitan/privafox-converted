@@ -61,11 +61,10 @@ gfxMacFont::gfxMacFont(MacOSFontEntry *aFontEntry, const gfxFontStyle *aFontStyl
     cairo_matrix_init_scale(&sizeMatrix, mAdjustedSize, mAdjustedSize);
 
     // synthetic oblique by skewing via the font matrix
-    bool needsOblique =
-        (mFontEntry != nullptr) &&
-        (!mFontEntry->IsItalic() &&
-         (mStyle.style & (NS_FONT_STYLE_ITALIC | NS_FONT_STYLE_OBLIQUE))) &&
-        mStyle.allowSyntheticStyle;
+    bool needsOblique = mFontEntry != nullptr &&
+                        mFontEntry->IsUpright() &&
+                        mStyle.style != NS_FONT_STYLE_NORMAL &&
+                        mStyle.allowSyntheticStyle;
 
     if (needsOblique) {
         cairo_matrix_t style;
@@ -161,7 +160,8 @@ gfxMacFont::SetupCairoFont(gfxContext *aContext)
         // the cairo_t, precluding any further drawing.
         return false;
     }
-    cairo_set_scaled_font(aContext->GetCairo(), mScaledFont);
+    cairo_set_scaled_font(gfxContext::RefCairo(aContext->GetDrawTarget()),
+                          mScaledFont);
     return true;
 }
 

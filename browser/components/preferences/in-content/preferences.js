@@ -4,17 +4,17 @@
 
 "use strict";
 
-const Cc = Components.classes;
-const Ci = Components.interfaces;
-const Cu = Components.utils;
-const Cr = Components.results;
+var Cc = Components.classes;
+var Ci = Components.interfaces;
+var Cu = Components.utils;
+var Cr = Components.results;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 
-let gLastHash = "";
+var gLastHash = "";
 
-let gCategoryInits = new Map();
+var gCategoryInits = new Map();
 function init_category_if_required(category) {
   let categoryInfo = gCategoryInits.get(category);
   if (!categoryInfo) {
@@ -43,6 +43,7 @@ addEventListener("DOMContentLoaded", function onLoad() {
 
 function init_all() {
   document.documentElement.instantApply = true;
+
   gSubDialog.init();
   register_module("paneGeneral", gMainPane);
   register_module("paneSearch", gSearchPane);
@@ -76,8 +77,9 @@ function init_all() {
   });
   document.dispatchEvent(initFinished);
 
-  let helpCmd = document.getElementById("help-button");
-  helpCmd.addEventListener("command", helpButtonCommand);
+  let helpCmds = document.querySelectorAll(".help-button");
+  for (let helpCmd of helpCmds)
+    helpCmd.addEventListener("command", helpButtonCommand);
 
   // Wait until initialization of all preferences are complete before
   // notifying observers that the UI is now ready.
@@ -204,7 +206,6 @@ function helpButtonCommand() {
 							
     //let activeTab = getActiveTab(window);
 	
-  						
   openHelpLink(helpTopic);
 }
 

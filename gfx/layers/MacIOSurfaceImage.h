@@ -17,7 +17,11 @@ namespace layers {
 
 class MacIOSurfaceImage : public Image {
 public:
-  void SetSurface(MacIOSurface* aSurface) { mSurface = aSurface; }
+  explicit MacIOSurfaceImage(MacIOSurface* aSurface)
+   : Image(nullptr, ImageFormat::MAC_IOSURFACE),
+     mSurface(aSurface)
+  {}
+
   MacIOSurface* GetSurface() { return mSurface; }
 
   gfx::IntSize GetSize() override {
@@ -28,14 +32,16 @@ public:
 
   virtual TextureClient* GetTextureClient(CompositableClient* aClient) override;
 
-  MacIOSurfaceImage() : Image(nullptr, ImageFormat::MAC_IOSURFACE) {}
+  virtual MacIOSurfaceImage* AsMacIOSurfaceImage() override {
+    return this;
+  }
 
 private:
   RefPtr<MacIOSurface> mSurface;
   RefPtr<TextureClient> mTextureClient;
 };
 
-} // layers
-} // mozilla
+} // namespace layers
+} // namespace mozilla
 
 #endif // GFX_SHAREDTEXTUREIMAGE_H

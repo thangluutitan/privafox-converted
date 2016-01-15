@@ -262,9 +262,6 @@ NS_NewXULTreeBuilder(nsISupports* aOuter, REFNSIID aIID, void** aResult)
 
     nsresult rv;
     nsXULTreeBuilder* result = new nsXULTreeBuilder();
-    if (! result)
-        return NS_ERROR_OUT_OF_MEMORY;
-
     NS_ADDREF(result); // stabilize
 
     rv = result->InitGlobals();
@@ -1840,7 +1837,6 @@ nsXULTreeBuilder::SortSubtree(nsTreeRows::Subtree* aSubtree)
 }
 
 
-/* boolean canDrop (in long index, in long orientation); */
 NS_IMETHODIMP
 nsXULTreeBuilder::CanDrop(int32_t index, int32_t orientation,
                           nsIDOMDataTransfer* dataTransfer, bool *_retval)

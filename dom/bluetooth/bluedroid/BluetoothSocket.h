@@ -4,8 +4,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef mozilla_dom_bluetooth_BluetoothSocket_h
-#define mozilla_dom_bluetooth_BluetoothSocket_h
+#ifndef mozilla_dom_bluetooth_bluedroid_BluetoothSocket_h
+#define mozilla_dom_bluetooth_bluedroid_BluetoothSocket_h
 
 #include "BluetoothCommon.h"
 #include "mozilla/ipc/DataSocket.h"
@@ -22,8 +22,9 @@ class BluetoothSocket final : public mozilla::ipc::DataSocket
 {
 public:
   BluetoothSocket(BluetoothSocketObserver* aObserver);
+  ~BluetoothSocket();
 
-  nsresult Connect(const nsAString& aDeviceAddress,
+  nsresult Connect(const BluetoothAddress& aDeviceAddress,
                    const BluetoothUuid& aServiceUuid,
                    BluetoothSocketType aType,
                    int aChannel,
@@ -31,7 +32,7 @@ public:
                    MessageLoop* aConsumerLoop,
                    MessageLoop* aIOLoop);
 
-  nsresult Connect(const nsAString& aDeviceAddress,
+  nsresult Connect(const BluetoothAddress& aDeviceAddress,
                    const BluetoothUuid& aServiceUuid,
                    BluetoothSocketType aType,
                    int aChannel,
@@ -59,12 +60,12 @@ public:
    */
   void ReceiveSocketData(nsAutoPtr<mozilla::ipc::UnixSocketBuffer>& aBuffer);
 
-  inline void GetAddress(nsAString& aDeviceAddress)
+  inline void GetAddress(BluetoothAddress& aDeviceAddress)
   {
     aDeviceAddress = mDeviceAddress;
   }
 
-  inline void SetAddress(const nsAString& aDeviceAddress)
+  inline void SetAddress(const BluetoothAddress& aDeviceAddress)
   {
     mDeviceAddress = aDeviceAddress;
   }
@@ -92,9 +93,9 @@ private:
   BluetoothSocketObserver* mObserver;
   BluetoothSocketResultHandler* mCurrentRes;
   DroidSocketImpl* mImpl;
-  nsString mDeviceAddress;
+  BluetoothAddress mDeviceAddress;
 };
 
 END_BLUETOOTH_NAMESPACE
 
-#endif
+#endif // mozilla_dom_bluetooth_bluedroid_BluetoothSocket_h

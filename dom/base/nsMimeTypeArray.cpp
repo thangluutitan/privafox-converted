@@ -9,11 +9,13 @@
 #include "mozilla/dom/MimeTypeArrayBinding.h"
 #include "mozilla/dom/MimeTypeBinding.h"
 #include "nsIDOMNavigator.h"
+#include "nsPIDOMWindow.h"
 #include "nsPluginArray.h"
 #include "nsIMIMEService.h"
 #include "nsIMIMEInfo.h"
 #include "Navigator.h"
 #include "nsServiceManagerUtils.h"
+#include "nsPluginTags.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -88,7 +90,7 @@ nsMimeTypeArray::IndexedGetter(uint32_t aIndex, bool &aFound)
 }
 
 static nsMimeType*
-FindMimeType(const nsTArray<nsRefPtr<nsMimeType> >& aMimeTypes,
+FindMimeType(const nsTArray<RefPtr<nsMimeType> >& aMimeTypes,
              const nsAString& aType)
 {
   for (uint32_t i = 0; i < aMimeTypes.Length(); ++i) {
@@ -194,8 +196,7 @@ nsMimeTypeArray::EnsurePluginMimeTypes()
     return;
   }
 
-  nsCOMPtr<nsIDOMNavigator> navigator;
-  mWindow->GetNavigator(getter_AddRefs(navigator));
+  nsCOMPtr<nsIDOMNavigator> navigator = mWindow->GetNavigator();
 
   if (!navigator) {
     return;
@@ -216,19 +217,22 @@ NS_IMPL_CYCLE_COLLECTION_UNROOT_NATIVE(nsMimeType, Release)
 
 NS_IMPL_CYCLE_COLLECTION_WRAPPERCACHE(nsMimeType, mWindow, mPluginElement)
 
-nsMimeType::nsMimeType(nsPIDOMWindow* aWindow, nsPluginElement* aPluginElement,
-                       uint32_t aPluginTagMimeIndex, const nsAString& aType)
+nsMimeType::nsMimeType(nsPIDOMWindow* aWindow,
+                       nsPluginElement* aPluginElement,
+                       const nsAString& aType,
+                       const nsAString& aDescription,
+                       const nsAString& aExtension)
   : mWindow(aWindow),
     mPluginElement(aPluginElement),
-    mPluginTagMimeIndex(aPluginTagMimeIndex),
-    mType(aType)
+    mType(aType),
+    mDescription(aDescription),
+    mExtension(aExtension)
 {
 }
 
 nsMimeType::nsMimeType(nsPIDOMWindow* aWindow, const nsAString& aType)
   : mWindow(aWindow),
     mPluginElement(nullptr),
-    mPluginTagMimeIndex(0),
     mType(aType)
 {
 }
@@ -251,32 +255,24 @@ nsMimeType::WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto)
 }
 
 void
-nsMimeType::GetDescription(nsString& retval) const
+nsMimeType::GetDescription(nsString& aRetval) const
 {
-  retval.Truncate();
-
-  if (mPluginElement) {
-    CopyUTF8toUTF16(mPluginElement->PluginTag()->
-                    mMimeDescriptions[mPluginTagMimeIndex], retval);
-  }
+  aRetval = mDescription;
 }
 
 nsPluginElement*
 nsMimeType::GetEnabledPlugin() const
 {
-  return (mPluginElement && mPluginElement->PluginTag()->IsEnabled()) ?
-    mPluginElement : nullptr;
+  if (!mPluginElement || !mPluginElement->PluginTag()->IsEnabled()) {
+    return nullptr;
+  }
+  return mPluginElement;
 }
 
 void
-nsMimeType::GetSuffixes(nsString& retval) const
+nsMimeType::GetSuffixes(nsString& aRetval) const
 {
-  retval.Truncate();
-
-  if (mPluginElement) {
-    CopyUTF8toUTF16(mPluginElement->PluginTag()->
-                    mExtensions[mPluginTagMimeIndex], retval);
-  }
+  aRetval = mExtension;
 }
 
 void

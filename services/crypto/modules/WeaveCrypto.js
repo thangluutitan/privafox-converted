@@ -4,9 +4,9 @@
 
 this.EXPORTED_SYMBOLS = ["WeaveCrypto"];
 
-const Cc = Components.classes;
-const Ci = Components.interfaces;
-const Cr = Components.results;
+var Cc = Components.classes;
+var Ci = Components.interfaces;
+var Cr = Components.results;
 
 Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
 Components.utils.import("resource://gre/modules/Services.jsm");
@@ -129,21 +129,18 @@ WeaveCrypto.prototype = {
 
         // Open the NSS library.
         let path = ctypes.libraryName("nss3");
-        Services.prefs.setCharPref("Titan.com.init.WaeveCrypto.path", path);
+
         // XXX really want to be able to pass specific dlopen flags here.
         var nsslib;
 #ifdef MOZ_NATIVE_NSS
         // Search platform-dependent library paths for system NSS.
         this.log("Trying NSS library without path");
-        Services.prefs.setCharPref("Titan.com.init.WaeveCrypto.path.1", "1");
         nsslib = ctypes.open(path);
 #else
         let file = Services.dirsvc.get("GreBinD", Ci.nsILocalFile);
         file.append(path);
-        Services.prefs.setCharPref("Titan.com.init.WaeveCrypto.path.2", file.path);
         this.log("Trying NSS library with path " + file.path);
-        //nsslib = ctypes.open(file.path);
-        nsslib = ctypes.open("C:\\Program Files (x86)\\Mozilla Firefox\\nss3.dll");
+        nsslib = ctypes.open(file.path);
 #endif
 
         this.log("Initializing NSS types and function declarations...");
@@ -245,7 +242,6 @@ WeaveCrypto.prototype = {
         // SECStatus PK11_CheckUserPassword(PK11SlotInfo *slot, const char *pw);
         this.nss.PK11_CheckUserPassword = nsslib.declare("PK11_CheckUserPassword",
                                               ctypes.default_abi, this.nss_t.SECStatus, this.nss_t.PK11SlotInfo.ptr, ctypes.char.ptr);
-        
         // security/nss/lib/pk11wrap/pk11pub.h#286
         // SECStatus PK11_GenerateRandom(unsigned char *data,int len);
         this.nss.PK11_GenerateRandom = nsslib.declare("PK11_GenerateRandom",
@@ -422,7 +418,7 @@ WeaveCrypto.prototype = {
     initBuffers: function initBuffers(initialSize) {
         this._getInputBuffer(initialSize);
         this._getOutputBuffer(initialSize);
-        this.nss_t.SECItemType
+
         this._getRandomByteBuffer(this.ivLength);
     },
 
@@ -564,7 +560,9 @@ WeaveCrypto.prototype = {
         }
     },
 
-    generateRandomIV : function() this.generateRandomBytes(this.ivLength),
+    generateRandomIV : function() {
+      return this.generateRandomBytes(this.ivLength);
+    },
 
     generateRandomBytes : function(byteCount) {
         this.log("generateRandomBytes() called");

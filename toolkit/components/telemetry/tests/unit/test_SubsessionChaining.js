@@ -15,7 +15,6 @@ const MS_IN_ONE_HOUR  = 60 * 60 * 1000;
 const MS_IN_ONE_DAY   = 24 * MS_IN_ONE_HOUR;
 
 const PREF_BRANCH = "toolkit.telemetry.";
-const PREF_ENABLED = PREF_BRANCH + "enabled";
 const PREF_ARCHIVE_ENABLED = PREF_BRANCH + "archive.enabled";
 
 const REASON_ABORTED_SESSION = "aborted-session";
@@ -27,7 +26,7 @@ XPCOMUtils.defineLazyGetter(this, "DATAREPORTING_PATH", function() {
   return OS.Path.join(OS.Constants.Path.profileDir, "datareporting");
 });
 
-let promiseValidateArchivedPings = Task.async(function*(aExpectedReasons) {
+var promiseValidateArchivedPings = Task.async(function*(aExpectedReasons) {
   // The list of ping reasons which mark the session end (and must reset the subsession
   // count).
   const SESSION_END_PING_REASONS = new Set([ REASON_ABORTED_SESSION, REASON_SHUTDOWN ]);
@@ -92,7 +91,7 @@ function run_test() {
   do_get_profile();
   loadAddonManager("xpcshell@tests.mozilla.org", "XPCShell", "1", "1.9.2");
 
-  Preferences.set(PREF_ENABLED, true);
+  Preferences.set(PREF_TELEMETRY_ENABLED, true);
 
   run_next_test();
 }
@@ -105,7 +104,7 @@ add_task(function* test_subsessionsChaining() {
 
   const PREF_TEST = PREF_BRANCH + "test.pref1";
   const PREFS_TO_WATCH = new Map([
-    [PREF_TEST, TelemetryEnvironment.RECORD_PREF_VALUE],
+    [PREF_TEST, {what: TelemetryEnvironment.RECORD_PREF_VALUE}],
   ]);
   Preferences.reset(PREF_TEST);
 
@@ -233,5 +232,6 @@ add_task(function* test_subsessionsChaining() {
 });
 
 add_task(function* () {
+  yield TelemetrySend.shutdown();
   do_test_finished();
 });

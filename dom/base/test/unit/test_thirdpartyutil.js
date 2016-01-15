@@ -4,14 +4,14 @@
 
 // Test ThirdPartyUtil methods. See mozIThirdPartyUtil.
 
-let Cc = Components.classes;
-let Ci = Components.interfaces;
-let Cu = Components.utils;
+var Cc = Components.classes;
+var Ci = Components.interfaces;
+var Cu = Components.utils;
 
 Cu.import("resource://gre/modules/NetUtil.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 
-let NS_ERROR_INVALID_ARG = Components.results.NS_ERROR_INVALID_ARG;
+var NS_ERROR_INVALID_ARG = Components.results.NS_ERROR_INVALID_ARG;
 
 function do_check_throws(f, result, stack)
 {
@@ -67,17 +67,17 @@ function run_test() {
     NS_ERROR_INVALID_ARG);
 
   // We can't test isThirdPartyWindow since we can't really set up a window
-  // heirarchy. We leave that to mochitests.
+  // hierarchy. We leave that to mochitests.
 
   // Test isThirdPartyChannel. As above, we can't test the bits that require
-  // a load context or window heirarchy.
+  // a load context or window heirarchy. Because of that, the code assumes
+  // that these are all third-party loads.
   do_check_throws(function() { util.isThirdPartyChannel(null); },
     NS_ERROR_INVALID_ARG);
-  do_check_throws(function() { util.isThirdPartyChannel(channel1); },
-    NS_ERROR_INVALID_ARG);
-  do_check_throws(function() { util.isThirdPartyChannel(channel1, uri1); },
-    NS_ERROR_INVALID_ARG);
+  do_check_true(util.isThirdPartyChannel(channel1));
+  do_check_true(util.isThirdPartyChannel(channel1, uri1));
   do_check_true(util.isThirdPartyChannel(channel1, uri2));
+
   let httpchannel1 = channel1.QueryInterface(Ci.nsIHttpChannelInternal);
   httpchannel1.forceAllowThirdPartyCookie = true;
   do_check_false(util.isThirdPartyChannel(channel1));

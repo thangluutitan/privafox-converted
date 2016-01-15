@@ -44,7 +44,7 @@ this.LoginHelper = {
     };
 
     // Create a new instance of the ConsoleAPI so we can control the maxLogLevel with a pref.
-    let ConsoleAPI = Cu.import("resource://gre/modules/devtools/Console.jsm", {}).ConsoleAPI;
+    let ConsoleAPI = Cu.import("resource://gre/modules/Console.jsm", {}).ConsoleAPI;
     let consoleOptions = {
       maxLogLevel: getMaxLogLevel(),
       prefix: aLogPrefix,
@@ -260,6 +260,90 @@ this.LoginHelper = {
   },
 
   /**
+   * Removes duplicates from a list of logins.
+   *
+   * @param {nsILoginInfo[]} logins
+   *        A list of logins we want to deduplicate.
+   *
+   * @param {string[] = ["username", "password"]} uniqueKeys
+   *        A list of login attributes to use as unique keys for the deduplication.
+   *
+   * @returns {nsILoginInfo[]} list of unique logins.
+   */
+  dedupeLogins(logins, uniqueKeys = ["username", "password"]) {
+    const KEY_DELIMITER = ":";
+
+    // Generate a unique key string from a login.
+    function getKey(login, uniqueKeys) {
+      return uniqueKeys.reduce((prev, key) => prev + KEY_DELIMITER + login[key], "");
+    }
+
+    // We use a Map to easily lookup logins by their unique keys.
+    let loginsByKeys = new Map();
+    for (let login of logins) {
+      let key = getKey(login, uniqueKeys);
+      // If we find a more recently used login for the same key, replace the existing one.
+      if (loginsByKeys.has(key)) {
+        let loginDate = login.QueryInterface(Ci.nsILoginMetaInfo).timeLastUsed;
+        let storedLoginDate = loginsByKeys.get(key).QueryInterface(Ci.nsILoginMetaInfo).timeLastUsed;
+        if (loginDate < storedLoginDate) {
+          continue;
+        }
+      }
+      loginsByKeys.set(key, login);
+    }
+    // Return the map values in the form of an array.
+    return [...loginsByKeys.values()];
+  },
+
+  /**
+   * Open the password manager window.
+   *
+   * @param {Window} window
+   *                 the window from where we want to open the dialog
+   *
+   * @param {string} [filterString=""]
+   *                 the filterString parameter to pass to the login manager dialog
+   */
+  openPasswordManager(window, filterString = "") {
+    let win = Services.wm.getMostRecentWindow("Toolkit:PasswordManager");
+    if (win) {
+      win.setFilter(filterString);
+      win.focus();
+    } else {
+      window.openDialog("chrome://passwordmgr/content/passwordManager.xul",
+                        "Toolkit:PasswordManager", "",
+                        {filterString : filterString});
+    }
+  },
+
+  /**
+   * Checks if a field type is username compatible.
+   *
+   * @param {Element} element
+   *                  the field we want to check.
+   *
+   * @returns {Boolean} true if the field type is one
+   *                    of the username types.
+   */
+  isUsernameFieldType(element) {
+    if (!(element instanceof Ci.nsIDOMHTMLInputElement))
+      return false;
+
+    let fieldType = (element.hasAttribute("type") ?
+                     element.getAttribute("type").toLowerCase() :
+                     element.type);
+    if (fieldType == "text"  ||
+        fieldType == "email" ||
+        fieldType == "url"   ||
+        fieldType == "tel"   ||
+        fieldType == "number") {
+      return true;
+    }
+    return false;
+  },
+
+  /**
    * Add the login to the password manager if a similar one doesn't already exist. Merge it
    * otherwise with the similar existing ones.
    * @param {Object} loginData - the data about the login that needs to be added.
@@ -318,5 +402,4 @@ this.LoginHelper = {
     }
     Services.logins.addLogin(login);
   }
-
 };

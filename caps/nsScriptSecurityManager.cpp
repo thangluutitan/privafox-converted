@@ -1,5 +1,5 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-/* vim: set ts=4 et sw=4 tw=80: */
+/* vim: set ts=8 sts=2 et sw=2 tw=80: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -67,6 +67,7 @@
 #include "nsContentUtils.h"
 #include "nsJSUtils.h"
 #include "nsILoadInfo.h"
+#include "nsXPCOMStrings.h"
 
 // This should be probably defined on some other place... but I couldn't find it
 #define WEBAPPS_PERM_NAME "webapps-manage"
@@ -290,7 +291,7 @@ nsScriptSecurityManager::AppStatusForPrincipal(nsIPrincipal *aPrin)
     // The app could contain a cross-origin iframe - make sure that the content
     // is actually same-origin with the app.
     MOZ_ASSERT(inMozBrowser == false, "Checked this above");
-    OriginAttributes attrs(appId, false);
+    PrincipalOriginAttributes attrs(appId, false);
     nsCOMPtr<nsIPrincipal> appPrin = BasePrincipal::CreateCodebasePrincipal(appURI, attrs);
     NS_ENSURE_TRUE(appPrin, nsIPrincipal::APP_STATUS_NOT_INSTALLED);
     return aPrin->Equals(appPrin) ? status
@@ -325,7 +326,7 @@ nsScriptSecurityManager::GetChannelResultPrincipal(nsIChannel* aChannel,
     aChannel->GetLoadInfo(getter_AddRefs(loadInfo));
     if (loadInfo) {
         if (loadInfo->GetLoadingSandboxed()) {
-            nsRefPtr<nsNullPrincipal> prin =
+            RefPtr<nsNullPrincipal> prin =
               nsNullPrincipal::CreateWithInheritedAttributes(loadInfo->LoadingPrincipal());
             NS_ENSURE_TRUE(prin, NS_ERROR_FAILURE);
             prin.forget(aPrincipal);
@@ -336,8 +337,42 @@ nsScriptSecurityManager::GetChannelResultPrincipal(nsIChannel* aChannel,
             NS_ADDREF(*aPrincipal = loadInfo->TriggeringPrincipal());
             return NS_OK;
         }
+
+        nsSecurityFlags securityFlags = loadInfo->GetSecurityMode();
+        if (securityFlags == nsILoadInfo::SEC_REQUIRE_SAME_ORIGIN_DATA_INHERITS ||
+            securityFlags == nsILoadInfo::SEC_ALLOW_CROSS_ORIGIN_DATA_INHERITS ||
+            securityFlags == nsILoadInfo::SEC_REQUIRE_CORS_DATA_INHERITS) {
+
+            nsCOMPtr<nsIURI> uri;
+            nsresult rv = NS_GetFinalChannelURI(aChannel, getter_AddRefs(uri));
+            NS_ENSURE_SUCCESS(rv, rv);
+            nsCOMPtr<nsIPrincipal> triggeringPrincipal = loadInfo->TriggeringPrincipal();
+            bool inheritForAboutBlank = loadInfo->GetAboutBlankInherits();
+
+            if (nsContentUtils::ChannelShouldInheritPrincipal(triggeringPrincipal,
+                                                               uri,
+                                                               inheritForAboutBlank,
+                                                               false)) {
+                triggeringPrincipal.forget(aPrincipal);
+                return NS_OK;
+            }
+        }
     }
     return GetChannelURIPrincipal(aChannel, aPrincipal);
+}
+
+nsresult
+nsScriptSecurityManager::MaybeSetAddonIdFromURI(PrincipalOriginAttributes& aAttrs, nsIURI* aURI)
+{
+  nsAutoCString scheme;
+  nsresult rv = aURI->GetScheme(scheme);
+  NS_ENSURE_SUCCESS(rv, rv);
+  if (scheme.EqualsLiteral("moz-extension") && GetAddonPolicyService()) {
+    rv = GetAddonPolicyService()->ExtensionURIToAddonId(aURI, aAttrs.mAddonId);
+    NS_ENSURE_SUCCESS(rv, rv);
+  }
+
+  return NS_OK;
 }
 
 /* The principal of the URI that this channel is loading. This is never
@@ -370,7 +405,10 @@ nsScriptSecurityManager::GetChannelURIPrincipal(nsIChannel* aChannel,
         return GetLoadContextCodebasePrincipal(uri, loadContext, aPrincipal);
     }
 
-    OriginAttributes attrs(UNKNOWN_APP_ID, false);
+    //TODO: Bug 1211590. inherit Origin Attributes from LoadInfo.
+    PrincipalOriginAttributes attrs(UNKNOWN_APP_ID, false);
+    rv = MaybeSetAddonIdFromURI(attrs, uri);
+    NS_ENSURE_SUCCESS(rv, rv);
     nsCOMPtr<nsIPrincipal> prin = BasePrincipal::CreateCodebasePrincipal(uri, attrs);
     prin.forget(aPrincipal);
     return *aPrincipal ? NS_OK : NS_ERROR_FAILURE;
@@ -393,7 +431,6 @@ nsScriptSecurityManager::IsSystemPrincipal(nsIPrincipal* aPrincipal,
 ////////////////////////////////////
 NS_IMPL_ISUPPORTS(nsScriptSecurityManager,
                   nsIScriptSecurityManager,
-                  nsIChannelEventSink,
                   nsIObserver)
 
 ///////////////////////////////////////////////////
@@ -807,18 +844,12 @@ nsScriptSecurityManager::CheckLoadURIWithPrincipal(nsIPrincipal* aPrincipal,
             }
         }
 
-        // resource: and chrome: are equivalent, securitywise
-        // That's bogus!!  Fix this.  But watch out for
-        // the view-source stylesheet?
-        bool sourceIsChrome;
-        rv = NS_URIChainHasFlags(sourceURI,
-                                 nsIProtocolHandler::URI_IS_UI_RESOURCE,
-                                 &sourceIsChrome);
-        NS_ENSURE_SUCCESS(rv, rv);
-        if (sourceIsChrome) {
+        // Allow chrome://
+        if (sourceScheme.EqualsLiteral("chrome")) {
             return NS_OK;
         }
 
+        // Nothing else.
         if (reportErrors) {
             ReportError(nullptr, errorTag, sourceURI, aTargetURI);
         }
@@ -957,7 +988,7 @@ bool
 nsScriptSecurityManager::ScriptAllowed(JSObject *aGlobal)
 {
     MOZ_ASSERT(aGlobal);
-    MOZ_ASSERT(JS_IsGlobalObject(aGlobal) || js::IsOuterObject(aGlobal));
+    MOZ_ASSERT(JS_IsGlobalObject(aGlobal) || js::IsWindowProxy(aGlobal));
 
     // Check the bits on the compartment private.
     return xpc::Scriptability::Get(aGlobal).Allowed();
@@ -977,7 +1008,7 @@ NS_IMETHODIMP
 nsScriptSecurityManager::GetSimpleCodebasePrincipal(nsIURI* aURI,
                                                     nsIPrincipal** aPrincipal)
 {
-  OriginAttributes attrs(UNKNOWN_APP_ID, false);
+  PrincipalOriginAttributes attrs(UNKNOWN_APP_ID, false);
   nsCOMPtr<nsIPrincipal> prin = BasePrincipal::CreateCodebasePrincipal(aURI, attrs);
   prin.forget(aPrincipal);
   return *aPrincipal ? NS_OK : NS_ERROR_FAILURE;
@@ -987,7 +1018,7 @@ NS_IMETHODIMP
 nsScriptSecurityManager::GetNoAppCodebasePrincipal(nsIURI* aURI,
                                                    nsIPrincipal** aPrincipal)
 {
-  OriginAttributes attrs(NO_APP_ID, false);
+  PrincipalOriginAttributes attrs(NO_APP_ID, false);
   nsCOMPtr<nsIPrincipal> prin = BasePrincipal::CreateCodebasePrincipal(aURI, attrs);
   prin.forget(aPrincipal);
   return *aPrincipal ? NS_OK : NS_ERROR_FAILURE;
@@ -1004,7 +1035,7 @@ NS_IMETHODIMP
 nsScriptSecurityManager::CreateCodebasePrincipal(nsIURI* aURI, JS::Handle<JS::Value> aOriginAttributes,
                                                  JSContext* aCx, nsIPrincipal** aPrincipal)
 {
-  OriginAttributes attrs;
+  PrincipalOriginAttributes attrs;
   if (!aOriginAttributes.isObject() || !attrs.Init(aCx, aOriginAttributes)) {
       return NS_ERROR_INVALID_ARG;
   }
@@ -1014,16 +1045,48 @@ nsScriptSecurityManager::CreateCodebasePrincipal(nsIURI* aURI, JS::Handle<JS::Va
 }
 
 NS_IMETHODIMP
+nsScriptSecurityManager::CreateCodebasePrincipalFromOrigin(const nsACString& aOrigin,
+                                                           nsIPrincipal** aPrincipal)
+{
+  if (StringBeginsWith(aOrigin, NS_LITERAL_CSTRING("["))) {
+    return NS_ERROR_INVALID_ARG;
+  }
+
+  if (StringBeginsWith(aOrigin, NS_LITERAL_CSTRING(NS_NULLPRINCIPAL_SCHEME ":"))) {
+    return NS_ERROR_INVALID_ARG;
+  }
+
+  nsCOMPtr<nsIPrincipal> prin = BasePrincipal::CreateCodebasePrincipal(aOrigin);
+  prin.forget(aPrincipal);
+  return *aPrincipal ? NS_OK : NS_ERROR_FAILURE;
+}
+
+NS_IMETHODIMP
 nsScriptSecurityManager::CreateNullPrincipal(JS::Handle<JS::Value> aOriginAttributes,
                                              JSContext* aCx, nsIPrincipal** aPrincipal)
 {
-  OriginAttributes attrs;
+  PrincipalOriginAttributes attrs;
   if (!aOriginAttributes.isObject() || !attrs.Init(aCx, aOriginAttributes)) {
       return NS_ERROR_INVALID_ARG;
   }
   nsCOMPtr<nsIPrincipal> prin = nsNullPrincipal::Create(attrs);
   NS_ENSURE_TRUE(prin, NS_ERROR_FAILURE);
   prin.forget(aPrincipal);
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+nsScriptSecurityManager::CreateExpandedPrincipal(nsIPrincipal** aPrincipalArray, uint32_t aLength,
+                                                 nsIPrincipal** aResult)
+{
+  nsTArray<nsCOMPtr<nsIPrincipal>> principals;
+  principals.SetCapacity(aLength);
+  for (uint32_t i = 0; i < aLength; ++i) {
+    principals.AppendElement(aPrincipalArray[i]);
+  }
+
+  nsCOMPtr<nsIPrincipal> p = new nsExpandedPrincipal(principals);
+  p.forget(aResult);
   return NS_OK;
 }
 
@@ -1036,7 +1099,7 @@ nsScriptSecurityManager::GetAppCodebasePrincipal(nsIURI* aURI,
   NS_ENSURE_TRUE(aAppId != nsIScriptSecurityManager::UNKNOWN_APP_ID,
                  NS_ERROR_INVALID_ARG);
 
-  OriginAttributes attrs(aAppId, aInMozBrowser);
+  PrincipalOriginAttributes attrs(aAppId, aInMozBrowser);
   nsCOMPtr<nsIPrincipal> prin = BasePrincipal::CreateCodebasePrincipal(aURI, attrs);
   prin.forget(aPrincipal);
   return *aPrincipal ? NS_OK : NS_ERROR_FAILURE;
@@ -1048,10 +1111,15 @@ nsScriptSecurityManager::
                                   nsILoadContext* aLoadContext,
                                   nsIPrincipal** aPrincipal)
 {
-  // XXXbholley - Make this more general in bug 1165466.
-  OriginAttributes attrs;
-  aLoadContext->GetAppId(&attrs.mAppId);
-  aLoadContext->GetIsInBrowserElement(&attrs.mInBrowser);
+  DocShellOriginAttributes docShellAttrs;
+  bool result = aLoadContext->GetOriginAttributes(docShellAttrs);;
+  NS_ENSURE_TRUE(result, NS_ERROR_FAILURE);
+
+  PrincipalOriginAttributes attrs;
+  attrs.InheritFromDocShellToDoc(docShellAttrs, aURI);
+
+  nsresult rv = MaybeSetAddonIdFromURI(attrs, aURI);
+  NS_ENSURE_SUCCESS(rv, rv);
   nsCOMPtr<nsIPrincipal> prin = BasePrincipal::CreateCodebasePrincipal(aURI, attrs);
   prin.forget(aPrincipal);
   return *aPrincipal ? NS_OK : NS_ERROR_FAILURE;
@@ -1062,8 +1130,11 @@ nsScriptSecurityManager::GetDocShellCodebasePrincipal(nsIURI* aURI,
                                                       nsIDocShell* aDocShell,
                                                       nsIPrincipal** aPrincipal)
 {
-  // XXXbholley - Make this more general in bug 1165466.
-  OriginAttributes attrs(aDocShell->GetAppId(), aDocShell->GetIsInBrowserElement());
+  PrincipalOriginAttributes attrs;
+  attrs.InheritFromDocShellToDoc(nsDocShell::Cast(aDocShell)->GetOriginAttributes(), aURI);
+
+  nsresult rv = MaybeSetAddonIdFromURI(attrs, aURI);
+  NS_ENSURE_SUCCESS(rv, rv);
   nsCOMPtr<nsIPrincipal> prin = BasePrincipal::CreateCodebasePrincipal(aURI, attrs);
   prin.forget(aPrincipal);
   return *aPrincipal ? NS_OK : NS_ERROR_FAILURE;
@@ -1164,41 +1235,6 @@ nsScriptSecurityManager::CanGetService(JSContext *cx,
     return NS_ERROR_DOM_XPCONNECT_ACCESS_DENIED;
 }
 
-/////////////////////////////////////////////
-// Method implementing nsIChannelEventSink //
-/////////////////////////////////////////////
-NS_IMETHODIMP
-nsScriptSecurityManager::AsyncOnChannelRedirect(nsIChannel* oldChannel, 
-                                                nsIChannel* newChannel,
-                                                uint32_t redirFlags,
-                                                nsIAsyncVerifyRedirectCallback *cb)
-{
-    nsCOMPtr<nsIPrincipal> oldPrincipal;
-    GetChannelResultPrincipal(oldChannel, getter_AddRefs(oldPrincipal));
-
-    nsCOMPtr<nsIURI> newURI;
-    newChannel->GetURI(getter_AddRefs(newURI));
-    nsCOMPtr<nsIURI> newOriginalURI;
-    newChannel->GetOriginalURI(getter_AddRefs(newOriginalURI));
-
-    NS_ENSURE_STATE(oldPrincipal && newURI && newOriginalURI);
-
-    const uint32_t flags =
-        nsIScriptSecurityManager::LOAD_IS_AUTOMATIC_DOCUMENT_REPLACEMENT |
-        nsIScriptSecurityManager::DISALLOW_SCRIPT;
-    nsresult rv = CheckLoadURIWithPrincipal(oldPrincipal, newURI, flags);
-    if (NS_SUCCEEDED(rv) && newOriginalURI != newURI) {
-        rv = CheckLoadURIWithPrincipal(oldPrincipal, newOriginalURI, flags);
-    }
-
-    if (NS_FAILED(rv))
-        return rv;
-
-    cb->OnRedirectVerifyCallback(NS_OK);
-    return NS_OK;
-}
-
-
 /////////////////////////////////////
 // Method implementing nsIObserver //
 /////////////////////////////////////
@@ -1250,7 +1286,7 @@ nsresult nsScriptSecurityManager::Init()
     NS_ENSURE_SUCCESS(rv, rv);
 
     // Create our system principal singleton
-    nsRefPtr<nsSystemPrincipal> system = new nsSystemPrincipal();
+    RefPtr<nsSystemPrincipal> system = new nsSystemPrincipal();
 
     mSystemPrincipal = system;
 
@@ -1283,7 +1319,7 @@ nsScriptSecurityManager::~nsScriptSecurityManager(void)
     // ContentChild might hold a reference to the domain policy,
     // and it might release it only after the security manager is
     // gone. But we can still assert this for the main process.
-    MOZ_ASSERT_IF(XRE_GetProcessType() == GeckoProcessType_Default,
+    MOZ_ASSERT_IF(XRE_IsParentProcess(),
                   !mDomainPolicy);
 }
 
@@ -1309,7 +1345,7 @@ nsScriptSecurityManager::GetScriptSecurityManager()
 /* static */ void
 nsScriptSecurityManager::InitStatics()
 {
-    nsRefPtr<nsScriptSecurityManager> ssManager = new nsScriptSecurityManager();
+    RefPtr<nsScriptSecurityManager> ssManager = new nsScriptSecurityManager();
     nsresult rv = ssManager->Init();
     if (NS_FAILED(rv)) {
         MOZ_CRASH();
@@ -1500,7 +1536,7 @@ nsScriptSecurityManager::GetDomainPolicyActive(bool *aRv)
 NS_IMETHODIMP
 nsScriptSecurityManager::ActivateDomainPolicy(nsIDomainPolicy** aRv)
 {
-    if (XRE_GetProcessType() != GeckoProcessType_Default) {
+    if (!XRE_IsParentProcess()) {
         return NS_ERROR_SERVICE_NOT_AVAILABLE;
     }
 

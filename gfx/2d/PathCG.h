@@ -6,7 +6,12 @@
 #ifndef MOZILLA_GFX_PATHCG_H_
 #define MOZILLA_GFX_PATHCG_H_
 
+#ifdef MOZ_WIDGET_COCOA
 #include <ApplicationServices/ApplicationServices.h>
+#else
+#include <CoreGraphics/CoreGraphics.h>
+#endif
+
 #include "2D.h"
 
 namespace mozilla {
@@ -103,7 +108,7 @@ private:
   FillRule mFillRule;
 };
 
-}
-}
+} // namespace gfx
+} // namespace mozilla
 
 #endif

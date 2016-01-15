@@ -433,7 +433,7 @@ class Runner(object):
                     try:
                         # assumes self.app_name is defined, as it should be for
                         # implementors
-                        keyname = r"Software\Privacore\Privacore %s" % self.app_name
+                        keyname = r"Software\Mozilla\Mozilla %s" % self.app_name
                         sam = _winreg.KEY_READ | sam_flag
                         app_key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, keyname, 0, sam)
                         version, _type = _winreg.QueryValueEx(app_key, "CurrentVersion")

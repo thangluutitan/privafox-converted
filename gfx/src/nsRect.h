@@ -10,21 +10,18 @@
 #include <stdio.h>                      // for FILE
 #include <stdint.h>                     // for int32_t, int64_t
 #include <algorithm>                    // for min/max
-#include "gfxCore.h"                    // for NS_GFX
 #include "mozilla/Likely.h"             // for MOZ_UNLIKELY
 #include "mozilla/gfx/Rect.h"
 #include "nsCoord.h"                    // for nscoord, etc
 #include "nsISupportsImpl.h"            // for MOZ_COUNT_CTOR, etc
 #include "nsPoint.h"                    // for nsIntPoint, nsPoint
+#include "nsMargin.h"                   // for nsIntMargin, nsMargin
 #include "nsSize.h"                     // for IntSize, nsSize
 #include "nscore.h"                     // for NS_BUILD_REFCNT_LOGGING
 
-struct nsMargin;
-struct nsIntMargin;
-
 typedef mozilla::gfx::IntRect nsIntRect;
 
-struct NS_GFX nsRect :
+struct nsRect :
   public mozilla::gfx::BaseRect<nscoord, nsRect, nsPoint, nsSize, nsMargin> {
   typedef mozilla::gfx::BaseRect<nscoord, nsRect, nsPoint, nsSize, nsMargin> Super;
 
@@ -174,6 +171,8 @@ struct NS_GFX nsRect :
   {
     return IsEqualEdges(aRect);
   }
+
+  MOZ_WARN_UNUSED_RESULT inline nsRect RemoveResolution(const float aResolution) const;
 };
 
 /*
@@ -282,15 +281,41 @@ nsRect::ToInsidePixels(nscoord aAppUnitsPerPixel) const
   return ScaleToInsidePixels(1.0f, 1.0f, aAppUnitsPerPixel);
 }
 
+inline nsRect
+nsRect::RemoveResolution(const float aResolution) const
+{
+  MOZ_ASSERT(aResolution > 0.0f);
+  nsRect rect;
+  rect.x = NSToCoordRound(NSCoordToFloat(x) / aResolution);
+  rect.y = NSToCoordRound(NSCoordToFloat(y) / aResolution);
+  // A 1x1 rect indicates we are just hit testing a point, so pass down a 1x1
+  // rect as well instead of possibly rounding the width or height to zero.
+  if (width == 1 && height == 1) {
+    rect.width = rect.height = 1;
+  } else {
+    rect.width = NSToCoordCeil(NSCoordToFloat(width) / aResolution);
+    rect.height = NSToCoordCeil(NSCoordToFloat(height) / aResolution);
+  }
+
+  return rect;
+}
+
 const mozilla::gfx::IntRect& GetMaxSizedIntRect();
 
 // app units are integer multiples of pixels, so no rounding needed
+template<class units>
 nsRect
-ToAppUnits(const mozilla::gfx::IntRect& aRect, nscoord aAppUnitsPerPixel);
+ToAppUnits(const mozilla::gfx::IntRectTyped<units>& aRect, nscoord aAppUnitsPerPixel)
+{
+  return nsRect(NSIntPixelsToAppUnits(aRect.x, aAppUnitsPerPixel),
+                NSIntPixelsToAppUnits(aRect.y, aAppUnitsPerPixel),
+                NSIntPixelsToAppUnits(aRect.width, aAppUnitsPerPixel),
+                NSIntPixelsToAppUnits(aRect.height, aAppUnitsPerPixel));
+}
 
 #ifdef DEBUG
 // Diagnostics
-extern NS_GFX FILE* operator<<(FILE* out, const nsRect& rect);
+extern FILE* operator<<(FILE* out, const nsRect& rect);
 #endif // DEBUG
 
 #endif /* NSRECT_H */

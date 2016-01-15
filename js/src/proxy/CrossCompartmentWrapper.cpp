@@ -153,10 +153,10 @@ CrossCompartmentWrapper::hasOwn(JSContext* cx, HandleObject wrapper, HandleId id
 }
 
 bool
-CrossCompartmentWrapper::get(JSContext* cx, HandleObject wrapper, HandleObject receiver,
+CrossCompartmentWrapper::get(JSContext* cx, HandleObject wrapper, HandleValue receiver,
                              HandleId id, MutableHandleValue vp) const
 {
-    RootedObject receiverCopy(cx, receiver);
+    RootedValue receiverCopy(cx, receiver);
     {
         AutoCompartment call(cx, wrappedObject(wrapper));
         if (!cx->compartment()->wrap(cx, &receiverCopy))
@@ -314,7 +314,7 @@ CrossCompartmentWrapper::construct(JSContext* cx, HandleObject wrapper, const Ca
 
 bool
 CrossCompartmentWrapper::nativeCall(JSContext* cx, IsAcceptableThis test, NativeImpl impl,
-                                    CallArgs srcArgs) const
+                                    const CallArgs& srcArgs) const
 {
     RootedObject wrapper(cx, &srcArgs.thisv().toObject());
     MOZ_ASSERT(srcArgs.thisv().isMagic(JS_IS_CONSTRUCTING) ||
@@ -417,16 +417,6 @@ CrossCompartmentWrapper::boxedValue_unbox(JSContext* cx, HandleObject wrapper, M
            cx->compartment()->wrap(cx, vp));
 }
 
-bool
-CrossCompartmentWrapper::defaultValue(JSContext* cx, HandleObject wrapper, JSType hint,
-                                      MutableHandleValue vp) const
-{
-    PIERCE(cx, wrapper,
-           NOTHING,
-           Wrapper::defaultValue(cx, wrapper, hint, vp),
-           cx->compartment()->wrap(cx, vp));
-}
-
 const CrossCompartmentWrapper CrossCompartmentWrapper::singleton(0u);
 
 bool
@@ -484,8 +474,10 @@ js::NukeCrossCompartmentWrappers(JSContext* cx,
             JSObject* wrapped = UncheckedUnwrap(wobj);
 
             if (nukeReferencesToWindow == DontNukeWindowReferences &&
-                wrapped->getClass()->ext.innerObject)
+                IsWindowProxy(wrapped))
+            {
                 continue;
+            }
 
             if (targetFilter.match(wrapped->compartment())) {
                 // We found a wrapper to nuke.

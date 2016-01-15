@@ -76,7 +76,7 @@ Var ProgressTotal
 Var TmpVal
 
 Var ExitCode
-Var PrivafoxLaunchCode
+Var FirefoxLaunchCode
 
 ; The first three tick counts are for the start of a phase and equate equate to
 ; the display of individual installer pages.
@@ -241,9 +241,9 @@ Var ControlRightPX
 !ifdef OFFICIAL
 !ifdef BETA_UPDATE_CHANNEL
 !undef URLStubDownload
-!define URLStubDownload "http://download.provacore.com/?os=win&lang=${AB_CD}&product=privafox-beta-latest"
+!define URLStubDownload "http://download.mozilla.org/?os=win&lang=${AB_CD}&product=firefox-beta-latest"
 !undef URLManualDownload
-!define URLManualDownload "https://www.privacore.com/${AB_CD}/privafox/installer-help/?channel=beta&installer_lang=${AB_CD}"
+!define URLManualDownload "https://www.mozilla.org/${AB_CD}/firefox/installer-help/?channel=beta&installer_lang=${AB_CD}"
 !undef Channel
 !define Channel "beta"
 !endif
@@ -366,11 +366,11 @@ Function .onInit
 !endif
 
   SetShellVarContext all ; Set SHCTX to HKLM
-  ${GetSingleInstallPath} "Software\Privacore\${BrandFullNameInternal}" $R9
+  ${GetSingleInstallPath} "Software\Mozilla\${BrandFullNameInternal}" $R9
 
   ${If} "$R9" == "false"
     SetShellVarContext current ; Set SHCTX to HKCU
-    ${GetSingleInstallPath} "Software\Privacore\${BrandFullNameInternal}" $R9
+    ${GetSingleInstallPath} "Software\Mozilla\${BrandFullNameInternal}" $R9
   ${EndIf}
 
   ${If} "$R9" != "false"
@@ -381,7 +381,7 @@ Function .onInit
   StrCpy $InitialInstallDir "$INSTDIR"
 
   ClearErrors
-  WriteRegStr HKLM "Software\Privacore" "${BrandShortName}InstallerTest" \
+  WriteRegStr HKLM "Software\Mozilla" "${BrandShortName}InstallerTest" \
                    "Write Test"
 
   ; Only display set as default when there is write access to HKLM and on Win7
@@ -391,7 +391,7 @@ Function .onInit
     StrCpy $CanSetAsDefault "false"
     StrCpy $CheckboxSetAsDefault "0"
   ${Else}
-    DeleteRegValue HKLM "Software\Privacore" "${BrandShortName}InstallerTest"
+    DeleteRegValue HKLM "Software\Mozilla" "${BrandShortName}InstallerTest"
     StrCpy $CanSetAsDefault "true"
   ${EndIf}
 
@@ -410,7 +410,7 @@ Function .onInit
   StrCpy $EndInstallPhaseTickCount "0"
   StrCpy $InitialInstallRequirementsCode ""
   StrCpy $IsDownloadFinished ""
-  StrCpy $PrivafoxLaunchCode "0"
+  StrCpy $FirefoxLaunchCode "0"
   StrCpy $CheckboxShortcutOnBar "1"
   StrCpy $CheckboxShortcutInStartMenu "1"
   StrCpy $CheckboxShortcutOnDesktop "1"
@@ -606,12 +606,12 @@ Function SendPing
     ${EndIf}
 
     ClearErrors
-    WriteRegStr HKLM "Software\Privacore" "${BrandShortName}InstallerTest" \
+    WriteRegStr HKLM "Software\Mozilla" "${BrandShortName}InstallerTest" \
                      "Write Test"
     ${If} ${Errors}
       StrCpy $R8 "0"
     ${Else}
-      DeleteRegValue HKLM "Software\Privacore" "${BrandShortName}InstallerTest"
+      DeleteRegValue HKLM "Software\Mozilla" "${BrandShortName}InstallerTest"
       StrCpy $R8 "1"
     ${EndIf}
 
@@ -627,17 +627,17 @@ Function SendPing
       ${GetParent} "$R2" $R3
       ${GetLongPath} "$R3" $R3
       ${If} $R3 == $INSTDIR
-        StrCpy $R2 "1" ; This Privafox install is set as default.
+        StrCpy $R2 "1" ; This Firefox install is set as default.
       ${Else}
-        StrCpy $R2 "$R2" "" -11 # length of privafox.exe
+        StrCpy $R2 "$R2" "" -11 # length of firefox.exe
         ${If} "$R2" == "${FileMainEXE}"
-          StrCpy $R2 "2" ; Another Privafox install is set as default.
+          StrCpy $R2 "2" ; Another Firefox install is set as default.
         ${Else}
           StrCpy $R2 "0"
         ${EndIf}
       ${EndIf}
     ${Else}
-      StrCpy $R2 "0" ; Privafox is not set as default.
+      StrCpy $R2 "0" ; Firefox is not set as default.
     ${EndIf}
 
     ${If} "$R2" == "0"
@@ -657,17 +657,17 @@ Function SendPing
             ${GetParent} "$R2" $R3
             ${GetLongPath} "$R3" $R3
             ${If} $R3 == $INSTDIR
-              StrCpy $R2 "1" ; This Privafox install is set as default.
+              StrCpy $R2 "1" ; This Firefox install is set as default.
             ${Else}
-              StrCpy $R2 "$R2" "" -11 # length of privafox.exe
+              StrCpy $R2 "$R2" "" -11 # length of firefox.exe
               ${If} "$R2" == "${FileMainEXE}"
-                StrCpy $R2 "2" ; Another Privafox install is set as default.
+                StrCpy $R2 "2" ; Another Firefox install is set as default.
               ${Else}
                 StrCpy $R2 "0"
               ${EndIf}
             ${EndIf}
           ${Else}
-            StrCpy $R2 "0" ; Privafox is not set as default.
+            StrCpy $R2 "0" ; Firefox is not set as default.
           ${EndIf}
         ${EndIf}
       ${EndUnless}
@@ -693,7 +693,7 @@ Function SendPing
                       $\nBuild Channel = ${Channel} \
                       $\nUpdate Channel = ${UpdateChannel} \
                       $\nLocale = ${AB_CD} \
-                      $\nPrivafox x64 = $R0 \
+                      $\nFirefox x64 = $R0 \
                       $\nRunning x64 Windows = $R1 \
                       $\nMajor = $5 \
                       $\nMinor = $6 \
@@ -701,7 +701,7 @@ Function SendPing
                       $\nServicePack = $8 \
                       $\nIsServer = $9 \
                       $\nExit Code = $ExitCode \
-                      $\nPrivafox Launch Code = $PrivafoxLaunchCode \
+                      $\nFirefox Launch Code = $FirefoxLaunchCode \
                       $\nDownload Retry Count = $DownloadRetryCount \
                       $\nDownloaded Bytes = $DownloadedBytes \
                       $\nDownload Size Bytes = $DownloadSizeBytes \
@@ -731,7 +731,7 @@ Function SendPing
     Call RelativeGotoPage
 !else
     ${NSD_CreateTimer} OnPing ${DownloadIntervalMS}
-    InetBgDL::Get "${BaseURLStubPing}/${StubURLVersion}${StubURLVersionAppend}/${Channel}/${UpdateChannel}/${AB_CD}/$R0/$R1/$5/$6/$7/$8/$9/$ExitCode/$PrivafoxLaunchCode/$DownloadRetryCount/$DownloadedBytes/$DownloadSizeBytes/$IntroPhaseSeconds/$OptionsPhaseSeconds/$0/$1/$DownloadFirstTransferSeconds/$2/$3/$4/$InitialInstallRequirementsCode/$OpenedDownloadPage/$ExistingProfile/$ExistingVersion/$ExistingBuildID/$R5/$R6/$R7/$R8/$R2/$R3/$DownloadServerIP" \
+    InetBgDL::Get "${BaseURLStubPing}/${StubURLVersion}${StubURLVersionAppend}/${Channel}/${UpdateChannel}/${AB_CD}/$R0/$R1/$5/$6/$7/$8/$9/$ExitCode/$FirefoxLaunchCode/$DownloadRetryCount/$DownloadedBytes/$DownloadSizeBytes/$IntroPhaseSeconds/$OptionsPhaseSeconds/$0/$1/$DownloadFirstTransferSeconds/$2/$3/$4/$InitialInstallRequirementsCode/$OpenedDownloadPage/$ExistingProfile/$ExistingVersion/$ExistingBuildID/$R5/$R6/$R7/$R8/$R2/$R3/$DownloadServerIP" \
                   "$PLUGINSDIR\_temp" /END
 !endif
   ${Else}
@@ -757,10 +757,10 @@ Function createIntro
   nsDialogs::OnBack /NOUNLOAD $0
 
 !ifdef ${AB_CD}_rtl
-  ; For RTL align the text with the top of the F in the Privafox bitmap
+  ; For RTL align the text with the top of the F in the Firefox bitmap
   StrCpy $0 "${INTRO_BLURB_RTL_TOP_DU}"
 !else
-  ; For LTR align the text with the top of the x in the Privafox bitmap
+  ; For LTR align the text with the top of the x in the Firefox bitmap
   StrCpy $0 "${INTRO_BLURB_LTR_TOP_DU}"
 !endif
   ${NSD_CreateLabel} ${INTRO_BLURB_EDGE_DU} $0 ${INTRO_BLURB_WIDTH_DU} 76u "${INTRO_BLURB}"
@@ -1021,21 +1021,31 @@ Function createOptions
   ${NSD_Check} $CheckboxSendPing
 
 !ifdef MOZ_MAINTENANCE_SERVICE
-  ; Only show the maintenance service checkbox if we have write access to HKLM
+  ; We can only install the maintenance service if the user is an admin.
   Call IsUserAdmin
   Pop $0
+  
+  ; Only show the maintenance service checkbox if we're on XP SP3 or higher;
+  ;  we don't ever want to install it on XP without at least SP3 installed.
+  ${If} $0 == "true"
+  ${AndIf} ${IsWinXP}
+  ${AndIf} ${AtMostServicePack} 2
+    StrCpy $0 "false"
+  ${EndIf}
+  
+  ; Only show the maintenance service checkbox if we have write access to HKLM
   ClearErrors
-  WriteRegStr HKLM "Software\Privacore" "${BrandShortName}InstallerTest" \
+  WriteRegStr HKLM "Software\Mozilla" "${BrandShortName}InstallerTest" \
                    "Write Test"
   ${If} ${Errors}
   ${OrIf} $0 != "true"
     StrCpy $CheckboxInstallMaintSvc "0"
   ${Else}
-    DeleteRegValue HKLM "Software\Privacore" "${BrandShortName}InstallerTest"
+    DeleteRegValue HKLM "Software\Mozilla" "${BrandShortName}InstallerTest"
     ; Read the registry instead of using ServicesHelper::IsInstalled so the
     ; plugin isn't included in the stub installer to lessen its size.
     ClearErrors
-    ReadRegStr $0 HKLM "SYSTEM\CurrentControlSet\services\PrivacoreMaintenance" "ImagePath"
+    ReadRegStr $0 HKLM "SYSTEM\CurrentControlSet\services\MozillaMaintenance" "ImagePath"
     ${If} ${Errors}
       ${NSD_CreateCheckbox} ${OPTIONS_ITEM_EDGE_DU} 184u ${OPTIONS_ITEM_WIDTH_DU} \
                             12u "$(INSTALL_MAINT_SERVICE)"
@@ -1279,7 +1289,7 @@ Function createInstall
     StrCpy $ExistingBuildID "0"
   ${EndIf}
 
-  ${If} ${FileExists} "$LOCALAPPDATA\Privacore\Privafox"
+  ${If} ${FileExists} "$LOCALAPPDATA\Mozilla\Firefox"
     StrCpy $ExistingProfile "1"
   ${Else}
     StrCpy $ExistingProfile "0"
@@ -1571,7 +1581,7 @@ Function OnDownload
       ; installer closes it we can detect that it has completed.
       Delete "$INSTDIR\install.log"
 
-      ; Delete privafox.exe.moz-upgrade and privafox.exe.moz-delete if it exists
+      ; Delete firefox.exe.moz-upgrade and firefox.exe.moz-delete if it exists
       ; since it being present will require an OS restart for the full
       ; installer.
       Delete "$INSTDIR\${FileMainEXE}.moz-upgrade"
@@ -1929,13 +1939,13 @@ Function LaunchApp
 !ifndef DEV_EDITION
   FindWindow $0 "${WindowClass}"
   ${If} $0 <> 0 ; integer comparison
-    StrCpy $PrivafoxLaunchCode "1"
+    StrCpy $FirefoxLaunchCode "1"
     MessageBox MB_OK|MB_ICONQUESTION "$(WARN_MANUALLY_CLOSE_APP_LAUNCH)"
     Return
   ${EndIf}
 !endif
 
-  StrCpy $PrivafoxLaunchCode "2"
+  StrCpy $FirefoxLaunchCode "2"
 
   ; Set the current working directory to the installation directory
   SetOutPath "$INSTDIR"

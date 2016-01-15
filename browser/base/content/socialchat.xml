@@ -53,10 +53,6 @@
           });
         }
 
-        if (!this.chatbar) {
-          document.getAnonymousElementByAttribute(this, "anonid", "minimize").hidden = true;
-          document.getAnonymousElementByAttribute(this, "anonid", "close").hidden = true;
-        }
         let contentWindow = this.contentWindow;
         // process this._callbacks, then set to null so the chatbox creator
         // knows to make new callbacks immediately.
@@ -71,6 +67,7 @@
             return;
           this.removeEventListener("DOMContentLoaded", DOMContentLoaded, true);
           this.isActive = !this.minimized;
+          this._chat.loadButtonSet(this, this.getAttribute("buttonSet"));
           this._deferredChatLoaded.resolve(this);
         }, true);
 
@@ -90,6 +87,10 @@
 
       <field name="content" readonly="true">
         document.getAnonymousElementByAttribute(this, "anonid", "content");
+      </field>
+
+      <field name="_chat" readonly="true">
+        Cu.import("resource:///modules/Chat.jsm", {}).Chat;
       </field>
 
       <property name="contentWindow">
@@ -171,10 +172,9 @@
       <method name="setDecorationAttributes">
         <parameter name="aTarget"/>
         <body><![CDATA[
-          for (let attr of ["dark", "customSize"]) {
-            if (this.hasAttribute(attr))
-              aTarget.setAttribute(attr, this.getAttribute(attr));
-          }
+          if (this.hasAttribute("customSize"))
+            aTarget.setAttribute("customSize", this.getAttribute("customSize"));
+          this._chat.loadButtonSet(aTarget, this.getAttribute("buttonSet"));
         ]]></body>
       </method>
 
@@ -389,11 +389,13 @@
         <getter><![CDATA[
           // A generator yielding all collapsed chatboxes, in the order in
           // which they should be restored.
-          let child = this.lastElementChild;
-          while (child) {
-            if (child.collapsed)
-              yield child;
-            child = child.previousElementSibling;
+          return function*() {
+            let child = this.lastElementChild;
+            while (child) {
+              if (child.collapsed)
+                yield child;
+              child = child.previousElementSibling;
+            }
           }
         ]]></getter>
       </property>
@@ -401,11 +403,13 @@
       <property name="visibleChildren">
         <getter><![CDATA[
           // A generator yielding all non-collapsed chatboxes.
-          let child = this.firstElementChild;
-          while (child) {
-            if (!child.collapsed)
-              yield child;
-            child = child.nextElementSibling;
+          return function*() {
+            let child = this.firstElementChild;
+            while (child) {
+              if (!child.collapsed)
+                yield child;
+              child = child.nextElementSibling;
+            }
           }
         ]]></getter>
       </property>
@@ -415,9 +419,11 @@
           // A generator yielding all children which are able to be collapsed
           // in the order in which they should be collapsed.
           // (currently this is all visible ones other than the selected one.)
-          for (let child of this.visibleChildren)
-            if (child != this.selectedChat)
-              yield child;
+          return function*() {
+            for (let child of this.visibleChildren())
+              if (child != this.selectedChat)
+                yield child;
+          }
         ]]></getter>
       </property>
 
@@ -473,8 +479,8 @@
         <body><![CDATA[
           // These are from the CSS for the chatbox and must be kept in sync.
           // We can't use calcTotalWidthOf due to the transitions...
-          const CHAT_WIDTH_OPEN = 260;
-          const CHAT_WIDTH_OPEN_ALT = 300;
+          const CHAT_WIDTH_OPEN = 300;
+          const CHAT_WIDTH_OPEN_ALT = 350;
           const CHAT_WIDTH_MINIMIZED = 160;
           let openWidth = aChatbox.hasAttribute("customSize") ?
             CHAT_WIDTH_OPEN_ALT : CHAT_WIDTH_OPEN;
@@ -627,14 +633,14 @@
             this.cachedWidthNub = this.calcTotalWidthOf(this.nub);
           currentWidth += this.cachedWidthNub;
         }
-        for (let child of this.visibleChildren) {
+        for (let child of this.visibleChildren()) {
           currentWidth += this.getTotalChildWidth(child);
         }
 
         if (currentWidth > availWidth) {
           // we need to collapse some.
           let toCollapse = [];
-          for (let child of this.collapsibleChildren) {
+          for (let child of this.collapsibleChildren()) {
             if (currentWidth <= availWidth)
               break;
             toCollapse.push(child);
@@ -649,7 +655,7 @@
           // XXX - if this was clever, it could know when removing the nub
           // leaves enough space to show all collapsed
           let toShow = [];
-          for (let child of this.collapsedChildren) {
+          for (let child of this.collapsedChildren()) {
             currentWidth += this.getTotalChildWidth(child);
             if (currentWidth > availWidth)
               break;
@@ -805,12 +811,7 @@
         let top = Math.min(Math.max(eY, sY.value),
                            sY.value + sHeight.value - winHeight);
 
-        let title = draggedChat.content.getAttribute("title");
-        this.detachChatbox(draggedChat, { screenX: left, screenY: top }).then(
-          chatbox => {
-            chatbox.contentWindow.document.title = title;
-          }
-        );
+        this.detachChatbox(draggedChat, { screenX: left, screenY: top });
         event.stopPropagation();
       ]]></handler>
     </handlers>

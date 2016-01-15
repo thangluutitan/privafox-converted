@@ -1,8 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-window.location.href = 'about:aboutNull';
-return;
+
 // First, parse and save the incoming arguments ("?storage=name&context=key")
 // Note: window.location.search doesn't work with nsSimpleURIs used for about:* addresses.
 var search = window.location.href.match(/^.*\?(.*)$/);
@@ -11,7 +10,8 @@ var storage = searchParams.get('storage');
 var context = searchParams.get('context');
 
 // The context is in a format as used by the HTTP cache v2 back end
-var [context, isAnon, isInBrowser, appId, isPrivate] = context.match(/(a,)?(b,)?(i\d+,)?(p,)?/);
+if (context)
+  var [context, isAnon, isInBrowser, appId, isPrivate] = context.match(/(a,)?(b,)?(i\d+,)?(p,)?/);
 if (appId)
   appId = appId.match(/i(\d+),/)[1];
 
@@ -40,6 +40,5 @@ function navigate()
   if ($('priv').checked)
     context += 'p,';
 
-  //window.location.href = 'about:cache?storage=' + storage + '&context=' + context;
-  window.location.href = 'about:aboutNull';
+  window.location.href = 'about:cache?storage=' + storage + '&context=' + context;
 }

@@ -10,11 +10,9 @@
 
 #include "jsmath.h"
 
-#include "mozilla/Constants.h"
 #include "mozilla/FloatingPoint.h"
 #include "mozilla/MathAlgorithms.h"
 #include "mozilla/MemoryReporting.h"
-#include "mozilla/unused.h"
 
 #include <algorithm>  // for std::max
 #include <fcntl.h>
@@ -23,19 +21,24 @@
 # include <unistd.h>
 #endif
 
+#ifdef XP_WIN
+# include "jswin.h"
+#endif
+
 #include "jsapi.h"
 #include "jsatom.h"
 #include "jscntxt.h"
 #include "jscompartment.h"
 #include "jslibmath.h"
 #include "jstypes.h"
-#include "prmjtime.h"
 
+#include "jit/InlinableNatives.h"
 #include "js/Class.h"
+#include "vm/Time.h"
 
 #include "jsobjinlines.h"
 
-#if defined(ANDROID) || defined(XP_MACOSX) || defined(__DragonFly__) || \
+#if defined(ANDROID) || defined(XP_DARWIN) || defined(__DragonFly__) || \
     defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 # include <stdlib.h>
 # define HAVE_ARC4RANDOM
@@ -729,83 +732,115 @@ js::math_pow(JSContext* cx, unsigned argc, Value* vp)
     return math_pow_handle(cx, args.get(0), args.get(1), args.rval());
 }
 
-static uint64_t
-random_generateSeed()
+static void
+GenerateSeed(uint64_t* seedBuffer, size_t length)
 {
+    MOZ_ASSERT(length > 0);
+
+#if defined(XP_WIN)
+    /*
+     * Temporary diagnostic for bug 1167248: Test whether the injected hooks
+     * react differently to LoadLibraryW / LoadLibraryExW.
+     */
+    HMODULE oldWay = LoadLibraryW(L"ADVAPI32.DLL");
+    HMODULE newWay = LoadLibraryExW(L"ADVAPI32.DLL",
+                                    nullptr,
+                                    LOAD_LIBRARY_SEARCH_SYSTEM32);
+    /* Fallback for older versions of Windows */
+    if (!newWay && GetLastError() == ERROR_INVALID_PARAMETER)
+        newWay = LoadLibraryExW(L"ADVAPI32.DLL", nullptr, 0);
+
+    if (oldWay && !newWay)
+        MOZ_CRASH();
+
     union {
-        uint8_t     u8[8];
         uint32_t    u32[2];
         uint64_t    u64;
     } seed;
     seed.u64 = 0;
 
-#if defined(XP_WIN)
     errno_t error = rand_s(&seed.u32[0]);
+
+    if (oldWay)
+        FreeLibrary(oldWay);
+    if (newWay)
+        FreeLibrary(newWay);
+
     MOZ_ASSERT(error == 0, "rand_s() error?!");
 
     error = rand_s(&seed.u32[1]);
     MOZ_ASSERT(error == 0, "rand_s() error?!");
+
+    seedBuffer[0] = seed.u64 ^= PRMJ_Now();
+    for (size_t i = 1; i < length; i++) {
+        error = rand_s(&seed.u32[0]);
+        MOZ_ASSERT(error == 0, "rand_s() error?!");
+
+        error = rand_s(&seed.u32[1]);
+        MOZ_ASSERT(error == 0, "rand_s() error?!");
+
+        seedBuffer[i] = seed.u64 ^ PRMJ_Now();
+    }
+
 #elif defined(HAVE_ARC4RANDOM)
-    seed.u32[0] = arc4random();
-    seed.u32[1] = arc4random();
+    union {
+        uint32_t    u32[2];
+        uint64_t    u64;
+    } seed;
+    seed.u64 = 0;
+
+    for (size_t i = 0; i < length; i++) {
+        seed.u32[0] = arc4random();
+        seed.u32[1] = arc4random();
+        seedBuffer[i] = seed.u64 ^ PRMJ_Now();
+    }
+
 #elif defined(XP_UNIX)
     int fd = open("/dev/urandom", O_RDONLY);
-    MOZ_ASSERT(fd >= 0, "Can't open /dev/urandom?!");
     if (fd >= 0) {
-        ssize_t nread = read(fd, seed.u8, mozilla::ArrayLength(seed.u8));
-        MOZ_ASSERT(nread == 8, "Can't read /dev/urandom?!");
-        mozilla::unused << nread;
+        ssize_t size = length * sizeof(seedBuffer[0]);
+        ssize_t nread = read(fd, (char *) seedBuffer, size);
         close(fd);
+        if (nread == size)
+            return;
     }
+
+    // Use PRMJ_Now() if we couldn't read from /dev/urandom.
+    for (size_t i = 0; i < length; i++)
+        seedBuffer[i] = PRMJ_Now();
 #else
 # error "Platform needs to implement random_generateSeed()"
 #endif
-
-    seed.u64 ^= PRMJ_Now();
-    return seed.u64;
 }
 
-/*
- * Math.random() support, lifted from java.util.Random.java.
- */
 void
-js::random_initState(uint64_t* rngState)
+js::GenerateXorShift128PlusSeed(mozilla::Array<uint64_t, 2>& seed)
 {
-    /* Our PRNG only uses 48 bits, so squeeze our entropy into those bits. */
-    uint64_t seed = random_generateSeed();
-    seed ^= (seed >> 16);
-    *rngState = (seed ^ RNG_MULTIPLIER) & RNG_MASK;
+    // XorShift128PlusRNG must be initialized with a non-zero seed.
+    do {
+        GenerateSeed(seed.begin(), mozilla::ArrayLength(seed));
+    } while (seed[0] == 0 && seed[1] == 0);
 }
 
-uint64_t
-js::random_next(uint64_t* rngState, int bits)
+void
+JSCompartment::ensureRandomNumberGenerator()
 {
-    MOZ_ASSERT((*rngState & 0xffff000000000000ULL) == 0, "Bad rngState");
-    MOZ_ASSERT(bits > 0 && bits <= RNG_STATE_WIDTH, "bits is out of range");
-
-    if (*rngState == 0) {
-        random_initState(rngState);
+    if (randomNumberGenerator.isNothing()) {
+        mozilla::Array<uint64_t, 2> seed;
+        GenerateXorShift128PlusSeed(seed);
+        randomNumberGenerator.emplace(seed[0], seed[1]);
     }
-
-    uint64_t nextstate = *rngState * RNG_MULTIPLIER;
-    nextstate += RNG_ADDEND;
-    nextstate &= RNG_MASK;
-    *rngState = nextstate;
-    return nextstate >> (RNG_STATE_WIDTH - bits);
-}
-
-double
-js::math_random_no_outparam(JSContext* cx)
-{
-    /* Calculate random without memory traffic, for use in the JITs. */
-    return random_nextDouble(&cx->compartment()->rngState);
 }
 
 bool
 js::math_random(JSContext* cx, unsigned argc, Value* vp)
 {
     CallArgs args = CallArgsFromVp(argc, vp);
-    double z = random_nextDouble(&cx->compartment()->rngState);
+
+    JSCompartment* comp = cx->compartment();
+    comp->ensureRandomNumberGenerator();
+
+    double z = comp->randomNumberGenerator.ref().nextDouble();
     args.rval().setDouble(z);
     return true;
 }
@@ -925,6 +960,40 @@ js::math_sin(JSContext* cx, unsigned argc, Value* vp)
     }
 
     return math_sin_handle(cx, args[0], args.rval());
+}
+
+void
+js::math_sincos_uncached(double x, double *sin, double *cos)
+{
+#if defined(__GLIBC__)
+    sincos(x, sin, cos);
+#elif defined(HAVE_SINCOS)
+    __sincos(x, sin, cos);
+#else
+    *sin = js::math_sin_uncached(x);
+    *cos = js::math_cos_uncached(x);
+#endif
+}
+
+void
+js::math_sincos_impl(MathCache* mathCache, double x, double *sin, double *cos)
+{
+    unsigned indexSin;
+    unsigned indexCos;
+    bool hasSin = mathCache->isCached(x, MathCache::Sin, sin, &indexSin);
+    bool hasCos = mathCache->isCached(x, MathCache::Cos, cos, &indexCos);
+    if (!(hasSin || hasCos)) {
+        js::math_sincos_uncached(x, sin, cos);
+        mathCache->store(MathCache::Sin, x, *sin, indexSin);
+        mathCache->store(MathCache::Cos, x, *cos, indexCos);
+        return;
+    }
+
+    if (!hasSin)
+        *sin = js::math_sin_impl(mathCache, x);
+
+    if (!hasCos)
+        *cos = js::math_cos_impl(mathCache, x);
 }
 
 bool
@@ -1563,41 +1632,41 @@ static const JSFunctionSpec math_static_methods[] = {
 #if JS_HAS_TOSOURCE
     JS_FN(js_toSource_str,  math_toSource,        0, 0),
 #endif
-    JS_FN("abs",            math_abs,             1, 0),
-    JS_FN("acos",           math_acos,            1, 0),
-    JS_FN("asin",           math_asin,            1, 0),
-    JS_FN("atan",           math_atan,            1, 0),
-    JS_FN("atan2",          math_atan2,           2, 0),
-    JS_FN("ceil",           math_ceil,            1, 0),
-    JS_FN("clz32",          math_clz32,           1, 0),
-    JS_FN("cos",            math_cos,             1, 0),
-    JS_FN("exp",            math_exp,             1, 0),
-    JS_FN("floor",          math_floor,           1, 0),
-    JS_FN("imul",           math_imul,            2, 0),
-    JS_FN("fround",         math_fround,          1, 0),
-    JS_FN("log",            math_log,             1, 0),
-    JS_FN("max",            math_max,             2, 0),
-    JS_FN("min",            math_min,             2, 0),
-    JS_FN("pow",            math_pow,             2, 0),
-    JS_FN("random",         math_random,          0, 0),
-    JS_FN("round",          math_round,           1, 0),
-    JS_FN("sin",            math_sin,             1, 0),
-    JS_FN("sqrt",           math_sqrt,            1, 0),
-    JS_FN("tan",            math_tan,             1, 0),
-    JS_FN("log10",          math_log10,           1, 0),
-    JS_FN("log2",           math_log2,            1, 0),
-    JS_FN("log1p",          math_log1p,           1, 0),
-    JS_FN("expm1",          math_expm1,           1, 0),
-    JS_FN("cosh",           math_cosh,            1, 0),
-    JS_FN("sinh",           math_sinh,            1, 0),
-    JS_FN("tanh",           math_tanh,            1, 0),
-    JS_FN("acosh",          math_acosh,           1, 0),
-    JS_FN("asinh",          math_asinh,           1, 0),
-    JS_FN("atanh",          math_atanh,           1, 0),
-    JS_FN("hypot",          math_hypot,           2, 0),
-    JS_FN("trunc",          math_trunc,           1, 0),
-    JS_FN("sign",           math_sign,            1, 0),
-    JS_FN("cbrt",           math_cbrt,            1, 0),
+    JS_INLINABLE_FN("abs",    math_abs,             1, 0, MathAbs),
+    JS_INLINABLE_FN("acos",   math_acos,            1, 0, MathACos),
+    JS_INLINABLE_FN("asin",   math_asin,            1, 0, MathASin),
+    JS_INLINABLE_FN("atan",   math_atan,            1, 0, MathATan),
+    JS_INLINABLE_FN("atan2",  math_atan2,           2, 0, MathATan2),
+    JS_INLINABLE_FN("ceil",   math_ceil,            1, 0, MathCeil),
+    JS_INLINABLE_FN("clz32",  math_clz32,           1, 0, MathClz32),
+    JS_INLINABLE_FN("cos",    math_cos,             1, 0, MathCos),
+    JS_INLINABLE_FN("exp",    math_exp,             1, 0, MathExp),
+    JS_INLINABLE_FN("floor",  math_floor,           1, 0, MathFloor),
+    JS_INLINABLE_FN("imul",   math_imul,            2, 0, MathImul),
+    JS_INLINABLE_FN("fround", math_fround,          1, 0, MathFRound),
+    JS_INLINABLE_FN("log",    math_log,             1, 0, MathLog),
+    JS_INLINABLE_FN("max",    math_max,             2, 0, MathMax),
+    JS_INLINABLE_FN("min",    math_min,             2, 0, MathMin),
+    JS_INLINABLE_FN("pow",    math_pow,             2, 0, MathPow),
+    JS_INLINABLE_FN("random", math_random,          0, 0, MathRandom),
+    JS_INLINABLE_FN("round",  math_round,           1, 0, MathRound),
+    JS_INLINABLE_FN("sin",    math_sin,             1, 0, MathSin),
+    JS_INLINABLE_FN("sqrt",   math_sqrt,            1, 0, MathSqrt),
+    JS_INLINABLE_FN("tan",    math_tan,             1, 0, MathTan),
+    JS_INLINABLE_FN("log10",  math_log10,           1, 0, MathLog10),
+    JS_INLINABLE_FN("log2",   math_log2,            1, 0, MathLog2),
+    JS_INLINABLE_FN("log1p",  math_log1p,           1, 0, MathLog1P),
+    JS_INLINABLE_FN("expm1",  math_expm1,           1, 0, MathExpM1),
+    JS_INLINABLE_FN("cosh",   math_cosh,            1, 0, MathCosH),
+    JS_INLINABLE_FN("sinh",   math_sinh,            1, 0, MathSinH),
+    JS_INLINABLE_FN("tanh",   math_tanh,            1, 0, MathTanH),
+    JS_INLINABLE_FN("acosh",  math_acosh,           1, 0, MathACosH),
+    JS_INLINABLE_FN("asinh",  math_asinh,           1, 0, MathASinH),
+    JS_INLINABLE_FN("atanh",  math_atanh,           1, 0, MathATanH),
+    JS_INLINABLE_FN("hypot",  math_hypot,           2, 0, MathHypot),
+    JS_INLINABLE_FN("trunc",  math_trunc,           1, 0, MathTrunc),
+    JS_INLINABLE_FN("sign",   math_sign,            1, 0, MathSign),
+    JS_INLINABLE_FN("cbrt",   math_cbrt,            1, 0, MathCbrt),
     JS_FS_END
 };
 

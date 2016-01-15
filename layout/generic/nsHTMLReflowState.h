@@ -19,7 +19,7 @@ class nsRenderingContext;
 class nsFloatManager;
 class nsLineLayout;
 class nsIPercentBSizeObserver;
-struct nsHypotheticalBox;
+struct nsHypotheticalPosition;
 
 /**
  * @return aValue clamped to [aMinValue, aMaxValue].
@@ -246,16 +246,16 @@ protected:
   inline nscoord ComputeISizeValue(nscoord aContainingBlockISize,
                                    nscoord aContentEdgeToBoxSizing,
                                    nscoord aBoxSizingToMarginEdge,
-                                   const nsStyleCoord& aCoord);
+                                   const nsStyleCoord& aCoord) const;
   // same as previous, but using mComputedBorderPadding, mComputedPadding,
   // and mComputedMargin
   nscoord ComputeISizeValue(nscoord aContainingBlockISize,
-                            uint8_t aBoxSizing,
-                            const nsStyleCoord& aCoord);
+                            mozilla::StyleBoxSizing aBoxSizing,
+                            const nsStyleCoord& aCoord) const;
 
   nscoord ComputeBSizeValue(nscoord aContainingBlockBSize,
-                            uint8_t aBoxSizing,
-                            const nsStyleCoord& aCoord);
+                            mozilla::StyleBoxSizing aBoxSizing,
+                            const nsStyleCoord& aCoord) const;
 };
 
 /**
@@ -436,6 +436,11 @@ struct nsHTMLReflowState : public nsCSSOffsetState {
                                                            GetWritingMode());
   }
 
+  nsSize
+  ComputedPhysicalSize() const {
+    return nsSize(ComputedWidth(), ComputedHeight());
+  }
+
   // XXX this will need to change when we make mComputedOffsets logical;
   // we won't be able to return a reference for the physical offsets
   const nsMargin& ComputedPhysicalOffsets() const { return mComputedOffsets; }
@@ -446,6 +451,17 @@ struct nsHTMLReflowState : public nsCSSOffsetState {
 
   void SetComputedLogicalOffsets(const LogicalMargin& aOffsets)
     { mComputedOffsets = aOffsets.GetPhysicalMargin(mWritingMode); }
+
+  // Return the state's computed size including border-padding, with
+  // unconstrained dimensions replaced by zero.
+  nsSize ComputedSizeAsContainerIfConstrained() const {
+    const nscoord wd = ComputedWidth();
+    const nscoord ht = ComputedHeight();
+    return nsSize(wd == NS_UNCONSTRAINEDSIZE
+                  ? 0 : wd + ComputedPhysicalBorderPadding().LeftRight(),
+                  ht == NS_UNCONSTRAINEDSIZE
+                  ? 0 : ht + ComputedPhysicalBorderPadding().TopBottom());
+  }
 
 private:
   // the available width in which to reflow the frame. The space
@@ -537,7 +553,6 @@ public:
                                      // page?  When true, we force something
                                      // that's too tall for a page/column to
                                      // fit anyway to avoid infinite loops.
-    uint16_t mHasClearance:1;        // Block has clearance
     uint16_t mAssumingHScrollbar:1;  // parent frame is an nsIScrollableFrame and it
                                      // is assuming a horizontal scrollbar
     uint16_t mAssumingVScrollbar:1;  // parent frame is an nsIScrollableFrame and it
@@ -568,6 +583,8 @@ public:
                                         // but its in a paginated environment
                                         // (e.g. columns), it should always
                                         // reflow its placeholder children.
+    uint16_t mShrinkWrap:1; // stores the COMPUTE_SIZE_SHRINK_WRAP ctor flag
+    uint16_t mStaticPosIsCBOrigin:1; // the STATIC_POS_IS_CB_ORIGIN ctor flag
   } mFlags;
 
   // Logical and physical accessors for the resize flags. All users should go
@@ -637,9 +654,9 @@ public:
    * @param aFrame The frame for whose reflow state is being constructed.
    * @param aAvailableSpace See comments for availableHeight and availableWidth
    *        members.
-   * @param aContainingBlockSize An optional size, in app units, that
-   *        is used by absolute positioning code to override default containing
-   *        block sizes.
+   * @param aContainingBlockSize An optional size, in app units, specifying
+   *        the containing block size to use instead of the default which is
+   *        to use the aAvailableSpace.
    * @param aFlags A set of flags used for additional boolean parameters (see
    *        below).
    */
@@ -658,7 +675,15 @@ public:
 
     // Indicates that the calling function will initialize the reflow state, and
     // that the constructor should not call Init().
-    CALLER_WILL_INIT = (1<<1)
+    CALLER_WILL_INIT = (1<<1),
+
+    // The caller wants shrink-wrap behavior (i.e. ComputeSizeFlags::eShrinkWrap
+    // will be passed to ComputeSize()).
+    COMPUTE_SIZE_SHRINK_WRAP = (1<<2),
+
+    // The caller wants the abs.pos. static-position resolved at the origin
+    // of the containing block, i.e. at LogicalPoint(0, 0).
+    STATIC_POS_IS_CB_ORIGIN = (1<<3),
   };
 
   // This method initializes various data members. It is automatically
@@ -839,27 +864,27 @@ public:
                            mozilla::WritingMode aWritingMode,
                            const mozilla::LogicalMargin& aComputedOffsets,
                            mozilla::LogicalPoint* aPosition,
-                           nscoord aContainerWidth) {
-    // Subtract the width of the frame from the container width that we
+                           const nsSize& aContainerSize) {
+    // Subtract the size of the frame from the container size that we
     // use for converting between the logical and physical origins of
     // the frame. This accounts for the fact that logical origins in RTL
     // coordinate systems are at the top right of the frame instead of
     // the top left.
-    nscoord frameWidth = aFrame->GetSize().width;
+    nsSize frameSize = aFrame->GetSize();
     nsPoint pos = aPosition->GetPhysicalPoint(aWritingMode,
-                                              aContainerWidth - frameWidth);
+                                              aContainerSize - frameSize);
     ApplyRelativePositioning(aFrame,
                              aComputedOffsets.GetPhysicalMargin(aWritingMode),
                              &pos);
     *aPosition = mozilla::LogicalPoint(aWritingMode, pos,
-                                       aContainerWidth - frameWidth);
+                                       aContainerSize - frameSize);
   }
 
   void ApplyRelativePositioning(mozilla::LogicalPoint* aPosition,
-                                nscoord aContainerWidth) const {
+                                const nsSize& aContainerSize) const {
     ApplyRelativePositioning(frame, mWritingMode,
                              ComputedLogicalOffsets(), aPosition,
-                             aContainerWidth);
+                             aContainerSize);
   }
 
 #ifdef DEBUG
@@ -894,18 +919,23 @@ protected:
 
   // Returns the nearest containing block or block frame (whether or not
   // it is a containing block) for the specified frame.  Also returns
-  // the inline-start edge and inline size of the containing block's
+  // the inline-start edge and logical size of the containing block's
   // content area.
   // These are returned in the coordinate space of the containing block.
   nsIFrame* GetHypotheticalBoxContainer(nsIFrame* aFrame,
                                         nscoord& aCBIStartEdge,
-                                        nscoord& aCBISize);
+                                        mozilla::LogicalSize& aCBSize) const;
 
-  void CalculateHypotheticalBox(nsPresContext*    aPresContext,
-                                nsIFrame*         aPlaceholderFrame,
-                                const nsHTMLReflowState* cbrs,
-                                nsHypotheticalBox& aHypotheticalBox,
-                                nsIAtom*          aFrameType);
+  // Calculate a "hypothetical box" position where the placeholder frame
+  // (for a position:fixed/absolute element) would have been placed if it were
+  // positioned statically. The hypothetical box position will have a writing
+  // mode with the same block direction as the absolute containing block
+  // (cbrs->frame), though it may differ in inline direction.
+  void CalculateHypotheticalPosition(nsPresContext* aPresContext,
+                                     nsIFrame* aPlaceholderFrame,
+                                     const nsHTMLReflowState* cbrs,
+                                     nsHypotheticalPosition& aHypotheticalPos,
+                                     nsIAtom* aFrameType) const;
 
   void InitAbsoluteConstraints(nsPresContext* aPresContext,
                                const nsHTMLReflowState* cbrs,
@@ -917,9 +947,13 @@ protected:
   // data members
   void ComputeMinMaxValues(const mozilla::LogicalSize& aContainingBlockSize);
 
-  void CalculateInlineBorderPaddingMargin(nscoord aContainingBlockISize,
-                                          nscoord* aInsideBoxSizing,
-                                          nscoord* aOutsideBoxSizing);
+  // aInsideBoxSizing returns the part of the padding, border, and margin
+  // in the aAxis dimension that goes inside the edge given by box-sizing;
+  // aOutsideBoxSizing returns the rest.
+  void CalculateBorderPaddingMargin(mozilla::LogicalAxis aAxis,
+                                    nscoord aContainingBlockSize,
+                                    nscoord* aInsideBoxSizing,
+                                    nscoord* aOutsideBoxSizing) const;
 
   void CalculateBlockSideMargins(nsIAtom* aFrameType);
 };

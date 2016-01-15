@@ -13,6 +13,7 @@
 #include "prnetdb.h"
 #include "prenv.h"
 #include "nsPrintfCString.h"
+#include "nsNetCID.h"
 #include "nsNetUtil.h"
 #include "nsISupportsPrimitives.h"
 #include "nsIGSettingsService.h"
@@ -266,8 +267,8 @@ nsUnixSystemProxySettings::SetProxyResultFromGSettings(const char* aKeyBase, con
   nsAutoCString host;
   rv = proxy_settings->GetString(NS_LITERAL_CSTRING("host"), host);
   NS_ENSURE_SUCCESS(rv, rv);
-  //if (host.IsEmpty())
-  //  return NS_ERROR_FAILURE;
+  if (host.IsEmpty())
+    return NS_ERROR_FAILURE;
   
   int32_t port;
   rv = proxy_settings->GetInt(NS_LITERAL_CSTRING("port"), &port);
@@ -462,7 +463,7 @@ nsUnixSystemProxySettings::GetProxyFromGSettings(const nsACString& aScheme,
         aResult.AppendLiteral("none;");
         //aResult.Append(proxyMode);        
     }else 
-      return NS_ERROR_FAILURE;
+    return NS_ERROR_FAILURE;
   }
 
   nsCOMPtr<nsIArray> ignoreList;

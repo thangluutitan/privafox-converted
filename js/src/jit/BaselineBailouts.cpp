@@ -4,6 +4,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include "mozilla/ScopeExit.h"
 #include "mozilla/SizePrintfMacros.h"
 
 #include "jsprf.h"
@@ -13,7 +14,8 @@
 #include "jit/BaselineJIT.h"
 #include "jit/CompileInfo.h"
 #include "jit/JitSpewer.h"
-#include "jit/mips/Simulator-mips.h"
+#include "jit/mips32/Simulator-mips32.h"
+#include "jit/mips64/Simulator-mips64.h"
 #include "jit/Recover.h"
 #include "jit/RematerializedFrame.h"
 
@@ -69,7 +71,7 @@ class BufferPointer
  * allocated portion being constructed or the existing stack).
  *
  * The abstraction handles transparent re-allocation of the heap memory when it
- * needs to be enlarged to accomodate new data.  Similarly to the C stack, the
+ * needs to be enlarged to accommodate new data.  Similarly to the C stack, the
  * data that's written to the reconstructed stack grows from high to low in memory.
  *
  * The lowest region of the allocated memory contains a BaselineBailoutInfo structure that
@@ -373,7 +375,8 @@ struct BaselineStackBuilder
         priorOffset -= sizeof(void*);
         return virtualPointerAtStackOffset(priorOffset);
 #elif defined(JS_CODEGEN_ARM) || defined(JS_CODEGEN_ARM64) || \
-      defined(JS_CODEGEN_X64) || defined(JS_CODEGEN_MIPS)
+      defined(JS_CODEGEN_MIPS32) || defined(JS_CODEGEN_MIPS64) || \
+      defined(JS_CODEGEN_X64)
         // On X64, ARM, ARM64, and MIPS, the frame pointer save location depends on
         // the caller of the rectifier frame.
         BufferPointer<RectifierFrameLayout> priorFrame =
@@ -412,7 +415,7 @@ class SnapshotIteratorForBailout : public SnapshotIterator
 
   public:
     SnapshotIteratorForBailout(JitActivation* activation, JitFrameIterator& iter)
-      : SnapshotIterator(iter),
+      : SnapshotIterator(iter, activation->bailoutData()->machineState()),
         activation_(activation),
         iter_(iter)
     {
@@ -684,7 +687,7 @@ InitFromBailout(JSContext* cx, HandleScript caller, jsbytecode* callerPC,
         Value v = iter.read();
         if (v.isObject()) {
             scopeChain = &v.toObject();
-            if (fun && fun->isHeavyweight())
+            if (fun && fun->needsCallObject())
                 flags |= BaselineFrame::HAS_CALL_OBJ;
         } else {
             MOZ_ASSERT(v.isUndefined() || v.isMagic(JS_OPTIMIZED_OUT));
@@ -703,16 +706,18 @@ InitFromBailout(JSContext* cx, HandleScript caller, jsbytecode* callerPC,
                 {
                     scopeChain = fun->environment();
                 }
+            } else if (script->module()) {
+                scopeChain = script->module()->environment();
             } else {
                 // For global scripts without a non-syntactic scope the scope
-                // chain is the script's global (Ion does not compile scripts
-                // with a non-syntactic global scope). Also note that it's
-                // invalid to resume into the prologue in this case because
-                // the prologue expects the scope chain in R1 for eval and
-                // global scripts.
+                // chain is the script's global lexical scope (Ion does not
+                // compile scripts with a non-syntactic global scope). Also
+                // note that it's invalid to resume into the prologue in this
+                // case because the prologue expects the scope chain in R1 for
+                // eval and global scripts.
                 MOZ_ASSERT(!script->isForEval());
                 MOZ_ASSERT(!script->hasNonSyntacticScope());
-                scopeChain = &(script->global());
+                scopeChain = &(script->global().lexicalScope());
             }
         }
 
@@ -789,6 +794,16 @@ InitFromBailout(JSContext* cx, HandleScript caller, jsbytecode* callerPC,
     // catch or finally block.
     jsbytecode* pc = catchingException ? excInfo->resumePC() : script->offsetToPC(iter.pcOffset());
     bool resumeAfter = catchingException ? false : iter.resumeAfter();
+
+    // When pgo is enabled, increment the counter of the block in which we
+    // resume, as Ion does not keep track of the code coverage.
+    //
+    // We need to do that when pgo is enabled, as after a specific number of
+    // FirstExecution bailouts, we invalidate and recompile the script with
+    // IonMonkey. Failing to increment the counter of the current basic block
+    // might lead to repeated bailouts and invalidations.
+    if (!JitOptions.disablePgo && script->hasScriptCounts())
+        script->incHitCount(pc);
 
     JSOp op = JSOp(*pc);
 
@@ -970,16 +985,18 @@ InitFromBailout(JSContext* cx, HandleScript caller, jsbytecode* callerPC,
             }
         }
     }
+#endif
 
+#ifdef JS_JITSPEW
     JitSpew(JitSpew_BaselineBailouts, "      Resuming %s pc offset %d (op %s) (line %d) of %s:%" PRIuSIZE,
-                resumeAfter ? "after" : "at", (int) pcOff, js_CodeName[op],
+                resumeAfter ? "after" : "at", (int) pcOff, CodeName[op],
                 PCToLineNumber(script, pc), script->filename(), script->lineno());
     JitSpew(JitSpew_BaselineBailouts, "      Bailout kind: %s",
             BailoutKindString(bailoutKind));
 #endif
 
     bool pushedNewTarget = op == JSOP_NEW;
-    
+
     // If this was the last inline frame, or we are bailing out to a catch or
     // finally block in this frame, then unpacking is almost done.
     if (!iter.moreFrames() || catchingException) {
@@ -990,7 +1007,7 @@ InitFromBailout(JSContext* cx, HandleScript caller, jsbytecode* callerPC,
         // then the bailed out state should be in a position to enter
         // into the ICTypeMonitor chain for the op.
         bool enterMonitorChain = false;
-        if (resumeAfter && (js_CodeSpec[op].format & JOF_TYPESET)) {
+        if (resumeAfter && (CodeSpec[op].format & JOF_TYPESET)) {
             // Not every monitored op has a monitored fallback stub, e.g.
             // JSOP_NEWOBJECT, which always returns the same type for a
             // particular script/pc location.
@@ -1137,7 +1154,7 @@ InitFromBailout(JSContext* cx, HandleScript caller, jsbytecode* callerPC,
             JS_snprintf(buf, len, "%s %s %s on line %u of %s:%" PRIuSIZE,
                                   BailoutKindString(bailoutKind),
                                   resumeAfter ? "after" : "at",
-                                  js_CodeName[op],
+                                  CodeName[op],
                                   PCToLineNumber(script, pc),
                                   filename,
                                   script->lineno());
@@ -1406,18 +1423,27 @@ jit::BailoutIonToBaseline(JSContext* cx, JitActivation* activation, JitFrameIter
     TraceLogStopEvent(logger, TraceLogger_IonMonkey);
     TraceLogStartEvent(logger, TraceLogger_Baseline);
 
+    // Ion bailout can fail due to overrecursion and OOM. In such cases we
+    // cannot honor any further Debugger hooks on the frame, and need to
+    // ensure that its Debugger.Frame entry is cleaned up.
+    auto guardRemoveRematerializedFramesFromDebugger = mozilla::MakeScopeExit([&] {
+        activation->removeRematerializedFramesFromDebugger(cx, iter.fp());
+    });
+
     // The caller of the top frame must be one of the following:
     //      IonJS - Ion calling into Ion.
     //      BaselineStub - Baseline calling into Ion.
     //      Entry - Interpreter or other calling into Ion.
     //      Rectifier - Arguments rectifier calling into Ion.
     MOZ_ASSERT(iter.isBailoutJS());
-    mozilla::DebugOnly<FrameType> prevFrameType = iter.prevType();
+#if defined(DEBUG) || defined(JS_JITSPEW)
+    FrameType prevFrameType = iter.prevType();
     MOZ_ASSERT(prevFrameType == JitFrame_IonJS ||
                prevFrameType == JitFrame_BaselineStub ||
                prevFrameType == JitFrame_Entry ||
                prevFrameType == JitFrame_Rectifier ||
                prevFrameType == JitFrame_IonAccessorIC);
+#endif
 
     // All incoming frames are going to look like this:
     //
@@ -1471,8 +1497,10 @@ jit::BailoutIonToBaseline(JSContext* cx, JitActivation* activation, JitFrameIter
 
     // Allocate buffer to hold stack replacement data.
     BaselineStackBuilder builder(iter, 1024);
-    if (!builder.init())
+    if (!builder.init()) {
+        ReportOutOfMemory(cx);
         return BAILOUT_RETURN_FATAL_ERROR;
+    }
     JitSpew(JitSpew_BaselineBailouts, "  Incoming frame ptr = %p", builder.startFrame());
 
     SnapshotIteratorForBailout snapIter(activation, iter);
@@ -1589,6 +1617,7 @@ jit::BailoutIonToBaseline(JSContext* cx, JitActivation* activation, JitFrameIter
     info->numFrames = frameNo + 1;
     info->bailoutKind = bailoutKind;
     *bailoutInfo = info;
+    guardRemoveRematerializedFramesFromDebugger.release();
     return BAILOUT_RETURN_OK;
 }
 
@@ -1691,13 +1720,18 @@ CopyFromRematerializedFrame(JSContext* cx, JitActivation* act, uint8_t* fp, size
     MOZ_ASSERT(rematFrame->numActualArgs() == frame->numActualArgs());
 
     frame->setScopeChain(rematFrame->scopeChain());
-    frame->thisValue() = rematFrame->thisValue();
+
+    if (frame->isNonEvalFunctionFrame())
+        frame->thisArgument() = rematFrame->thisArgument();
 
     for (unsigned i = 0; i < frame->numActualArgs(); i++)
         frame->argv()[i] = rematFrame->argv()[i];
 
     for (size_t i = 0; i < frame->script()->nfixed(); i++)
         *frame->valueSlot(i) = rematFrame->locals()[i];
+
+    if (rematFrame->hasCachedSavedFrame())
+        frame->setHasCachedSavedFrame();
 
     JitSpew(JitSpew_BaselineBailouts,
             "  Copied from rematerialized frame at (%p,%u)",
@@ -1859,15 +1893,27 @@ jit::FinishBailoutToBaseline(BaselineBailoutInfo* bailoutInfo)
       case Bailout_NonObjectInput:
       case Bailout_NonStringInput:
       case Bailout_NonSymbolInput:
+      case Bailout_NonSimdBool32x4Input:
       case Bailout_NonSimdInt32x4Input:
       case Bailout_NonSimdFloat32x4Input:
+      case Bailout_NonSharedTypedArrayInput:
       case Bailout_InitialState:
       case Bailout_Debugger:
+      case Bailout_UninitializedThis:
+      case Bailout_BadDerivedConstructorReturn:
         // Do nothing.
+        break;
+
+      case Bailout_FirstExecution:
+        // Do not return directly, as this was not frequent in the first place,
+        // thus rely on the check for frequent bailouts to recompile the current
+        // script.
         break;
 
       // Invalid assumption based on baseline code.
       case Bailout_OverflowInvalidate:
+        outerScript->setHadOverflowBailout();
+        // FALL THROUGH
       case Bailout_NonStringInputInvalidate:
       case Bailout_DoubleOutput:
       case Bailout_ObjectIdentityOrTypeGuard:
@@ -1899,7 +1945,7 @@ jit::FinishBailoutToBaseline(BaselineBailoutInfo* bailoutInfo)
         MOZ_CRASH("Unknown bailout kind!");
     }
 
-    if (!CheckFrequentBailouts(cx, outerScript))
+    if (!CheckFrequentBailouts(cx, outerScript, bailoutKind))
         return false;
 
     // We're returning to JIT code, so we should clear the override pc.

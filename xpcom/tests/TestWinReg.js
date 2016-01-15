@@ -7,7 +7,7 @@
  */
 
 const nsIWindowsRegKey = Components.interfaces.nsIWindowsRegKey;
-const BASE_PATH = "SOFTWARE\\Privacore\\Privafox";
+const BASE_PATH = "SOFTWARE\\Mozilla\\Firefox";
 
 function idump(indent, str)
 {

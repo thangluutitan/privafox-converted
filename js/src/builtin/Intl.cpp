@@ -569,7 +569,6 @@ static const Class CollatorClass = {
     nullptr, /* enumerate */
     nullptr, /* resolve */
     nullptr, /* mayResolve */
-    nullptr, /* convert */
     collator_finalize
 };
 
@@ -601,7 +600,7 @@ static const JSFunctionSpec collator_methods[] = {
  * Spec: ECMAScript Internationalization API Specification, 10.1
  */
 static bool
-Collator(JSContext* cx, CallArgs args, bool construct)
+Collator(JSContext* cx, const CallArgs& args, bool construct)
 {
     RootedObject obj(cx);
 
@@ -1064,7 +1063,6 @@ static const Class NumberFormatClass = {
     nullptr, /* enumerate */
     nullptr, /* resolve */
     nullptr, /* mayResolve */
-    nullptr, /* convert */
     numberFormat_finalize
 };
 
@@ -1096,7 +1094,7 @@ static const JSFunctionSpec numberFormat_methods[] = {
  * Spec: ECMAScript Internationalization API Specification, 11.1
  */
 static bool
-NumberFormat(JSContext* cx, CallArgs args, bool construct)
+NumberFormat(JSContext* cx, const CallArgs& args, bool construct)
 {
     RootedObject obj(cx);
 
@@ -1534,7 +1532,6 @@ static const Class DateTimeFormatClass = {
     nullptr, /* enumerate */
     nullptr, /* resolve */
     nullptr, /* mayResolve */
-    nullptr, /* convert */
     dateTimeFormat_finalize
 };
 
@@ -1566,7 +1563,7 @@ static const JSFunctionSpec dateTimeFormat_methods[] = {
  * Spec: ECMAScript Internationalization API Specification, 12.1
  */
 static bool
-DateTimeFormat(JSContext* cx, CallArgs args, bool construct)
+DateTimeFormat(JSContext* cx, const CallArgs& args, bool construct)
 {
     RootedObject obj(cx);
 
@@ -1930,6 +1927,14 @@ NewUDateFormat(JSContext* cx, HandleObject dateTimeFormat)
     uPatternLength = u_strlen(uPattern);
 
     UErrorCode status = U_ZERO_ERROR;
+
+    if (!uTimeZone) {
+        // When no time zone was specified, we use ICU's default time zone.
+        // The current default might be stale, because JS::ResetTimeZone()
+        // doesn't immediately update ICU's default time zone.  So perform an
+        // update if needed.
+        js::ResyncICUDefaultTimeZone();
+    }
 
     // If building with ICU headers before 50.1, use UDAT_IGNORE instead of
     // UDAT_PATTERN.

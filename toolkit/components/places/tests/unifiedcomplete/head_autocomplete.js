@@ -2,10 +2,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-const Ci = Components.interfaces;
-const Cc = Components.classes;
-const Cr = Components.results;
-const Cu = Components.utils;
+var Ci = Components.interfaces;
+var Cc = Components.classes;
+var Cr = Components.results;
+var Cu = Components.utils;
+
+const FRECENCY_DEFAULT = 10000;
 
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://testing-common/httpd.js");
@@ -100,8 +102,8 @@ AutoCompleteInput.prototype = {
   onSearchBegin: function () {},
   onSearchComplete: function () {},
 
-  onTextEntered: function() false,
-  onTextReverted: function() false,
+  onTextEntered: () => false,
+  onTextReverted: () => false,
 
   QueryInterface: XPCOMUtils.generateQI([Ci.nsIAutoCompleteInput])
 }
@@ -129,7 +131,7 @@ function _check_autocomplete_matches(match, result) {
   if (style)
     Assert.equal(actualStyle.toString(), style.toString(), "Match should have expected style");
   if (uri.spec.startsWith("moz-action:")) {
-    Assert.ok(actualStyle.indexOf("action") != -1, "moz-action results should always have 'action' in their style");
+    Assert.ok(actualStyle.includes("action"), "moz-action results should always have 'action' in their style");
   }
 
   if (match.icon)
@@ -216,8 +218,10 @@ function* check_autocomplete(test) {
         image: controller.getImageAt(i),
       }
       do_print(`Looking for "${result.value}", "${result.comment}" in expected results...`);
-      let j;
-      for (j = firstIndexToCheck; j < matches.length; j++) {
+      let lowerBound = test.checkSorting ? i : firstIndexToCheck;
+      let upperBound = test.checkSorting ? i + 1 : matches.length;
+      let found = false;
+      for (let j = lowerBound; j < upperBound; ++j) {
         // Skip processed expected results
         if (matches[j] == undefined)
           continue;
@@ -225,12 +229,12 @@ function* check_autocomplete(test) {
           do_print("Got a match at index " + j + "!");
           // Make it undefined so we don't process it again
           matches[j] = undefined;
+          found = true;
           break;
         }
       }
 
-      // We didn't hit the break, so we must have not found it
-      if (j == matches.length)
+      if (!found)
         do_throw(`Didn't find the current result ("${result.value}", "${result.comment}") in matches`); //' (Emacs syntax highlighting fix)
     }
 
@@ -257,7 +261,7 @@ function* check_autocomplete(test) {
   }
 }
 
-let addBookmark = Task.async(function* (aBookmarkObj) {
+var addBookmark = Task.async(function* (aBookmarkObj) {
   Assert.ok(!!aBookmarkObj.uri, "Bookmark object contains an uri");
   let parentId = aBookmarkObj.parentId ? aBookmarkObj.parentId
                                        : PlacesUtils.unfiledBookmarksFolderId;
@@ -355,13 +359,17 @@ function makeSearchMatch(input, extra = {}) {
   let params = {
     engineName: extra.engineName || "MozSearch",
     input,
-    searchQuery: extra.searchQuery || input,
+    searchQuery: "searchQuery" in extra ? extra.searchQuery : input,
     alias: extra.alias, // may be undefined which is expected.
+  }
+  let style = [ "action", "searchengine" ];
+  if (extra.heuristic) {
+    style.push("heuristic");
   }
   return {
     uri: makeActionURI("searchengine", params),
     title: params.engineName,
-    style: [ "action", "searchengine" ],
+    style,
   }
 }
 
@@ -375,10 +383,14 @@ function makeVisitMatch(input, url, extra = {}) {
     url,
     input,
   }
+  let style = [ "action", "visiturl" ];
+  if (extra.heuristic) {
+    style.push("heuristic");
+  }
   return {
     uri: makeActionURI("visiturl", params),
     title: extra.title || url,
-    style: [ "action", "visiturl" ],
+    style,
   }
 }
 
@@ -397,7 +409,8 @@ function setFaviconForHref(href, iconHref) {
       NetUtil.newURI(iconHref),
       true,
       PlacesUtils.favicons.FAVICON_LOAD_NON_PRIVATE,
-      resolve
+      resolve,
+      Services.scriptSecurityManager.getSystemPrincipal()
     );
   });
 }
@@ -430,8 +443,7 @@ function* addTestEngine(basename, httpServer=undefined) {
     }, "browser-search-engine-modified", false);
 
     do_print("Adding engine from URL: " + dataUrl + basename);
-    Services.search.addEngine(dataUrl + basename,
-                              Ci.nsISearchEngine.DATA_XML, null, false);
+    Services.search.addEngine(dataUrl + basename, null, null, false);
   });
 }
 

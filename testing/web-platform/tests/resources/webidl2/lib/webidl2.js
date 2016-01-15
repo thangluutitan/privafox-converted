@@ -214,8 +214,7 @@
                     ret.idlType = type() || error("Error parsing generic type " + value);
                     all_ws();
                     if (!consume(OTHER, ">")) error("Unterminated generic type " + value);
-                    all_ws();
-                    if (consume(OTHER, "?")) ret.nullable = true;
+                    type_suffix(ret);
                     return ret;
                 }
                 else {
@@ -331,8 +330,21 @@
             all_ws();
             var eq = consume(OTHER, "=");
             if (eq) {
+                var rhs;
                 all_ws();
-                ret.rhs = consume(ID);
+                if (rhs = consume(ID)) {
+                  ret.rhs = rhs
+                }
+                else if (consume(OTHER, "(")) {
+                    rhs = [];
+                    var id = consume(ID);
+                    if (id) {
+                      rhs = [id.value];
+                    }
+                    identifiers(rhs);
+                    consume(OTHER, ")") || error("Unexpected token in extended attribute argument list or type pair");
+                    ret.rhs = rhs;
+                }
                 if (!ret.rhs) return error("No right hand side to extended attribute assignment");
             }
             all_ws();
@@ -379,6 +391,10 @@
                 var def = const_value();
                 if (def) {
                     return def;
+                }
+                else if (consume(OTHER, "[")) {
+                    if (!consume(OTHER, "]")) error("Default sequence value must be empty");
+                    return { type: "sequence", value: [] };
                 }
                 else {
                     var str = consume(STR) || error("No value for default");
@@ -741,15 +757,19 @@
                 }
                 var ea = extended_attrs(store ? mems : null);
                 all_ws(store ? mems : null, "pea");
+                var required = consume(ID, "required");
                 var typ = type() || error("No type for dictionary member");
                 all_ws();
                 var name = consume(ID) || error("No name for dictionary member");
+                var dflt = default_();
+                if (required && dflt) error("Required member must not have a default");
                 ret.members.push({
                     type:       "field"
                 ,   name:       name.value
+                ,   required:   !!required
                 ,   idlType:    typ
                 ,   extAttrs:   ea
-                ,   "default":  default_()
+                ,   "default":  dflt
                 });
                 all_ws();
                 consume(OTHER, ";") || error("Unterminated dictionary member");

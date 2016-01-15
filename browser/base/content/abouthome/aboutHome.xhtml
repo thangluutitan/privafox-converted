@@ -24,15 +24,14 @@
     <link rel="icon" type="image/png" id="favicon"
           href="chrome://branding/content/icon32.png"/>
     <link rel="stylesheet" type="text/css" media="all"
-          href="chrome://browser/content/searchSuggestionUI.css"/>
+          href="chrome://browser/content/contentSearchUI.css"/>
     <link rel="stylesheet" type="text/css" media="all" defer="defer"
           href="chrome://browser/content/abouthome/aboutHome.css"/>
-      
- 
+
     <script type="text/javascript;version=1.8"
             src="chrome://browser/content/abouthome/aboutHome.js"/>
     <script type="text/javascript;version=1.8"
-            src="chrome://browser/content/searchSuggestionUI.js"/>
+            src="chrome://browser/content/contentSearchUI.js"/>
   </head>
 
   <body dir="&locale.dir;">
@@ -40,14 +39,13 @@
     <div id="topSection">
       <div id="brandLogo"></div>
 
-      <div id="searchContainer">
-        <form name="searchForm" id="searchForm" onsubmit="onSearchSubmit(event)">
-          <div id="searchLogoContainer" hidden="true"><img id="searchEngineLogo"/></div>
-          <div id="searchIcon" />
-          <input type="text" name="q" value="" id="searchText" maxlength="256"
-                 autofocus="autofocus" dir="auto"/>
-          <input id="searchSubmit" type="submit" value="&abouthome.searchEngineButton.label;"/>
-        </form>
+      <div id="searchIconAndTextContainer">
+        <div id="searchIcon"/>
+        <input type="text" name="q" value="" id="searchText" maxlength="256"
+               aria-label="&contentSearchInput.label;" autofocus="autofocus"
+               dir="auto"/>
+        <input id="searchSubmit" type="button" value="" onclick="onSearchSubmit(event)"
+               aria-label="&contentSearchSubmit.label;"/>
       </div>
 
       <div id="snippetContainer">
@@ -60,21 +58,21 @@
     </div>
     <div class="spacer"/>
       <!-- Custom Privafox -->
-      <div id="launcher" >
-          <button class="launchButton" id="downloads" hidden="false">&abouthome.downloadsButton.label;</button>
-          <button class="launchButton" id="bookmarks" hidden="false">&abouthome.bookmarksButton.label;</button>
-          <button class="launchButton" id="history" hidden="false">&abouthome.historyButton.label;</button>
-          <button class="launchButton" id="apps" hidden="false">&abouthome.appsButton2.label;</button>
-          <button class="launchButton" id="addons" hidden="false">&abouthome.addonsButton.label;</button>
-          <button class="launchButton" id="sync" hidden="false">&abouthome.syncButton.label;</button>
-          <!--#ifdef XP_WIN-->
-          <button class="launchButton" id="settings" hidden="false">&abouthome.preferencesButtonWin.label;</button>
-          <!--#else-->
-          <button class="launchButton" id="settings" hidden="false">&abouthome.preferencesButtonUnix.label;</button>
-          <!--#endif-->
-          <div id="restorePreviousSessionSeparator" hidden="false" />
-          <button class="launchButton" id="restorePreviousSession" hidden="false">&historyRestoreLastSession.label;</button>
-      </div>
+    <div id="launcher">
+      <button class="launchButton" id="downloads" hidden="false">&abouthome.downloadsButton.label;</button>
+      <button class="launchButton" id="bookmarks" hidden="false">&abouthome.bookmarksButton.label;</button>
+      <button class="launchButton" id="history" hidden="false">&abouthome.historyButton.label;</button>
+      <button class="launchButton" id="apps" hidden="false">&abouthome.appsButton2.label;</button>
+      <button class="launchButton" id="addons" hidden="false">&abouthome.addonsButton.label;</button>
+      <button class="launchButton" id="sync" hidden="false">&abouthome.syncButton.label;</button>
+#ifdef XP_WIN
+      <button class="launchButton" id="settings" hidden="false">&abouthome.preferencesButtonWin.label;</button>
+#else
+      <button class="launchButton" id="settings" hidden="false">&abouthome.preferencesButtonUnix.label;</button>
+#endif
+      <div id="restorePreviousSessionSeparator" hidden="false"/>
+      <button class="launchButton" id="restorePreviousSession" hidden="false">&historyRestoreLastSession.label;</button>
+    </div>
 
     <a id="aboutMozilla" href="https://www.privacore.com"/>
   </body>

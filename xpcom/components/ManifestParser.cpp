@@ -171,7 +171,7 @@ struct AutoPR_smprintf_free
   char* mBuf;
 };
 
-} // anonymous namespace
+} // namespace
 
 /**
  * If we are pre-loading XPTs, this method may do nothing because the
@@ -465,7 +465,7 @@ struct CachedDirective
   char* argv[4];
 };
 
-} // anonymous namespace
+} // namespace
 
 
 /**
@@ -572,7 +572,7 @@ ParseManifest(NSLocationType aType, FileLocation& aFile, char* aBuf,
 #elif defined(MOZ_WIDGET_COCOA)
   SInt32 majorVersion = nsCocoaFeatures::OSXVersionMajor();
   SInt32 minorVersion = nsCocoaFeatures::OSXVersionMinor();
-  nsTextFormatter::ssprintf(osVersion, NS_LITERAL_STRING("%ld.%ld").get(),
+  nsTextFormatter::ssprintf(osVersion, MOZ_UTF16("%ld.%ld"),
                             majorVersion,
                             minorVersion);
 #elif defined(MOZ_WIDGET_GTK)
@@ -589,7 +589,7 @@ ParseManifest(NSLocationType aType, FileLocation& aFile, char* aBuf,
   }
 #endif
 
-  if (XRE_GetProcessType() == GeckoProcessType_Content) {
+  if (XRE_IsContentProcess()) {
     process = kContent;
   } else {
     process = kMain;

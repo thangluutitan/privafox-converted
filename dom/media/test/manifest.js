@@ -58,11 +58,17 @@ var gVideoTests = [
   { name:"bogus.duh", type:"bogus/duh" }
 ];
 
+// Temp hack for trackIDs and captureStream() -- bug 1215769
+var gLongerTests = [
+  { name:"seek.webm", type:"video/webm", width:320, height:240, duration:3.966 },
+  { name:"gizmo.mp4", type:"video/mp4", width:560, height:320, duration:5.56 },
+];
+
 // Used by test_progress to ensure we get the correct progress information
 // during resource download.
 var gProgressTests = [
   { name:"r11025_u8_c1.wav", type:"audio/x-wav", duration:1.0, size:11069 },
-  { name:"big.wav", type:"audio/x-wav", duration:9.278981, size:102444 },
+  { name:"big.wav", type:"audio/x-wav", duration:9.278982, size:102444 },
   { name:"seek.ogv", type:"video/ogg", duration:3.966, size:285310 },
   { name:"320x240.ogv", type:"video/ogg", width:320, height:240, duration:0.266, size:28942 },
   { name:"seek.webm", type:"video/webm", duration:3.966, size:215529 },
@@ -76,7 +82,7 @@ var gPlayedTests = [
   { name:"seek.ogv", type:"video/ogg", duration:3.966 },
   { name:"seek.webm", type:"video/webm", duration:3.966 },
   { name:"gizmo.mp4", type:"video/mp4", duration:5.56 },
-  { name:"owl.mp3", type:"audio/mpeg", duration:3.29 },
+  { name:"owl.mp3", type:"audio/mpeg", duration:3.343 },
   // Disable vbr.mp3 to see if it reduces the error of AUDCLNT_E_CPUUSAGE_EXCEEDED.
   // See bug 1110922 comment 26.
   //{ name:"vbr.mp3", type:"audio/mpeg", duration:10.0 },
@@ -109,7 +115,7 @@ var gPausedAfterEndedTests = gSmallTests.concat([
 // Test the mozHasAudio property, and APIs that detect different kinds of
 // tracks
 var gTrackTests = [
-  { name:"big.wav", type:"audio/x-wav", duration:9.278981, size:102444, hasAudio:true, hasVideo:false },
+  { name:"big.wav", type:"audio/x-wav", duration:9.278982, size:102444, hasAudio:true, hasVideo:false },
   { name:"320x240.ogv", type:"video/ogg", width:320, height:240, duration:0.266, size:28942, hasAudio:false, hasVideo:true },
   { name:"short-video.ogv", type:"video/ogg", duration:1.081, hasAudio:true, hasVideo:true },
   { name:"seek.webm", type:"video/webm", duration:3.966, size:215529, hasAudio:false, hasVideo:true },
@@ -124,6 +130,11 @@ var gClosingConnectionsTest = [
 // currently supported by the media encoder.
 var gMediaRecorderTests = [
   { name:"detodos.opus", type:"audio/ogg; codecs=opus", duration:2.9135 }
+];
+
+// Used by video media recorder tests
+var gMediaRecorderVideoTests = [
+  { name:"seek.webm", type:"video/webm", width:320, height:240, duration:3.966 },
 ];
 
 // These are files that we want to make sure we can play through.  We can
@@ -143,6 +154,10 @@ var gPlayTests = [
   { name:"r11025_s16_c1_trailing.wav", type:"audio/x-wav", duration:1.0 },
   // file with list chunk
   { name:"r16000_u8_c1_list.wav", type:"audio/x-wav", duration:4.2 },
+  // file with 2 extra bytes of metadata
+  { name:"16bit_wave_extrametadata.wav", type:"audio/x-wav", duration:1.108 },
+  // 24-bit samples
+  { name:"wavedata_s24.wav", type:"audio/x-wav", duration:1.0 },
 
   // Ogg stream without eof marker
   { name:"bug461281.ogg", type:"application/ogg", duration:2.208 },
@@ -232,13 +247,13 @@ var gPlayTests = [
 
   { name:"small-shot.m4a", type:"audio/mp4", duration:0.29 },
   { name:"small-shot.mp3", type:"audio/mpeg", duration:0.27 },
-  { name:"owl.mp3", type:"audio/mpeg", duration:3.29 },
+  { name:"owl.mp3", type:"audio/mpeg", duration:3.343 },
   // owl.mp3 as above, but with something funny going on in the ID3v2 tag
   // that causes DirectShow to fail.
-  { name:"owl-funny-id3.mp3", type:"audio/mpeg", duration:3.29 },
+  { name:"owl-funny-id3.mp3", type:"audio/mpeg", duration:3.343 },
   // owl.mp3 as above, but with something even funnier going on in the ID3v2 tag
   // that causes DirectShow to fail.
-  { name:"owl-funnier-id3.mp3", type:"audio/mpeg", duration:3.29 },
+  { name:"owl-funnier-id3.mp3", type:"audio/mpeg", duration:3.343 },
   // One second of silence with ~140KB of ID3 tags. Usually when the first MP3
   // frame is at such a high offset into the file, MP3FrameParser will give up
   // and report that the stream is not MP3. However, it does not count ID3 tags
@@ -256,7 +271,7 @@ var gPlayTests = [
 
 // A file for each type we can support.
 var gSnifferTests = [
-  { name:"big.wav", type:"audio/x-wav", duration:9.278981, size:102444 },
+  { name:"big.wav", type:"audio/x-wav", duration:9.278982, size:102444 },
   { name:"320x240.ogv", type:"video/ogg", width:320, height:240, duration:0.233, size:28942 },
   { name:"seek.webm", type:"video/webm", duration:3.966, size:215529 },
   { name:"gizmo.mp4", type:"video/mp4", duration:5.56, size:383631 },
@@ -464,7 +479,7 @@ var gSeekTests = [
   { name:"split.webm", type:"video/webm", duration:1.967 },
   { name:"detodos.opus", type:"audio/ogg; codecs=opus", duration:2.9135 },
   { name:"gizmo.mp4", type:"video/mp4", duration:5.56 },
-  { name:"owl.mp3", type:"audio/mpeg", duration:3.29 },
+  { name:"owl.mp3", type:"audio/mpeg", duration:3.343 },
   { name:"bogus.duh", type:"bogus/duh", duration:123 }
 ];
 
@@ -490,12 +505,25 @@ var gUnseekableTests = [
   { name:"no-cues.webm", type:"video/webm" },
   { name:"bogus.duh", type:"bogus/duh"}
 ];
-// Android supports fragmented MP4 playback from 4.3.
-var androidVersion = SpecialPowers.Cc['@mozilla.org/system-info;1']
-                                  .getService(SpecialPowers.Ci.nsIPropertyBag2)
-                                  .getProperty('version');
-// Fragmented MP4.
-if (manifestNavigator().userAgent.indexOf("Mobile") != -1 && androidVersion >= 18) {
+
+var androidVersion = -1; // non-Android platforms
+if (manifestNavigator().userAgent.indexOf("Mobile") != -1) {
+  // See nsSystemInfo.cpp, the getProperty('version') returns different value
+  // on each platforms, so we need to distinguish the android and B2G platform.
+  var versionString = manifestNavigator().userAgent.indexOf("Android") != -1 ?
+                      'version' : 'sdk_version';
+  androidVersion = SpecialPowers.Cc['@mozilla.org/system-info;1']
+                                .getService(SpecialPowers.Ci.nsIPropertyBag2)
+                                .getProperty(versionString);
+}
+
+function getAndroidVersion() {
+  return androidVersion;
+}
+
+//Android supports fragmented MP4 playback from 4.3.
+//Fragmented MP4.
+if (getAndroidVersion() >= 18) {
   gUnseekableTests = gUnseekableTests.concat([
     { name:"street.mp4", type:"video/mp4" }
   ]);
@@ -505,7 +533,7 @@ if (manifestNavigator().userAgent.indexOf("Mobile") != -1 && androidVersion >= 1
 var gAudioTests = [
   { name:"r11025_s16_c1.wav", type:"audio/x-wav", duration:1.0 },
   { name:"sound.ogg", type:"audio/ogg" },
-  { name:"owl.mp3", type:"audio/mpeg", duration:3.29 },
+  { name:"owl.mp3", type:"audio/mpeg", duration:3.343 },
   { name:"small-shot.m4a", type:"audio/mp4", duration:0.29 },
   { name:"bogus.duh", type:"bogus/duh", duration:123 }
 ];
@@ -536,7 +564,7 @@ var gDecodeErrorTests = [
 
 // These are files that are used for media fragments tests
 var gFragmentTests = [
-  { name:"big.wav", type:"audio/x-wav", duration:9.278981, size:102444 }
+  { name:"big.wav", type:"audio/x-wav", duration:9.278982, size:102444 }
 ];
 
 // Used by test_chaining.html. The |links| attributes is the number of links in
@@ -774,7 +802,6 @@ var gEMETests = [
   },
   {
     name:"400x300 audio&video tracks, each with its key",
-    type:"video/mp4; codecs=\"avc1.64000d,mp4a.40.2\"",
     tracks: [
       {
         name:"audio",
@@ -806,7 +833,6 @@ var gEMETests = [
   },
   {
     name:"640x480@624kbps audio&video tracks, each with its key",
-    type:"video/mp4; codecs=\"avc1.64000d,mp4a.40.2\"",
     tracks: [
       {
         name:"audio",
@@ -838,7 +864,6 @@ var gEMETests = [
   },
   {
     name:"640x480@959kbps audio&video tracks, each with its key",
-    type:"video/mp4; codecs=\"avc1.64000d,mp4a.40.2\"",
     tracks: [
       {
         name:"audio",
@@ -870,7 +895,6 @@ var gEMETests = [
   },
   {
     name:"640x480 then 400x300, same key (1st) per track",
-    type:"video/mp4; codecs=\"avc1.64000d,mp4a.40.2\"",
     tracks: [
       {
         name:"audio",
@@ -903,7 +927,6 @@ var gEMETests = [
   },
   {
     name:"640x480 then 400x300, same key (2nd) per track",
-    type:"video/mp4; codecs=\"avc1.64000d,mp4a.40.2\"",
     tracks: [
       {
         name:"audio",
@@ -936,7 +959,6 @@ var gEMETests = [
   },
   {
     name:"640x480 with 1st keys then 400x300 with 2nd keys",
-    type:"video/mp4; codecs=\"avc1.64000d,mp4a.40.2\"",
     tracks: [
       {
         name:"audio",
@@ -970,7 +992,6 @@ var gEMETests = [
   },
   {
     name:"400x300 with 1st keys then 640x480 with 2nd keys",
-    type:"video/mp4; codecs=\"avc1.64000d,mp4a.40.2\"",
     tracks: [
       {
         name:"audio",
@@ -1004,7 +1025,6 @@ var gEMETests = [
   },
   {
     name:"640x480@959kbps with 1st keys then 640x480@624kbps with 2nd keys",
-    type:"video/mp4; codecs=\"avc1.64000d,mp4a.40.2\"",
     tracks: [
       {
         name:"audio",
@@ -1038,7 +1058,6 @@ var gEMETests = [
   },
   {
     name:"640x480@624kbps with 1st keys then 640x480@959kbps with 2nd keys",
-    type:"video/mp4; codecs=\"avc1.64000d,mp4a.40.2\"",
     tracks: [
       {
         name:"audio",
@@ -1072,7 +1091,6 @@ var gEMETests = [
   },
   {
     name:"400x300 with presentation size 533x300",
-    type:"video/mp4; codecs=\"avc1.64000d,mp4a.40.2\"",
     tracks: [
       {
         name:"audio",
@@ -1104,7 +1122,6 @@ var gEMETests = [
   },
   {
     name:"400x300 as-is then 400x300 presented as 533x300",
-    type:"video/mp4; codecs=\"avc1.64000d,mp4a.40.2\"",
     tracks: [
       {
         name:"audio",
@@ -1138,7 +1155,6 @@ var gEMETests = [
   },
   {
     name:"400x225",
-    type:"video/mp4; codecs=\"avc1.64000d,mp4a.40.2\"",
     tracks: [
       {
         name:"audio",
@@ -1169,7 +1185,6 @@ var gEMETests = [
   },
   {
     name:"640x360",
-    type:"video/mp4; codecs=\"avc1.64000d,mp4a.40.2\"",
     tracks: [
       {
         name:"audio",
@@ -1200,7 +1215,6 @@ var gEMETests = [
   },
   {
     name:"400x225 then 640x360",
-    type:"video/mp4; codecs=\"avc1.64000d,mp4a.40.2\"",
     tracks: [
       {
         name:"audio",
@@ -1234,7 +1248,6 @@ var gEMETests = [
   },
   {
     name:"640x360 then 640x480",
-    type:"video/mp4; codecs=\"avc1.64000d,mp4a.40.2\"",
     tracks: [
       {
         name:"audio",
@@ -1271,7 +1284,8 @@ var gEMETests = [
 var gEMENonMSEFailTests = [
   {
     name:"short-cenc.mp4",
-    type:"video/mp4; codecs=\"avc1.64000d,mp4a.40.2\"",
+    audioType:"audio/mp4; codecs=\"mp4a.40.2\"",
+    videoType:"video/mp4; codecs=\"avc1.64000d\"",
     duration:0.47,
   },
 ];
@@ -1325,12 +1339,12 @@ function getMajorMimeType(mimetype) {
 // Force releasing decoder to avoid timeout in waiting for decoding resource.
 function removeNodeAndSource(n) {
   n.remove();
-  // Clearing mozSrcObject and/or src will actually set them to some default
+  // Clearing srcObject and/or src will actually set them to some default
   // URI that will fail to load, so make sure we don't produce a spurious
   // bailing error.
   n.onerror = null;
-  // reset |mozSrcObject| first since it takes precedence over |src|.
-  n.mozSrcObject = null;
+  // reset |srcObject| first since it takes precedence over |src|.
+  n.srcObject = null;
   n.src = "";
   while (n.firstChild) {
     n.removeChild(n.firstChild);
@@ -1402,6 +1416,11 @@ const DEBUG_TEST_LOOP_FOREVER = false;
 //      or end the mochitest if all the tests are done.
 function MediaTestManager() {
 
+  // Return how many seconds elapsed since |begin|.
+  function elapsedTime(begin) {
+    var end = new Date();
+    return (end.getTime() - begin.getTime()) / 1000;
+  }
   // Sets up a MediaTestManager to runs through the 'tests' array, which needs
   // to be one of, or have the same fields as, the g*Test arrays of tests. Uses
   // the user supplied 'startTest' function to initialize the test. This
@@ -1446,7 +1465,8 @@ function MediaTestManager() {
     this.tokens.push(token);
     this.numTestsRunning++;
     this.handlers[token] = handler;
-    is(this.numTestsRunning, this.tokens.length, "[started " + token + "] Length of array should match number of running tests");
+    is(this.numTestsRunning, this.tokens.length,
+       "[started " + token + " t=" + elapsedTime(this.startTime) + "] Length of array should match number of running tests");
   }
 
   // Registers that the test corresponding to 'token' has finished. Call when
@@ -1462,7 +1482,8 @@ function MediaTestManager() {
 
     info("[finished " + token + "] remaining= " + this.tokens);
     this.numTestsRunning--;
-    is(this.numTestsRunning, this.tokens.length, "[finished " + token + "] Length of array should match number of running tests");
+    is(this.numTestsRunning, this.tokens.length,
+       "[finished " + token + " t=" + elapsedTime(this.startTime) + "] Length of array should match number of running tests");
     if (this.tokens.length < PARALLEL_TESTS) {
       this.nextTest();
     }
@@ -1500,7 +1521,7 @@ function MediaTestManager() {
       var onCleanup = function() {
         var end = new Date();
         SimpleTest.info("Finished at " + end + " (" + (end.getTime() / 1000) + "s)");
-        SimpleTest.info("Running time: " + (end.getTime() - this.startTime.getTime())/1000 + "s");
+        SimpleTest.info("Running time: " + elapsedTime(this.startTime) + "s");
         SimpleTest.finish();
       }.bind(this);
       mediaTestCleanup(onCleanup);
@@ -1532,6 +1553,11 @@ function setMediaTestsPrefs(callback, extraPrefs) {
     prefs = prefs.concat(extraPrefs);
   }
   SpecialPowers.pushPrefEnv({"set": prefs}, callback);
+}
+
+// B2G emulator and Android 2.3 are condidered slow platforms
+function isSlowPlatform() {
+  return SpecialPowers.Services.appinfo.name == "B2G" || getAndroidVersion() == 10;
 }
 
 SimpleTest.requestFlakyTimeout("untriaged");

@@ -147,11 +147,11 @@ namespace JS {
 
 struct RuntimeStats;
 
-}
+} // namespace JS
 
 #define XPCONNECT_GLOBAL_FLAGS_WITH_EXTRA_SLOTS(n)                            \
     JSCLASS_DOM_GLOBAL | JSCLASS_HAS_PRIVATE |                                \
-    JSCLASS_PRIVATE_IS_NSISUPPORTS | JSCLASS_IMPLEMENTS_BARRIERS |            \
+    JSCLASS_PRIVATE_IS_NSISUPPORTS |                                          \
     JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(DOM_GLOBAL_SLOTS + n)
 
 #define XPCONNECT_GLOBAL_EXTRA_SLOT_OFFSET (JSCLASS_GLOBAL_SLOT_COUNT + DOM_GLOBAL_SLOTS)
@@ -371,7 +371,7 @@ public:
     ZoneStatsExtras()
     {}
 
-    nsAutoCString pathPrefix;
+    nsCString pathPrefix;
 
 private:
     ZoneStatsExtras(const ZoneStatsExtras& other) = delete;
@@ -383,11 +383,13 @@ private:
 class CompartmentStatsExtras {
 public:
     CompartmentStatsExtras()
+      : sizeOfXPCPrivate(0)
     {}
 
-    nsAutoCString jsPathPrefix;
-    nsAutoCString domPathPrefix;
+    nsCString jsPathPrefix;
+    nsCString domPathPrefix;
     nsCOMPtr<nsIURI> location;
+    size_t sizeOfXPCPrivate;
 
 private:
     CompartmentStatsExtras(const CompartmentStatsExtras& other) = delete;
@@ -510,6 +512,7 @@ class ErrorReport {
     void Init(JSErrorReport* aReport, const char* aFallbackMessage,
               bool aIsChrome, uint64_t aWindowID);
     void LogToConsole();
+    void LogToConsoleWithStack(JS::HandleObject aStack);
 
   public:
 

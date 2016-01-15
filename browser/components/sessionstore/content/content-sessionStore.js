@@ -8,18 +8,21 @@ function debug(msg) {
   Services.console.logStringMessage("SessionStoreContent: " + msg);
 }
 
-let Cu = Components.utils;
-let Cc = Components.classes;
-let Ci = Components.interfaces;
-let Cr = Components.results;
+var Cu = Components.utils;
+var Cc = Components.classes;
+var Ci = Components.interfaces;
+var Cr = Components.results;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm", this);
 Cu.import("resource://gre/modules/Timer.jsm", this);
 
-XPCOMUtils.defineLazyModuleGetter(this, "DocShellCapabilities",
-  "resource:///modules/sessionstore/DocShellCapabilities.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "FormData",
   "resource://gre/modules/FormData.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "Preferences",
+  "resource://gre/modules/Preferences.jsm");
+
+XPCOMUtils.defineLazyModuleGetter(this, "DocShellCapabilities",
+  "resource:///modules/sessionstore/DocShellCapabilities.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "PageStyle",
   "resource:///modules/sessionstore/PageStyle.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "ScrollPosition",
@@ -29,19 +32,22 @@ XPCOMUtils.defineLazyModuleGetter(this, "SessionHistory",
 XPCOMUtils.defineLazyModuleGetter(this, "SessionStorage",
   "resource:///modules/sessionstore/SessionStorage.jsm");
 
-XPCOMUtils.defineLazyServiceGetter(this, "cpmm",
-                                   "@mozilla.org/childprocessmessagemanager;1",
-                                   "nsISyncMessageSender");
-
 Cu.import("resource:///modules/sessionstore/FrameTree.jsm", this);
-let gFrameTree = new FrameTree(this);
+var gFrameTree = new FrameTree(this);
 
 Cu.import("resource:///modules/sessionstore/ContentRestore.jsm", this);
 XPCOMUtils.defineLazyGetter(this, 'gContentRestore',
                             () => { return new ContentRestore(this) });
 
 // The current epoch.
-let gCurrentEpoch = 0;
+var gCurrentEpoch = 0;
+
+// A bound to the size of data to store for DOM Storage.
+const DOM_STORAGE_MAX_CHARS = 10000000; // 10M characters
+
+// This pref controls whether or not we send updates to the parent on a timeout
+// or not, and should only be used for tests or debugging.
+const TIMEOUT_DISABLED_PREF = "browser.sessionstore.debug.no_auto_updates";
 
 /**
  * Returns a lazy function that will evaluate the given
@@ -62,24 +68,10 @@ function createLazy(fn) {
 }
 
 /**
- * Determines whether the given storage event was triggered by changes
- * to the sessionStorage object and not the local or globalStorage.
- */
-function isSessionStorageEvent(event) {
-  try {
-    return event.storageArea == event.target.sessionStorage;
-  } catch (ex if ex instanceof Ci.nsIException && ex.result == Cr.NS_ERROR_NOT_AVAILABLE) {
-    // This page does not have a DOMSessionStorage
-    // (this is typically the case for about: pages)
-    return false;
-  }
-}
-
-/**
  * Listens for and handles content events that we need for the
  * session store service to be notified of state changes in content.
  */
-let EventListener = {
+var EventListener = {
 
   init: function () {
     addEventListener("load", this, true);
@@ -100,7 +92,7 @@ let EventListener = {
 /**
  * Listens for and handles messages sent by the session store service.
  */
-let MessageListener = {
+var MessageListener = {
 
   MESSAGES: [
     "SessionStore:restoreHistory",
@@ -200,52 +192,6 @@ let MessageListener = {
 };
 
 /**
- * On initialization, this handler gets sent to the parent process as a CPOW.
- * The parent will use it only to flush pending data from the frame script
- * when needed, i.e. when closing a tab, closing a window, shutting down, etc.
- *
- * This will hopefully not be needed in the future once we have async APIs for
- * closing windows and tabs.
- */
-let SyncHandler = {
-  init: function () {
-    // Send this object as a CPOW to chrome. In single-process mode,
-    // the synchronous send ensures that the handler object is
-    // available in SessionStore.jsm immediately upon loading
-    // content-sessionStore.js.
-    sendSyncMessage("SessionStore:setupSyncHandler", {}, {handler: this});
-  },
-
-  /**
-   * This function is used to make the tab process flush all data that
-   * hasn't been sent to the parent process, yet.
-   *
-   * @param id (int)
-   *        A unique id that represents the last message received by the chrome
-   *        process before flushing. We will use this to determine data that
-   *        would be lost when data has been sent asynchronously shortly
-   *        before flushing synchronously.
-   */
-  flush: function (id) {
-    MessageQueue.flush(id);
-  },
-
-  /**
-   * DO NOT USE - DEBUGGING / TESTING ONLY
-   *
-   * This function is used to simulate certain situations where race conditions
-   * can occur by sending data shortly before flushing synchronously.
-   */
-  flushAsync: function () {
-    if (!Services.prefs.getBoolPref("browser.sessionstore.debug")) {
-      throw new Error("flushAsync() must be used for testing, only.");
-    }
-
-    MessageQueue.send();
-  }
-};
-
-/**
  * Listens for changes to the session history. Whenever the user navigates
  * we will collect URLs and everything belonging to session history.
  *
@@ -255,7 +201,7 @@ let SyncHandler = {
  * Example:
  *   {entries: [{url: "about:mozilla", ...}, ...], index: 1}
  */
-let SessionHistoryListener = {
+var SessionHistoryListener = {
   init: function () {
     // The frame tree observer is needed to handle initial subframe loads.
     // It will redundantly invalidate with the SHistoryListener in some cases
@@ -355,7 +301,7 @@ let SessionHistoryListener = {
  * Example:
  *   {scroll: "100,100", children: [null, null, {scroll: "200,200"}]}
  */
-let ScrollPositionListener = {
+var ScrollPositionListener = {
   init: function () {
     addEventListener("scroll", this);
     gFrameTree.addObserver(this);
@@ -401,7 +347,7 @@ let ScrollPositionListener = {
  *     ]
  *   }
  */
-let FormDataListener = {
+var FormDataListener = {
   init: function () {
     addEventListener("input", this, true);
     addEventListener("change", this, true);
@@ -440,7 +386,7 @@ let FormDataListener = {
  * Example:
  *   {pageStyle: "Dusk", children: [null, {pageStyle: "Mozilla"}]}
  */
-let PageStyleListener = {
+var PageStyleListener = {
   init: function () {
     Services.obs.addObserver(this, "author-style-disabled-changed", false);
     Services.obs.addObserver(this, "style-sheet-applicable-state-changed", false);
@@ -482,7 +428,7 @@ let PageStyleListener = {
  * disabled docShell capabilities (all nsIDocShell.allow* properties set to
  * false) as a string - i.e. capability names separate by commas.
  */
-let DocShellCapabilitiesListener = {
+var DocShellCapabilitiesListener = {
   /**
    * This field is used to compare the last docShell capabilities to the ones
    * that have just been collected. If nothing changed we won't send a message.
@@ -518,9 +464,9 @@ let DocShellCapabilitiesListener = {
  * DOMSessionStorage contents. The data is a nested object using host names
  * as keys and per-host DOMSessionStorage data as values.
  */
-let SessionStorageListener = {
+var SessionStorageListener = {
   init: function () {
-    addEventListener("MozStorageChanged", this, true);
+    addEventListener("MozSessionStorageChanged", this, true);
     Services.obs.addObserver(this, "browser:purge-domain-data", false);
     gFrameTree.addObserver(this);
   },
@@ -530,8 +476,7 @@ let SessionStorageListener = {
   },
 
   handleEvent: function (event) {
-    // Ignore events triggered by localStorage or globalStorage changes.
-    if (gFrameTree.contains(event.target) && isSessionStorageEvent(event)) {
+    if (gFrameTree.contains(event.target)) {
       this.collect();
     }
   },
@@ -542,9 +487,58 @@ let SessionStorageListener = {
     setTimeout(() => this.collect(), 0);
   },
 
+  // Before DOM Storage can be written to disk, it needs to be serialized
+  // for sending across frames/processes, then again to be sent across
+  // threads, then again to be put in a buffer for the disk. Each of these
+  // serializations is an opportunity to OOM and (depending on the site of
+  // the OOM), either crash, lose all data for the frame or lose all data
+  // for the application.
+  //
+  // In order to avoid this, compute an estimate of the size of the
+  // object, and block SessionStorage items that are too large. As
+  // we also don't want to cause an OOM here, we use a quick and memory-
+  // efficient approximation: we compute the total sum of string lengths
+  // involved in this object.
+  estimateStorageSize: function(collected) {
+    if (!collected) {
+      return 0;
+    }
+
+    let size = 0;
+    for (let host of Object.keys(collected)) {
+      size += host.length;
+      let perHost = collected[host];
+      for (let key of Object.keys(perHost)) {
+        size += key.length;
+        let perKey = perHost[key];
+        size += perKey.length;
+      }
+    }
+
+    return size;
+  },
+
   collect: function () {
     if (docShell) {
-      MessageQueue.push("storage", () => SessionStorage.collect(docShell, gFrameTree));
+      MessageQueue.push("storage", () => {
+        let collected = SessionStorage.collect(docShell, gFrameTree);
+
+        if (collected == null) {
+          return collected;
+        }
+
+        let size = this.estimateStorageSize(collected);
+
+        MessageQueue.push("telemetry", () => ({ FX_SESSION_RESTORE_DOM_STORAGE_SIZE_ESTIMATE_CHARS: size }));
+        if (size > Preferences.get("browser.sessionstore.dom_storage_limit", DOM_STORAGE_MAX_CHARS)) {
+          // Rather than keeping the old storage, which wouldn't match the rest
+          // of the state of the page, empty the storage. DOM storage will be
+          // recollected the next time and stored if it is now small enough.
+          return {};
+        }
+
+        return collected;
+      });
     }
   },
 
@@ -567,7 +561,7 @@ let SessionStorageListener = {
  *  |null| if the tab is now public - the field is therefore
  *  not saved.
  */
-let PrivacyListener = {
+var PrivacyListener = {
   init: function() {
     docShell.addWeakPrivacyTransitionObserver(this);
 
@@ -594,27 +588,13 @@ let PrivacyListener = {
  * will be batched if they're pushed in quick succession to avoid a message
  * flood.
  */
-let MessageQueue = {
-  /**
-   * A unique, monotonically increasing ID used for outgoing messages. This is
-   * important to make it possible to reuse tabs and allow sync flushes before
-   * data could be destroyed.
-   */
-  _id: 1,
-
+var MessageQueue = {
   /**
    * A map (string -> lazy fn) holding lazy closures of all queued data
    * collection routines. These functions will return data collected from the
    * docShell.
    */
   _data: new Map(),
-
-  /**
-   * A map holding the |this._id| value for every type of data back when it
-   * was pushed onto the queue. We will use those IDs to find the data to send
-   * and flush.
-   */
-  _lastUpdated: new Map(),
 
   /**
    * The delay (in ms) used to delay sending changes after data has been
@@ -629,6 +609,54 @@ let MessageQueue = {
   _timeout: null,
 
   /**
+   * Whether or not sending batched messages on a timer is disabled. This should
+   * only be used for debugging or testing. If you need to access this value,
+   * you should probably use the timeoutDisabled getter.
+   */
+  _timeoutDisabled: false,
+
+  /**
+   * True if batched messages are not being fired on a timer. This should only
+   * ever be true when debugging or during tests.
+   */
+  get timeoutDisabled() {
+    return this._timeoutDisabled;
+  },
+
+  /**
+   * Disables sending batched messages on a timer. Also cancels any pending
+   * timers.
+   */
+  set timeoutDisabled(val) {
+    this._timeoutDisabled = val;
+
+    if (!val && this._timeout) {
+      clearTimeout(this._timeout);
+      this._timeout = null;
+    }
+
+    return val;
+  },
+
+  init() {
+    this.timeoutDisabled =
+      Services.prefs.getBoolPref(TIMEOUT_DISABLED_PREF);
+
+    Services.prefs.addObserver(TIMEOUT_DISABLED_PREF, this, false);
+  },
+
+  uninit() {
+    Services.prefs.removeObserver(TIMEOUT_DISABLED_PREF, this);
+  },
+
+  observe(subject, topic, data) {
+    if (topic == TIMEOUT_DISABLED_PREF) {
+      this.timeoutDisabled =
+        Services.prefs.getBoolPref(TIMEOUT_DISABLED_PREF);
+    }
+  },
+
+  /**
    * Pushes a given |value| onto the queue. The given |key| represents the type
    * of data that is stored and can override data that has been queued before
    * but has not been sent to the parent process, yet.
@@ -641,9 +669,8 @@ let MessageQueue = {
    */
   push: function (key, fn) {
     this._data.set(key, createLazy(fn));
-    this._lastUpdated.set(key, this._id);
 
-    if (!this._timeout) {
+    if (!this._timeout && !this._timeoutDisabled) {
       // Wait a little before sending the message to batch multiple changes.
       this._timeout = setTimeout(() => this.send(), this.BATCH_DELAY_MS);
     }
@@ -653,8 +680,6 @@ let MessageQueue = {
    * Sends queued data to the chrome process.
    *
    * @param options (object)
-   *        {id: 123} to override the update ID used to accumulate data to send.
-   *        {sync: true} to send data to the parent process synchronously.
    *        {flushID: 123} to specify that this is a flush
    *        {isFinal: true} to signal this is the final message sent on unload
    */
@@ -671,83 +696,54 @@ let MessageQueue = {
       this._timeout = null;
     }
 
-    let sync = options && options.sync;
-    let startID = (options && options.id) || this._id;
     let flushID = (options && options.flushID) || 0;
-
-    // We use sendRpcMessage in the sync case because we may have been called
-    // through a CPOW. RPC messages are the only synchronous messages that the
-    // child is allowed to send to the parent while it is handling a CPOW
-    // request.
-    let sendMessage = sync ? sendRpcMessage : sendAsyncMessage;
 
     let durationMs = Date.now();
 
     let data = {};
-    for (let [key, id] of this._lastUpdated) {
-      // There is no data for the given key anymore because
-      // the parent process already marked it as received.
-      if (!this._data.has(key)) {
-        continue;
+    let telemetry = {};
+    for (let [key, func] of this._data) {
+      let value = func();
+      if (key == "telemetry") {
+        for (let histogramId of Object.keys(value)) {
+          telemetry[histogramId] = value[histogramId];
+        }
+      } else {
+        data[key] = value;
       }
-
-      if (startID > id) {
-        // If the |id| passed by the parent process is higher than the one
-        // stored in |_lastUpdated| for the given key we know that the parent
-        // received all necessary data and we can remove it from the map.
-        this._data.delete(key);
-        continue;
-      }
-
-      data[key] = this._data.get(key)();
     }
 
     durationMs = Date.now() - durationMs;
-    let telemetry = {
-      FX_SESSION_RESTORE_CONTENT_COLLECT_DATA_LONGEST_OP_MS: durationMs
+    telemetry.FX_SESSION_RESTORE_CONTENT_COLLECT_DATA_LONGEST_OP_MS = durationMs;
+
+    try {
+      // Send all data to the parent process.
+      sendAsyncMessage("SessionStore:update", {
+        data, telemetry, flushID,
+        isFinal: options.isFinal || false,
+        epoch: gCurrentEpoch
+      });
+    } catch (ex if ex && ex.result == Cr.NS_ERROR_OUT_OF_MEMORY) {
+      let telemetry = {
+        FX_SESSION_RESTORE_SEND_UPDATE_CAUSED_OOM: 1
+      };
+      sendAsyncMessage("SessionStore:error", {
+        telemetry
+      });
     }
-
-    // Send all data to the parent process.
-    sendMessage("SessionStore:update", {
-      id: this._id, data, telemetry, flushID,
-      isFinal: options.isFinal || false,
-      epoch: gCurrentEpoch
-    });
-
-    // Increase our unique message ID.
-    this._id++;
   },
-
-  /**
-   * This function is used to make the message queue flush all queue data that
-   * hasn't been sent to the parent process, yet.
-   *
-   * @param id (int)
-   *        A unique id that represents the latest message received by the
-   *        chrome process. We can use this to determine which messages have not
-   *        yet been received because they are still stuck in the event queue.
-   */
-  flush: function (id) {
-    // It's important to always send data, even if there is nothing to flush.
-    // The update message will be received by the parent process that can then
-    // update its last received update ID to ignore stale messages.
-    this.send({id: id + 1, sync: true});
-
-    this._data.clear();
-    this._lastUpdated.clear();
-  }
 };
 
 EventListener.init();
 MessageListener.init();
 FormDataListener.init();
-SyncHandler.init();
 PageStyleListener.init();
 SessionHistoryListener.init();
 SessionStorageListener.init();
 ScrollPositionListener.init();
 DocShellCapabilitiesListener.init();
 PrivacyListener.init();
+MessageQueue.init();
 
 function handleRevivedTab() {
   if (!content) {
@@ -789,6 +785,7 @@ addEventListener("unload", () => {
   PageStyleListener.uninit();
   SessionStorageListener.uninit();
   SessionHistoryListener.uninit();
+  MessageQueue.uninit();
 
   // Remove progress listeners.
   gContentRestore.resetRestore();

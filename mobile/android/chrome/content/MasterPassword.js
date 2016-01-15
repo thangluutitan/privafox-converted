@@ -25,7 +25,7 @@ var MasterPassword = {
     }
     return false;
   },
-
+  // Privafox : required login
   requestLogin: function(){
     try {
         let token = this._pk11DB.getInternalKeyToken();
@@ -37,7 +37,6 @@ var MasterPassword = {
     }
     return false;
   },
-
   setPassword: function setPassword(aPassword) {
     try {
       let status;

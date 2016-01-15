@@ -137,7 +137,7 @@ private:
 };
 #endif
 
-#ifdef XP_MACOSX
+#ifdef XP_DARWIN
 /* This is a helper class that let's you borrow a CGContextRef from a
  * DrawTargetCG. This is used for drawing themed widgets.
  *
@@ -196,7 +196,7 @@ private:
 };
 #endif
 
-}
-}
+} // namespace gfx
+} // namespace mozilla
 
 #endif // _MOZILLA_GFX_BORROWED_CONTEXT_H
