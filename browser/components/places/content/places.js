@@ -3,9 +3,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+Components.utils.import("resource://gre/modules/AppConstants.jsm");
 Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
 Components.utils.import("resource://gre/modules/TelemetryStopwatch.jsm");
-Components.utils.import('resource://gre/modules/Services.jsm');
 XPCOMUtils.defineLazyModuleGetter(this, "MigrationUtils",
                                   "resource:///modules/MigrationUtils.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "Task",
@@ -23,12 +23,10 @@ const PREF_PROTECT_BOOKMARK = "security.additionalSecurity.protectBookmark";
 const PREF_PROTECT_BOOKMARK_ALREADYLOGIN = PREF_PROTECT_BOOKMARK + ".isAlreadyLogin";
 var PlacesOrganizer = {
   _places: null,
+
   // IDs of fields from editBookmarkOverlay that should be hidden when infoBox
   // is minimal. IDs should be kept in sync with the IDs of the elements
-    // observing additionalInfoBroadcaster.
-    /*
-    *Privafox remove Sync
-    */
+  // observing additionalInfoBroadcaster.
   _additionalInfoFields: [
     "editBMPanel_descriptionRow",
     "editBMPanel_loadInSidebarCheckbox",
@@ -36,7 +34,7 @@ var PlacesOrganizer = {
   ],
 
   _initFolderTree: function() {
-      var leftPaneRoot = PlacesUIUtils.leftPaneFolderId;
+    var leftPaneRoot = PlacesUIUtils.leftPaneFolderId;
     this._places.place = "place:excludeItems=1&expandQueries=0&folder=" + leftPaneRoot;
   },
 
@@ -48,7 +46,7 @@ var PlacesOrganizer = {
         isFocus = false; 
     }
     if(isFocus){
-        this._places.selectItems([itemId]);
+    this._places.selectItems([itemId]);
     }
     // Forcefully expand all-bookmarks
     if (!isFocus || aQueryName == "History")
@@ -68,7 +66,7 @@ var PlacesOrganizer = {
   selectLeftPaneContainerByHierarchy:
   function PO_selectLeftPaneContainerByHierarchy(aHierarchy) {
     if (!aHierarchy)
-        throw new Error("Invalid containers hierarchy");
+      throw new Error("Invalid containers hierarchy");
     if(aHierarchy == "AllBookmarks"){
         let isProtectBookmark = this._bookmarkIsProtectMasterPassword();
         if(isProtectBookmark){
@@ -108,8 +106,10 @@ var PlacesOrganizer = {
 
   init: function PO_init() {
     ContentArea.init();
+
     this._places = document.getElementById("placesList");
     this._initFolderTree();
+
     var leftPaneSelection = "AllBookmarks"; // default to all-bookmarks
     if (window.arguments && window.arguments[0])
       leftPaneSelection = window.arguments[0];
@@ -129,20 +129,21 @@ var PlacesOrganizer = {
     PlacesSearchBox.init();
 
     window.addEventListener("AppCommand", this, true);
-#ifdef XP_MACOSX
-    // 1. Map Edit->Find command to OrganizerCommand_find:all.  Need to map
-    // both the menuitem and the Find key.
-    var findMenuItem = document.getElementById("menu_find");
-    findMenuItem.setAttribute("command", "OrganizerCommand_find:all");
-    var findKey = document.getElementById("key_find");
-    findKey.setAttribute("command", "OrganizerCommand_find:all");
 
-    // 2. Disable some keybindings from browser.xul
-    var elements = ["cmd_handleBackspace", "cmd_handleShiftBackspace"];
-    for (var i=0; i < elements.length; i++) {
-      document.getElementById(elements[i]).setAttribute("disabled", "true");
+    if (AppConstants.platform === "macosx") {
+      // 1. Map Edit->Find command to OrganizerCommand_find:all.  Need to map
+      // both the menuitem and the Find key.
+      let findMenuItem = document.getElementById("menu_find");
+      findMenuItem.setAttribute("command", "OrganizerCommand_find:all");
+      let findKey = document.getElementById("key_find");
+      findKey.setAttribute("command", "OrganizerCommand_find:all");
+
+      // 2. Disable some keybindings from browser.xul
+      let elements = ["cmd_handleBackspace", "cmd_handleShiftBackspace"];
+      for (let i = 0; i < elements.length; i++) {
+        document.getElementById(elements[i]).setAttribute("disabled", "true");
+      }
     }
-#endif
 
     // remove the "Properties" context-menu item, we've our own details pane
     document.getElementById("placesContext")
@@ -256,7 +257,6 @@ _bookmarkIsProtectMasterPassword: function PO__bookmarkIsProtectMasterPassword()
      }     
     return hasProtectPassword;
 },
-
 _showPromptMP: false,
 _showPromptProtectBookmark: function PO__showPromptProtectBookmark() {
     let isHasProtectBookmark = this._bookmarkIsProtectMasterPassword();
@@ -284,7 +284,6 @@ _showPromptProtectBookmark: function PO__showPromptProtectBookmark() {
 	}
     return vLogin;
 },
-
   /**
    * Called when a place folder is selected in the left pane.
    * @param   resetSearchBox
@@ -299,9 +298,10 @@ _showPromptProtectBookmark: function PO__showPromptProtectBookmark() {
   onPlaceSelected: function PO_onPlaceSelected(resetSearchBox) {
     // Don't change the right-hand pane contents when there's no selection.
     if (!this._places.hasSelection)
-        return;
+      return;
+
     var node = this._places.selectedNode;
-    let itemId = node.itemId;
+   let itemId = node.itemId;
     if(itemId == PlacesUIUtils.leftPaneQueries["History"] || itemId == PlacesUIUtils.leftPaneQueries["Downloads"] 
         || itemId == PlacesUIUtils.leftPaneQueries["Tags"] ){
 
@@ -316,10 +316,10 @@ _showPromptProtectBookmark: function PO__showPromptProtectBookmark() {
     }
 
     var queries = PlacesUtils.asQuery(node).getQueries();
+
     // Items are only excluded on the left pane.
     var options = node.queryOptions.clone();
     options.excludeItems = false;
-
     var placeURI = PlacesUtils.history.queriesToQueryString(queries,
                                                             queries.length,
                                                             options);
@@ -392,31 +392,31 @@ _showPromptProtectBookmark: function PO__showPromptProtectBookmark() {
           isLogin = this._showPromptProtectBookmark();
       }
       if(isLogin){
-          let middleClick = aEvent.button == 1 && aEvent.detail == 1;
-          if (middleClick && PlacesUtils.nodeIsContainer(node)) {
-              // The command execution function will take care of seeing if the
-              // selection is a folder or a different container type, and will
-              // load its contents in tabs.
-              PlacesUIUtils.openContainerNodeInTabs(selectedNode, aEvent, this._places);
-          }
+      let middleClick = aEvent.button == 1 && aEvent.detail == 1;
+      if (middleClick && PlacesUtils.nodeIsContainer(node)) {
+        // The command execution function will take care of seeing if the
+        // selection is a folder or a different container type, and will
+        // load its contents in tabs.
+        PlacesUIUtils.openContainerNodeInTabs(selectedNode, aEvent, this._places);
       }
+    }
     }
   },
 
   /**
    * Handle focus changes on the places list and the current content view.
    */
-updateDetailsPane: function PO_updateDetailsPane() {    
+  updateDetailsPane: function PO_updateDetailsPane() {
     if (!ContentArea.currentViewOptions.showDetailsPane)
-        return;
+      return;
     let isOpenleft = this._bookmarkIsProtectMasterPassword();
     if(!isOpenleft){
-        let view = PlacesUIUtils.getViewForNode(document.activeElement);
-        if (view) {
-            let selectedNodes = view.selectedNode ?
-                                [view.selectedNode] : view.selectedNodes;
-            this._fillDetailsPane(selectedNodes);
-        }
+    let view = PlacesUIUtils.getViewForNode(document.activeElement);
+    if (view) {
+      let selectedNodes = view.selectedNode ?
+                          [view.selectedNode] : view.selectedNodes;
+      this._fillDetailsPane(selectedNodes);
+    }
     }
   },
 
@@ -451,7 +451,8 @@ updateDetailsPane: function PO_updateDetailsPane() {
    * cookies, history, preferences, and bookmarks.
    */
   importFromBrowser: function PO_importFromBrowser() {
-    MigrationUtils.showMigrationWizard(window);
+    // We pass in the type of source we're using for use in telemetry:
+    MigrationUtils.showMigrationWizard(window, [MigrationUtils.MIGRATION_ENTRYPOINT_PLACES]);
   },
 
   /**
@@ -595,7 +596,8 @@ updateDetailsPane: function PO_updateDetailsPane() {
    */
   restoreBookmarksFromFile: function PO_restoreBookmarksFromFile(aFilePath) {
     // check file extension
-    if (!aFilePath.endsWith("json") && !aFilePath.endsWith("jsonlz4"))  {
+    if (!aFilePath.toLowerCase().endsWith("json") &&
+        !aFilePath.toLowerCase().endsWith("jsonlz4"))  {
       this._showErrorAlert(PlacesUIUtils.getString("bookmarksRestoreFormatError"));
       return;
     }
@@ -665,7 +667,7 @@ updateDetailsPane: function PO_updateDetailsPane() {
     var infoBox = document.getElementById("infoBox");
     var infoBoxExpander = document.getElementById("infoBoxExpander");
     var infoBoxExpanderWrapper = document.getElementById("infoBoxExpanderWrapper");
-   // var additionalInfoBroadcaster = document.getElementById("additionalInfoBroadcaster");
+  //  var additionalInfoBroadcaster = document.getElementById("additionalInfoBroadcaster");
 
     if (!aNode) {
       infoBoxExpanderWrapper.hidden = true;
@@ -683,7 +685,7 @@ updateDetailsPane: function PO_updateDetailsPane() {
         infoBox.setAttribute("minimal", "true");
       infoBox.removeAttribute("wasminimal");
       infoBoxExpanderWrapper.hidden =
-        this._additionalInfoFields.every(function (id)
+        this._additionalInfoFields.every(id =>
           document.getElementById(id).collapsed);
     }
    // additionalInfoBroadcaster.hidden = infoBox.getAttribute("minimal") == "true";
@@ -761,7 +763,7 @@ updateDetailsPane: function PO_updateDetailsPane() {
     }
     else if (!selectedNode && aNodeList[0]) {
       if (aNodeList.every(PlacesUtils.nodeIsURI)) {
-        let uris = [for (node of aNodeList) PlacesUtils._uri(node.uri)];
+        let uris = aNodeList.map(node => PlacesUtils._uri(node.uri));
         detailsDeck.selectedIndex = 1;
         gEditItemOverlay.initPanel({ uris
                                    , hiddenRows: ["folderPicker",
@@ -833,21 +835,21 @@ updateDetailsPane: function PO_updateDetailsPane() {
     var infoBox = document.getElementById("infoBox");
     var infoBoxExpander = document.getElementById("infoBoxExpander");
     var infoBoxExpanderLabel = document.getElementById("infoBoxExpanderLabel");
-    //var additionalInfoBroadcaster = document.getElementById("additionalInfoBroadcaster");
+   // var additionalInfoBroadcaster = document.getElementById("additionalInfoBroadcaster");
 
     if (infoBox.getAttribute("minimal") == "true") {
       infoBox.removeAttribute("minimal");
       infoBoxExpanderLabel.value = infoBoxExpanderLabel.getAttribute("lesslabel");
       infoBoxExpanderLabel.accessKey = infoBoxExpanderLabel.getAttribute("lessaccesskey");
       infoBoxExpander.className = "expander-up";
-      //additionalInfoBroadcaster.removeAttribute("hidden");
+     // additionalInfoBroadcaster.removeAttribute("hidden");
     }
     else {
       infoBox.setAttribute("minimal", "true");
       infoBoxExpanderLabel.value = infoBoxExpanderLabel.getAttribute("morelabel");
       infoBoxExpanderLabel.accessKey = infoBoxExpanderLabel.getAttribute("moreaccesskey");
       infoBoxExpander.className = "expander-down";
-      //additionalInfoBroadcaster.setAttribute("hidden", "true");
+     // additionalInfoBroadcaster.setAttribute("hidden", "true");
     }
   },
 };
@@ -1338,7 +1340,7 @@ var ViewMenu = {
   }
 }
 
-let ContentArea = {
+var ContentArea = {
   _specialViews: new Map(),
 
   init: function CA_init() {
@@ -1397,7 +1399,9 @@ let ContentArea = {
                                            options: aOptions || new Object() });
   },
 
-  get currentView() PlacesUIUtils.getViewForNode(this._deck.selectedPanel),
+  get currentView() {
+    return PlacesUIUtils.getViewForNode(this._deck.selectedPanel);
+  },
   set currentView(aNewView) {
     let oldView = this.currentView;
     if (oldView != aNewView) {
@@ -1411,7 +1415,9 @@ let ContentArea = {
     return aNewView;
   },
 
-  get currentPlace() this.currentView.place,
+  get currentPlace() {
+    return this.currentView.place;
+  },
   set currentPlace(aQueryString) {
     let oldView = this.currentView;
     let newView = this.getContentViewForQueryString(aQueryString);
@@ -1440,11 +1446,11 @@ let ContentArea = {
       // On Windows and Linux the menu buttons are menus wrapped in a menubar.
       if (elt.id == "placesMenu") {
         for (let menuElt of elt.childNodes) {
-          menuElt.hidden = options.toolbarSet.indexOf(menuElt.id) == -1;
+          menuElt.hidden = !options.toolbarSet.includes(menuElt.id);
         }
       }
       else {
-        elt.hidden = options.toolbarSet.indexOf(elt.id) == -1;
+        elt.hidden = !options.toolbarSet.includes(elt.id);
       }
     }
   },
@@ -1471,17 +1477,21 @@ let ContentArea = {
   }
 };
 
-let ContentTree = {
+var ContentTree = {
   init: function CT_init() {
     this._view = document.getElementById("placeContent");
   },
 
-  get view() this._view,
+  get view() {
+    return this._view;
+  },
 
-  get viewOptions() Object.seal({
-    showDetailsPane: true,
-    toolbarSet: "back-button, forward-button, organizeButton, viewMenu, maintenanceButton, libraryToolbarSpacer, searchFilter"
-  }),
+  get viewOptions() {
+    return Object.seal({
+      showDetailsPane: true,
+      toolbarSet: "back-button, forward-button, organizeButton, viewMenu, maintenanceButton, libraryToolbarSpacer, searchFilter"
+    });
+  },
 
   openSelectedNode: function CT_openSelectedNode(aEvent) {
     let view = this.view;

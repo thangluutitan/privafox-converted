@@ -6,6 +6,10 @@ Components.utils.import("resource://gre/modules/Downloads.jsm");
 Components.utils.import("resource://gre/modules/FileUtils.jsm");
 Components.utils.import("resource://gre/modules/Task.jsm");
 Components.utils.import("resource:///modules/TransientPrefs.jsm");
+#ifdef E10S_TESTING_ONLY
+XPCOMUtils.defineLazyModuleGetter(this, "UpdateUtils",
+                                  "resource://gre/modules/UpdateUtils.jsm");
+#endif
 
 var gMainPane = {
   /**
@@ -97,7 +101,13 @@ var gMainPane = {
           e10sCheckbox.checked = true;
         } else {
           e10sCheckbox.disabled = true;
-          e10sCheckbox.label += " (disabled: " + e10sBlockedReason.data + ")";
+          let updateChannel = UpdateUtils.UpdateChannel;
+          // only add this label on developer channels
+          if (updateChannel == "default" ||
+              updateChannel == "nightly" ||
+              updateChannel == "aurora") {
+            e10sCheckbox.label += " (disabled: " + e10sBlockedReason.data + ")";
+          }
         }
       }
     }
@@ -106,7 +116,18 @@ var gMainPane = {
     // enabled
 #endif
 
+#ifdef MOZ_DEV_EDITION
+    Cu.import("resource://gre/modules/osfile.jsm");
+    let uAppData = OS.Constants.Path.userApplicationDataDir;
+    let ignoreSeparateProfile = OS.Path.join(uAppData, "ignore-dev-edition-profile");
 
+    setEventListener("separateProfileMode", "command", gMainPane.separateProfileModeChange);
+    let separateProfileModeCheckbox = document.getElementById("separateProfileMode");
+    setEventListener("getStarted", "click", gMainPane.onGetStarted);
+
+    OS.File.stat(ignoreSeparateProfile).then(() => separateProfileModeCheckbox.checked = false,
+                                             () => separateProfileModeCheckbox.checked = true);
+#endif
 
     // Notify observers that the UI is now ready
     Components.classes["@mozilla.org/observer-service;1"]
@@ -154,8 +175,8 @@ var gMainPane = {
         }
 
         let tmp = {};
-        Components.utils.import("resource://gre/modules/UpdateChannel.jsm", tmp);
-        if (!e10sCheckbox.checked && tmp.UpdateChannel.get() != "default") {
+        Components.utils.import("resource://gre/modules/UpdateUtils.jsm", tmp);
+        if (!e10sCheckbox.checked && tmp.UpdateUtils.UpdateChannel != "default") {
           Services.prefs.setBoolPref("browser.requestE10sFeedback", true);
           Services.prompt.alert(window, brandName, bundle.getString("e10sFeedbackAfterRestart"));
         }
@@ -168,7 +189,65 @@ var gMainPane = {
   },
 #endif
 
+#ifdef MOZ_DEV_EDITION
+  separateProfileModeChange: function ()
+  {
+    function quitApp() {
+      Services.startup.quit(Ci.nsIAppStartup.eAttemptQuit |  Ci.nsIAppStartup.eRestartNotSameProfile);
+    }
+    function revertCheckbox(error) {
+      separateProfileModeCheckbox.checked = !separateProfileModeCheckbox.checked;
+      if (error) {
+        Cu.reportError("Failed to toggle separate profile mode: " + error);
+      }
+    }
 
+    const Cc = Components.classes, Ci = Components.interfaces;
+    let separateProfileModeCheckbox = document.getElementById("separateProfileMode");
+    let brandName = document.getElementById("bundleBrand").getString("brandShortName");
+    let bundle = document.getElementById("bundlePreferences");
+    let msg = bundle.getFormattedString(separateProfileModeCheckbox.checked ?
+                                        "featureEnableRequiresRestart" : "featureDisableRequiresRestart",
+                                        [brandName]);
+    let title = bundle.getFormattedString("shouldRestartTitle", [brandName]);
+    let shouldProceed = Services.prompt.confirm(window, title, msg)
+    if (shouldProceed) {
+      let cancelQuit = Cc["@mozilla.org/supports-PRBool;1"]
+                         .createInstance(Ci.nsISupportsPRBool);
+      Services.obs.notifyObservers(cancelQuit, "quit-application-requested",
+                                   "restart");
+      shouldProceed = !cancelQuit.data;
+
+      if (shouldProceed) {
+        Cu.import("resource://gre/modules/osfile.jsm");
+        let uAppData = OS.Constants.Path.userApplicationDataDir;
+        let ignoreSeparateProfile = OS.Path.join(uAppData, "ignore-dev-edition-profile");
+
+        if (separateProfileModeCheckbox.checked) {
+          OS.File.remove(ignoreSeparateProfile).then(quitApp, revertCheckbox);
+        } else {
+          OS.File.writeAtomic(ignoreSeparateProfile, new Uint8Array()).then(quitApp, revertCheckbox);
+        }
+        return;
+      }
+    }
+
+    // Revert the checkbox in case we didn't quit
+    revertCheckbox();
+  },
+
+  onGetStarted: function (aEvent) {
+    const Cc = Components.classes, Ci = Components.interfaces;
+    let wm = Cc["@mozilla.org/appshell/window-mediator;1"]
+                .getService(Ci.nsIWindowMediator);
+    let win = wm.getMostRecentWindow("navigator:browser");
+
+    if (win) {
+      let accountsTab = win.gBrowser.addTab("about:accounts");
+      win.gBrowser.selectedTab = accountsTab;
+    }
+  },
+#endif
 
   // HOME PAGE
 
@@ -229,7 +308,9 @@ var gMainPane = {
   {
     let homePage = document.getElementById("browser.startup.homepage");
     let tabs = this._getTabsForHomePage();
-    function getTabURI(t) t.linkedBrowser.currentURI.spec;
+    function getTabURI(t) {
+      return t.linkedBrowser.currentURI.spec;
+    }
 
     // FIXME Bug 244192: using dangerous "|" joiner!
     if (tabs.length)
@@ -243,10 +324,10 @@ var gMainPane = {
    */
   setHomePageToBookmark: function ()
   {
-          var rv = { urls: null, names: null };
-          var dialog = gSubDialog.open("chrome://browser/content/preferences/selectBookmark.xul",
-                                       "resizable=yes, modal=yes", rv,
-                                       this._setHomePageToBookmarkClosed.bind(this, rv));
+    var rv = { urls: null, names: null };
+    var dialog = gSubDialog.open("chrome://browser/content/preferences/selectBookmark.xul",
+                                 "resizable=yes, modal=yes", rv,
+                                 this._setHomePageToBookmarkClosed.bind(this, rv));
   },
   bookmarkIsProtectMasterPassword: function() {
       let kCheckBookmarksIsMasterPassword = false;
@@ -346,7 +427,7 @@ var gMainPane = {
 
       tabs = win.gBrowser.visibleTabs.slice(win.gBrowser._numPinnedTabs);
       
-      tabs = tabs.filter(this.isAboutPreferences);
+      tabs = tabs.filter(this.isNotAboutPreferences);
     }
     
     return tabs;
@@ -355,9 +436,9 @@ var gMainPane = {
   /**
    * Check to see if a tab is not about:preferences
    */
-  isAboutPreferences: function (aElement, aIndex, aArray)
+  isNotAboutPreferences: function (aElement, aIndex, aArray)
   {
-    return (aElement.linkedBrowser.currentURI.spec != "about:preferences");
+    return (aElement.linkedBrowser.currentURI.spec.startsWith != "about:preferences");
   },
 
   /**
@@ -665,30 +746,6 @@ var gMainPane = {
    *   occurs at startup, false otherwise
    */
 
-   /**
-    * Firefox can attempt to set itself as the default application
-    * for all related filetypes or just for HTML. Some platforms
-    * such as Windows have terrible UIs for all filetypes. In those
-    * platforms, Firefox only attempts to associate itself with HTML.
-    */
-   shouldClaimAllTypes: function()
-   {
-    let claimAllTypes = true;
-    try {
-      if (AppConstants.platform == "win") {
-        // In Windows 10+, the UI for selecting default protocol is much
-        // nicer than the UI for setting file type associations. So we
-        // only show the protocol association screen on Windows 10+.
-        // Windows 8.1 is version 6.3. The startup code still uses
-        // the default protocol dialog, but the preferences is more "advanced"
-        // and as such uses the file type associations.
-        let version = Services.sysinfo.getProperty("version");
-        claimAllTypes = (parseFloat(version) <= 6.3);
-      }
-    } catch (ex) {}
-    return claimAllTypes;
-   },
-
   /**
    * Show button for setting browser as default browser or information that
    * browser is already the default browser.
@@ -702,8 +759,7 @@ var gMainPane = {
       return;
     }
     let setDefaultPane = document.getElementById("setDefaultPane");
-    let claimAllTypes = gMainPane.shouldClaimAllTypes();
-    let selectedIndex = shellSvc.isDefaultBrowser(false, claimAllTypes) ? 1 : 0;
+    let selectedIndex = shellSvc.isDefaultBrowser(false, true) ? 1 : 0;
     setDefaultPane.selectedIndex = selectedIndex;
   },
 
@@ -716,8 +772,7 @@ var gMainPane = {
     if (!shellSvc)
       return;
     try {
-      let claimAllTypes = gMainPane.shouldClaimAllTypes();
-      shellSvc.setDefaultBrowser(claimAllTypes, false);
+      shellSvc.setDefaultBrowser(true, false);
     } catch (ex) {
       Cu.reportError(ex);
       return;

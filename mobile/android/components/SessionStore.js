@@ -1003,7 +1003,12 @@ SessionStore.prototype = {
     // we stop the load above
     let activeIndex = (aTabData.index || aTabData.entries.length) - 1;
     aHistory.getEntryAtIndex(activeIndex, true);
-    aHistory.QueryInterface(Ci.nsISHistory).reloadCurrentEntry();
+
+    try {
+      aHistory.QueryInterface(Ci.nsISHistory).reloadCurrentEntry();
+    } catch (e) {
+      // This will throw if the current entry is an error page.
+    }
   },
 
   /**
@@ -1196,19 +1201,19 @@ SessionStore.prototype = {
 
   setTabValue: function ss_setTabValue(aTab, aKey, aStringValue) {
     let browser = aTab.browser;
-
-    if (!browser.__SS_extdata)
+    if (!browser.__SS_extdata) {
       browser.__SS_extdata = {};
+    }
     browser.__SS_extdata[aKey] = aStringValue;
     this.saveStateDelayed();
   },
 
   deleteTabValue: function ss_deleteTabValue(aTab, aKey) {
     let browser = aTab.browser;
-    if (browser.__SS_extdata && browser.__SS_extdata[aKey])
+    if (browser.__SS_extdata && aKey in browser.__SS_extdata) {
       delete browser.__SS_extdata[aKey];
-    else
-      throw (Components.returnCode = Cr.NS_ERROR_INVALID_ARG);
+      this.saveStateDelayed();
+    }
   },
 
   restoreLastSession: Task.async(function* (aSessionString) {

@@ -136,7 +136,7 @@ function ArrayEvery(callbackfn/*, thisArg*/) {
         /* Step b */
         if (k in O) {
             /* Step c. */
-            if (!callFunction(callbackfn, T, O[k], k, O))
+            if (!callContentFunction(callbackfn, T, O[k], k, O))
                 return false;
         }
     }
@@ -177,7 +177,7 @@ function ArraySome(callbackfn/*, thisArg*/) {
         /* Step b */
         if (k in O) {
             /* Step c. */
-            if (callFunction(callbackfn, T, O[k], k, O))
+            if (callContentFunction(callbackfn, T, O[k], k, O))
                 return true;
         }
     }
@@ -218,12 +218,21 @@ function ArrayForEach(callbackfn/*, thisArg*/) {
         /* Step b */
         if (k in O) {
             /* Step c. */
-            callFunction(callbackfn, T, O[k], k, O);
+            callContentFunction(callbackfn, T, O[k], k, O);
         }
     }
 
     /* Step 8. */
     return void 0;
+}
+
+function ArrayStaticForEach(list, callbackfn/*, thisArg*/) {
+    if (arguments.length < 2)
+        ThrowTypeError(JSMSG_MISSING_FUN_ARG, 0, 'Array.forEach');
+    if (!IsCallable(callbackfn))
+        ThrowTypeError(JSMSG_NOT_FUNCTION, DecompileArg(1, callbackfn));
+    var T = arguments.length > 2 ? arguments[2] : void 0;
+    callFunction(ArrayForEach, list, callbackfn, T);
 }
 
 /* ES5 15.4.4.19. */
@@ -244,7 +253,7 @@ function ArrayMap(callbackfn/*, thisArg*/) {
     var T = arguments.length > 1 ? arguments[1] : void 0;
 
     /* Step 6. */
-    var A = NewDenseArray(len);
+    var A = std_Array(len);
 
     /* Step 7-8. */
     /* Step a (implicit), and d. */
@@ -252,7 +261,7 @@ function ArrayMap(callbackfn/*, thisArg*/) {
         /* Step b */
         if (k in O) {
             /* Step c.i-iii. */
-            var mappedValue = callFunction(callbackfn, T, O[k], k, O);
+            var mappedValue = callContentFunction(callbackfn, T, O[k], k, O);
             _DefineDataProperty(A, k, mappedValue);
         }
     }
@@ -270,13 +279,52 @@ function ArrayStaticMap(list, callbackfn/*, thisArg*/) {
     return callFunction(ArrayMap, list, callbackfn, T);
 }
 
-function ArrayStaticForEach(list, callbackfn/*, thisArg*/) {
+/* ES2015 22.1.3.7 Array.prototype.filter. */
+function ArrayFilter(callbackfn/*, thisArg*/) {
+    /* Steps 1-2. */
+    var O = ToObject(this);
+
+    /* Steps 3-4. */
+    var len = ToInteger(O.length);
+
+    /* Step 5. */
+    if (arguments.length === 0)
+        ThrowTypeError(JSMSG_MISSING_FUN_ARG, 0, 'Array.prototype.filter');
+    if (!IsCallable(callbackfn))
+        ThrowTypeError(JSMSG_NOT_FUNCTION, DecompileArg(0, callbackfn));
+
+    /* Step 6. */
+    var T = arguments.length > 1 ? arguments[1] : void 0;
+
+    /* Step 7. */
+    var A = [];
+
+    /* Steps 8-11. */
+    /* Steps 11.a (implicit), and 11.e. */
+    for (var k = 0, to = 0; k < len; k++) {
+        /* Steps 11.b-c. */
+        if (k in O) {
+            /* Steps 11.c.i-ii. */
+            var kValue = O[k];
+            /* Steps 11.c.iii-iv. */
+            var selected = callContentFunction(callbackfn, T, kValue, k, O);
+            /* Step 11.c.v. */
+            if (selected)
+                _DefineDataProperty(A, to++, kValue);
+        }
+    }
+
+    /* Step 12. */
+    return A;
+}
+
+function ArrayStaticFilter(list, callbackfn/*, thisArg*/) {
     if (arguments.length < 2)
-        ThrowTypeError(JSMSG_MISSING_FUN_ARG, 0, 'Array.forEach');
+        ThrowTypeError(JSMSG_MISSING_FUN_ARG, 0, 'Array.filter');
     if (!IsCallable(callbackfn))
         ThrowTypeError(JSMSG_NOT_FUNCTION, DecompileArg(1, callbackfn));
     var T = arguments.length > 2 ? arguments[2] : void 0;
-    callFunction(ArrayForEach, list, callbackfn, T);
+    return callFunction(ArrayFilter, list, callbackfn, T);
 }
 
 /* ES5 15.4.4.21. */
@@ -441,7 +489,7 @@ function ArrayFind(predicate/*, thisArg*/) {
         /* Steps a-c. */
         var kValue = O[k];
         /* Steps d-f. */
-        if (callFunction(predicate, T, kValue, k, O))
+        if (callContentFunction(predicate, T, kValue, k, O))
             return kValue;
     }
 
@@ -475,7 +523,7 @@ function ArrayFindIndex(predicate/*, thisArg*/) {
      */
     for (var k = 0; k < len; k++) {
         /* Steps a-f. */
-        if (callFunction(predicate, T, O[k], k, O))
+        if (callContentFunction(predicate, T, O[k], k, O))
             return k;
     }
 
@@ -624,30 +672,19 @@ function ArrayIncludes(searchElement, fromIndex = 0) {
     return false;
 }
 
-#define ARRAY_ITERATOR_SLOT_ITERATED_OBJECT 0
-#define ARRAY_ITERATOR_SLOT_NEXT_INDEX 1
-#define ARRAY_ITERATOR_SLOT_ITEM_KIND 2
-
-#define ITEM_KIND_VALUE 0
-#define ITEM_KIND_KEY_AND_VALUE 1
-#define ITEM_KIND_KEY 2
-
 // ES6 draft specification, section 22.1.5.1, version 2013-09-05.
 function CreateArrayIteratorAt(obj, kind, n) {
     var iteratedObject = ToObject(obj);
     var iterator = NewArrayIterator();
-    UnsafeSetReservedSlot(iterator, ARRAY_ITERATOR_SLOT_ITERATED_OBJECT, iteratedObject);
-    UnsafeSetReservedSlot(iterator, ARRAY_ITERATOR_SLOT_NEXT_INDEX, n);
-    UnsafeSetReservedSlot(iterator, ARRAY_ITERATOR_SLOT_ITEM_KIND, kind);
+    UnsafeSetReservedSlot(iterator, ITERATOR_SLOT_TARGET, iteratedObject);
+    UnsafeSetReservedSlot(iterator, ITERATOR_SLOT_NEXT_INDEX, n);
+    UnsafeSetReservedSlot(iterator, ITERATOR_SLOT_ITEM_KIND, kind);
     return iterator;
 }
 function CreateArrayIterator(obj, kind) {
     return CreateArrayIteratorAt(obj, kind, 0);
 }
 
-function ArrayIteratorIdentity() {
-    return this;
-}
 
 function ArrayIteratorNext() {
     if (!IsObject(this) || !IsArrayIterator(this)) {
@@ -655,22 +692,22 @@ function ArrayIteratorNext() {
                             "ArrayIteratorNext");
     }
 
-    var a = UnsafeGetObjectFromReservedSlot(this, ARRAY_ITERATOR_SLOT_ITERATED_OBJECT);
+    var a = UnsafeGetObjectFromReservedSlot(this, ITERATOR_SLOT_TARGET);
     // The index might not be an integer, so we have to do a generic get here.
-    var index = UnsafeGetReservedSlot(this, ARRAY_ITERATOR_SLOT_NEXT_INDEX);
-    var itemKind = UnsafeGetInt32FromReservedSlot(this, ARRAY_ITERATOR_SLOT_ITEM_KIND);
+    var index = UnsafeGetReservedSlot(this, ITERATOR_SLOT_NEXT_INDEX);
+    var itemKind = UnsafeGetInt32FromReservedSlot(this, ITERATOR_SLOT_ITEM_KIND);
     var result = { value: undefined, done: false };
 
     // FIXME: This should be ToLength, which clamps at 2**53.  Bug 924058.
     if (index >= TO_UINT32(a.length)) {
         // When the above is changed to ToLength, use +1/0 here instead
         // of MAX_UINT32.
-        UnsafeSetReservedSlot(this, ARRAY_ITERATOR_SLOT_NEXT_INDEX, 0xffffffff);
+        UnsafeSetReservedSlot(this, ITERATOR_SLOT_NEXT_INDEX, 0xffffffff);
         result.done = true;
         return result;
     }
 
-    UnsafeSetReservedSlot(this, ARRAY_ITERATOR_SLOT_NEXT_INDEX, index + 1);
+    UnsafeSetReservedSlot(this, ITERATOR_SLOT_NEXT_INDEX, index + 1);
 
     if (itemKind === ITEM_KIND_VALUE) {
         result.value = a[index];
@@ -678,9 +715,7 @@ function ArrayIteratorNext() {
     }
 
     if (itemKind === ITEM_KIND_KEY_AND_VALUE) {
-        var pair = NewDenseArray(2);
-        pair[0] = index;
-        pair[1] = a[index];
+        var pair = [index, a[index]];
         result.value = pair;
         return result;
     }
@@ -736,7 +771,7 @@ function ArrayFrom(items, mapfn=undefined, thisArg=undefined) {
         // See <https://bugs.ecmascript.org/show_bug.cgi?id=2883>.
         while (true) {
             // Steps 6.g.i-iii.
-            var next = iterator.next();
+            var next = callContentFunction(iterator.next, iterator);
             if (!IsObject(next))
                 ThrowTypeError(JSMSG_NEXT_RETURNED_PRIMITIVE);
 
@@ -750,7 +785,7 @@ function ArrayFrom(items, mapfn=undefined, thisArg=undefined) {
             var nextValue = next.value;
 
             // Steps 6.g.vii-viii.
-            var mappedValue = mapping ? callFunction(mapfn, thisArg, nextValue, k) : nextValue;
+            var mappedValue = mapping ? callContentFunction(mapfn, thisArg, nextValue, k) : nextValue;
 
             // Steps 6.g.ix-xi.
             _DefineDataProperty(A, k++, mappedValue);
@@ -767,7 +802,7 @@ function ArrayFrom(items, mapfn=undefined, thisArg=undefined) {
     var len = ToLength(arrayLike.length);
 
     // Steps 12-14.
-    var A = IsConstructor(C) ? new C(len) : NewDenseArray(len);
+    var A = IsConstructor(C) ? new C(len) : std_Array(len);
 
     // Steps 15-16.
     for (var k = 0; k < len; k++) {
@@ -775,7 +810,7 @@ function ArrayFrom(items, mapfn=undefined, thisArg=undefined) {
         var kValue = items[k];
 
         // Steps 16.d-e.
-        var mappedValue = mapping ? callFunction(mapfn, thisArg, kValue, k) : kValue;
+        var mappedValue = mapping ? callContentFunction(mapfn, thisArg, kValue, k) : kValue;
 
         // Steps 16.f-g.
         _DefineDataProperty(A, k, mappedValue);
@@ -786,4 +821,18 @@ function ArrayFrom(items, mapfn=undefined, thisArg=undefined) {
 
     // Step 19.
     return A;
+}
+
+// ES2015 22.1.3.27 Array.prototype.toString.
+function ArrayToString() {
+    // Steps 1-2.
+    var array = ToObject(this);
+
+    // Steps 3-4.
+    var func = array.join;
+
+    // Steps 5-6.
+    if (!IsCallable(func))
+        return callFunction(std_Object_toString, array);
+    return callContentFunction(func, array);
 }

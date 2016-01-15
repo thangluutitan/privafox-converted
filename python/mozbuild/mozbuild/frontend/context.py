@@ -24,7 +24,6 @@ from collections import (
 )
 from mozbuild.util import (
     HierarchicalStringList,
-    HierarchicalStringListWithFlagsFactory,
     KeyedDefaultDict,
     List,
     memoize,
@@ -35,9 +34,10 @@ from mozbuild.util import (
     TypedList,
     TypedNamedTuple,
 )
+
+from ..testing import all_test_flavors
 import mozpack.path as mozpath
 from types import FunctionType
-from UserString import UserString
 
 import itertools
 
@@ -46,6 +46,7 @@ class ContextDerivedValue(object):
     """Classes deriving from this one receive a special treatment in a
     Context. See Context documentation.
     """
+    __slots__ = ()
 
 
 class Context(KeyedDefaultDict):
@@ -86,7 +87,6 @@ class Context(KeyedDefaultDict):
         # a list to be a problem.
         self._all_paths = []
         self.config = config
-        self.execution_time = 0
         self._sandbox = None
         KeyedDefaultDict.__init__(self, self._factory)
 
@@ -330,8 +330,13 @@ class PathMeta(type):
             assert isinstance(context, Context)
             if isinstance(value, Path):
                 context = value.context
-        if not issubclass(cls, (SourcePath, ObjDirPath)):
-            cls = ObjDirPath if value.startswith('!') else SourcePath
+        if not issubclass(cls, (SourcePath, ObjDirPath, AbsolutePath)):
+            if value.startswith('!'):
+                cls = ObjDirPath
+            elif value.startswith('%'):
+                cls = AbsolutePath
+            else:
+                cls = SourcePath
         return super(PathMeta, cls).__call__(context, value)
 
 class Path(ContextDerivedValue, unicode):
@@ -343,6 +348,7 @@ class Path(ContextDerivedValue, unicode):
       - 'srcdir/relative/paths'
       - '!/topobjdir/relative/paths'
       - '!objdir/relative/paths'
+      - '%/filesystem/absolute/paths'
     """
     __metaclass__ = PathMeta
 
@@ -398,6 +404,8 @@ class SourcePath(Path):
     def __init__(self, context, value):
         if value.startswith('!'):
             raise ValueError('Object directory paths are not allowed')
+        if value.startswith('%'):
+            raise ValueError('Filesystem absolute paths are not allowed')
         super(SourcePath, self).__init__(context, value)
 
         if value.startswith('/'):
@@ -429,7 +437,7 @@ class ObjDirPath(Path):
     """Like Path, but limited to paths in the object directory."""
     def __init__(self, context, value=None):
         if not value.startswith('!'):
-            raise ValueError('Source paths are not allowed')
+            raise ValueError('Object directory paths must start with ! prefix')
         super(ObjDirPath, self).__init__(context, value)
 
         if value.startswith('!/'):
@@ -437,6 +445,18 @@ class ObjDirPath(Path):
         else:
             path = mozpath.join(context.objdir, value[1:])
         self.full_path = mozpath.normpath(path)
+
+
+class AbsolutePath(Path):
+    """Like Path, but allows arbitrary paths outside the source and object directories."""
+    def __init__(self, context, value=None):
+        if not value.startswith('%'):
+            raise ValueError('Absolute paths must start with % prefix')
+        if not os.path.isabs(value[1:]):
+            raise ValueError('Path \'%s\' is not absolute' % value[1:])
+        super(AbsolutePath, self).__init__(context, value)
+
+        self.full_path = mozpath.normpath(value[1:])
 
 
 @memoize
@@ -468,12 +488,76 @@ def ContextDerivedTypedListWithItems(type, base_class=List):
     return _TypedListWithItems
 
 
+@memoize
+def ContextDerivedTypedRecord(*fields):
+    """Factory for objects with certain properties and dynamic
+    type checks.
+
+    This API is extremely similar to the TypedNamedTuple API,
+    except that properties may be mutated. This supports syntax like:
+
+    VARIABLE_NAME.property += [
+      'item1',
+      'item2',
+    ]
+    """
+
+    class _TypedRecord(ContextDerivedValue):
+        __slots__ = tuple([name for name, _ in fields])
+
+        def __init__(self, context):
+            for fname, ftype in self._fields.items():
+                if issubclass(ftype, ContextDerivedValue):
+                    setattr(self, fname, self._fields[fname](context))
+                else:
+                    setattr(self, fname, self._fields[fname]())
+
+        def __setattr__(self, name, value):
+            if name in self._fields and not isinstance(value, self._fields[name]):
+                value = self._fields[name](value)
+            object.__setattr__(self, name, value)
+
+    _TypedRecord._fields = dict(fields)
+    return _TypedRecord
+
+
+@memoize
+def ContextDerivedTypedHierarchicalStringList(type):
+    """Specialized HierarchicalStringList for use with ContextDerivedValue
+    types."""
+    class _TypedListWithItems(ContextDerivedValue, HierarchicalStringList):
+        __slots__ = ('_strings', '_children', '_context')
+
+        def __init__(self, context):
+            self._strings = ContextDerivedTypedList(
+                type, StrictOrderingOnAppendList)(context)
+            self._children = {}
+            self._context = context
+
+        def _get_exportvariable(self, name):
+            child = self._children.get(name)
+            if not child:
+                child = self._children[name] = _TypedListWithItems(
+                    self._context)
+            return child
+
+    return _TypedListWithItems
+
+
 BugzillaComponent = TypedNamedTuple('BugzillaComponent',
                         [('product', unicode), ('component', unicode)])
 
 WebPlatformTestManifest = TypedNamedTuple("WebPlatformTestManifest",
                                           [("manifest_path", unicode),
                                            ("test_root", unicode)])
+
+OrderedSourceList = ContextDerivedTypedList(SourcePath, StrictOrderingOnAppendList)
+OrderedTestFlavorList = TypedList(Enum(*all_test_flavors()),
+                                  StrictOrderingOnAppendList)
+OrderedStringList = TypedList(unicode, StrictOrderingOnAppendList)
+DependentTestsEntry = ContextDerivedTypedRecord(('files', OrderedSourceList),
+                                                ('tags', OrderedStringList),
+                                                ('flavors', OrderedTestFlavorList))
 
 class Files(SubContext):
     """Metadata attached to files.
@@ -543,17 +627,79 @@ class Files(SubContext):
 
             See :ref:`mozbuild_files_metadata_finalizing` for more info.
             """, None),
+        'IMPACTED_TESTS': (DependentTestsEntry, list,
+            """File patterns, tags, and flavors for tests relevant to these files.
+
+            Maps source files to the tests potentially impacted by those files.
+            Tests can be specified by file pattern, tag, or flavor.
+
+            For example:
+
+            with Files('runtests.py'):
+               IMPACTED_TESTS.files += [
+                   '**',
+               ]
+
+            in testing/mochitest/moz.build will suggest that any of the tests
+            under testing/mochitest may be impacted by a change to runtests.py.
+
+            File patterns may be made relative to the topsrcdir with a leading
+            '/', so
+
+            with Files('httpd.js'):
+               IMPACTED_TESTS.files += [
+                   '/testing/mochitest/tests/Harness_sanity/**',
+               ]
+
+            in netwerk/test/httpserver/moz.build will suggest that any change to httpd.js
+            will be relevant to the mochitest sanity tests.
+
+            Tags and flavors are sorted string lists (flavors are limited to valid
+            values).
+
+            For example:
+
+            with Files('toolkit/devtools/*'):
+                IMPACTED_TESTS.tags += [
+                    'devtools',
+                ]
+
+            in the root moz.build would suggest that any test tagged 'devtools' would
+            potentially be impacted by a change to a file under toolkit/devtools, and
+
+            with Files('dom/base/nsGlobalWindow.cpp'):
+                IMPACTED_TESTS.flavors += [
+                    'mochitest',
+                ]
+
+            Would suggest that nsGlobalWindow.cpp is potentially relevant to
+            any plain mochitest.
+            """, None),
     }
 
     def __init__(self, parent, pattern=None):
         super(Files, self).__init__(parent)
         self.pattern = pattern
         self.finalized = set()
+        self.test_files = set()
+        self.test_tags = set()
+        self.test_flavors = set()
 
     def __iadd__(self, other):
         assert isinstance(other, Files)
 
+        self.test_files |= other.test_files
+        self.test_tags |= other.test_tags
+        self.test_flavors |= other.test_flavors
+
         for k, v in other.items():
+            if k == 'IMPACTED_TESTS':
+                self.test_files |= set(mozpath.relpath(e.full_path, e.context.config.topsrcdir)
+                                       for e in v.files)
+                self.test_tags |= set(v.tags)
+                self.test_flavors |= set(v.flavors)
+                continue
+
             # Ignore updates to finalized flags.
             if k in self.finalized:
                 continue
@@ -661,6 +807,15 @@ SUBCONTEXTS = {cls.__name__: cls for cls in SUBCONTEXTS}
 # A value of None means the variable has no direct effect on any tier.
 
 VARIABLES = {
+    'ALLOW_COMPILER_WARNINGS': (bool, bool,
+        """Whether to allow compiler warnings (i.e. *not* treat them as
+        errors).
+
+        This is commonplace (almost mandatory, in fact) in directories
+        containing third-party code that we regularly update from upstream and
+        thus do not control, but is otherwise discouraged.
+        """, None),
+
     # Variables controlling reading of other frontend files.
     'ANDROID_GENERATED_RESFILES': (StrictOrderingOnAppendList, list,
         """Android resource files generated as part of the build.
@@ -671,12 +826,41 @@ VARIABLES = {
         file.
         """, 'export'),
 
-    'ANDROID_RES_DIRS': (List, list,
+    'ANDROID_APK_NAME': (unicode, unicode,
+        """The name of an Android APK file to generate.
+        """, 'export'),
+
+    'ANDROID_APK_PACKAGE': (unicode, unicode,
+        """The name of the Android package to generate R.java for, like org.mozilla.gecko.
+        """, 'export'),
+
+    'ANDROID_EXTRA_PACKAGES': (StrictOrderingOnAppendList, list,
+        """The name of extra Android packages to generate R.java for, like ['org.mozilla.other'].
+        """, 'export'),
+
+    'ANDROID_EXTRA_RES_DIRS': (ContextDerivedTypedListWithItems(Path, List), list,
+        """Android extra package resource directories.
+
+        This variable contains a list of directories containing static files
+        to package into a 'res' directory and merge into an APK file.  These
+        directories are packaged into the APK but are assumed to be static
+        unchecked dependencies that should not be otherwise re-distributed.
+        """, 'export'),
+
+    'ANDROID_RES_DIRS': (ContextDerivedTypedListWithItems(Path, List), list,
         """Android resource directories.
 
-        This variable contains a list of directories, each relative to
-        the srcdir, containing static files to package into a 'res'
-        directory and merge into an APK file.
+        This variable contains a list of directories containing static
+        files to package into a 'res' directory and merge into an APK
+        file.
+        """, 'export'),
+
+    'ANDROID_ASSETS_DIRS': (ContextDerivedTypedListWithItems(Path, List), list,
+        """Android assets directories.
+
+        This variable contains a list of directories containing static
+        files to package into an 'assets' directory and merge into an
+        APK file.
         """, 'export'),
 
     'ANDROID_ECLIPSE_PROJECT_TARGETS': (dict, dict,
@@ -746,6 +930,9 @@ VARIABLES = {
           GENERATED_FILES += ['bar.c']
           bar = GENERATED_FILES['bar.c']
           bar.script = 'generate.py:make_bar'
+
+        The chosen script entry point may optionally return a set of strings,
+        indicating extra files the output depends on.
         """, 'export'),
 
     'DEFINES': (OrderedDict, dict,
@@ -813,7 +1000,7 @@ VARIABLES = {
         break the build in subtle ways.
         """, 'misc'),
 
-    'FINAL_TARGET_FILES': (HierarchicalStringList, list,
+    'FINAL_TARGET_FILES': (ContextDerivedTypedHierarchicalStringList(Path), list,
         """List of files to be installed into the application directory.
 
         ``FINAL_TARGET_FILES`` will copy (or symlink, if the platform supports it)
@@ -833,51 +1020,15 @@ VARIABLES = {
         disabled.
         """, None),
 
-    'DIST_FILES': (StrictOrderingOnAppendList, list,
-        """Additional files to place in ``FINAL_TARGET`` (typically ``dist/bin``).
-
-        Unlike ``FINAL_TARGET_FILES``, these files are preprocessed.
+    'FINAL_TARGET_PP_FILES': (ContextDerivedTypedHierarchicalStringList(Path), list,
+        """Like ``FINAL_TARGET_FILES``, with preprocessing.
         """, 'libs'),
 
-    'EXTRA_COMPONENTS': (StrictOrderingOnAppendList, list,
-        """Additional component files to distribute.
+    'TESTING_FILES': (ContextDerivedTypedHierarchicalStringList(Path), list,
+        """List of files to be installed in the _tests directory.
 
-       This variable contains a list of files to copy into
-       ``$(FINAL_TARGET)/components/``.
-        """, 'misc'),
-
-    'EXTRA_JS_MODULES': (HierarchicalStringList, list,
-        """Additional JavaScript files to distribute.
-
-        This variable contains a list of files to copy into
-        ``$(FINAL_TARGET)/modules.
-        """, 'misc'),
-
-    'EXTRA_PP_JS_MODULES': (HierarchicalStringList, list,
-        """Additional JavaScript files to distribute.
-
-        This variable contains a list of files to copy into
-        ``$(FINAL_TARGET)/modules``, after preprocessing.
-        """, 'misc'),
-
-    'TESTING_JS_MODULES': (HierarchicalStringList, list,
-        """JavaScript modules to install in the test-only destination.
-
-        Some JavaScript modules (JSMs) are test-only and not distributed
-        with Firefox. This variable defines them.
-
-        To install modules in a subdirectory, use properties of this
-        variable to control the final destination. e.g.
-
-        ``TESTING_JS_MODULES.foo += ['module.jsm']``.
+        This works similarly to FINAL_TARGET_FILES.
         """, None),
-
-    'EXTRA_PP_COMPONENTS': (StrictOrderingOnAppendList, list,
-        """Javascript XPCOM files.
-
-       This variable contains a list of files to preprocess.  Generated
-       files will be installed in the ``/components`` directory of the distribution.
-        """, 'misc'),
 
     'FINAL_LIBRARY': (unicode, unicode,
         """Library in which the objects of the current directory will be linked.
@@ -898,10 +1049,6 @@ VARIABLES = {
         ``BIN_SUFFIX``, the name will remain unchanged.
         """, None),
 
-    'FAIL_ON_WARNINGS': (bool, bool,
-        """Whether to treat warnings as errors.
-        """, None),
-
     'FORCE_SHARED_LIB': (bool, bool,
         """Whether the library in this directory is a shared library.
         """, None),
@@ -915,11 +1062,6 @@ VARIABLES = {
         runtime library.
 
         This variable only has an effect when building with MSVC.
-        """, None),
-
-    'GENERATED_INCLUDES' : (StrictOrderingOnAppendList, list,
-        """Directories generated by the build system to be searched for include
-        files by the compiler.
         """, None),
 
     'HOST_SOURCES': (ContextDerivedTypedList(SourcePath, StrictOrderingOnAppendList), list,
@@ -948,13 +1090,6 @@ VARIABLES = {
 
         This variable should not be populated directly. Instead, it should
         populated by calling add_java_jar().
-        """, 'libs'),
-
-    'JS_PREFERENCE_FILES': (StrictOrderingOnAppendList, list,
-        """Exported javascript files.
-
-        A list of files copied into the dist directory for packaging and installation.
-        Path will be defined for gre or application prefs dir based on what is building.
         """, 'libs'),
 
     'LIBRARY_DEFINES': (OrderedDict, dict,
@@ -1009,7 +1144,7 @@ VARIABLES = {
         """List of system libraries for host programs and libraries.
         """, None),
 
-    'LOCAL_INCLUDES': (StrictOrderingOnAppendList, list,
+    'LOCAL_INCLUDES': (ContextDerivedTypedList(Path, StrictOrderingOnAppendList), list,
         """Additional directories to be searched for include files by the compiler.
         """, None),
 
@@ -1056,7 +1191,7 @@ VARIABLES = {
         This variable can only be used on Linux.
         """, None),
 
-    'BRANDING_FILES': (HierarchicalStringListWithFlagsFactory({'source': unicode}), list,
+    'BRANDING_FILES': (HierarchicalStringList, list,
         """List of files to be installed into the branding directory.
 
         ``BRANDING_FILES`` will copy (or symlink, if the platform supports it)
@@ -1068,35 +1203,6 @@ VARIABLES = {
 
            BRANDING_FILES += ['foo.png']
            BRANDING_FILES.images.subdir += ['bar.png']
-
-        If the source and destination have different file names, add the
-        destination name to the list and set the ``source`` property on the
-        entry, like so::
-
-           BRANDING_FILES.dir += ['baz.png']
-           BRANDING_FILES.dir['baz.png'].source = 'quux.png'
-        """, None),
-
-    'RESOURCE_FILES': (HierarchicalStringListWithFlagsFactory({'preprocess': bool}), list,
-        """List of resources to be exported, and in which subdirectories.
-
-        ``RESOURCE_FILES`` is used to list the resource files to be exported to
-        ``dist/bin/res``, but it can be used for other files as well. This variable
-        behaves as a list when appending filenames for resources in the top-level
-        directory. Files can also be appended to a field to indicate which
-        subdirectory they should be exported to. For example, to export
-        ``foo.res`` to the top-level directory, and ``bar.res`` to ``fonts/``,
-        append to ``RESOURCE_FILES`` like so::
-
-           RESOURCE_FILES += ['foo.res']
-           RESOURCE_FILES.fonts += ['bar.res']
-
-        Added files also have a 'preprocess' attribute, which will cause the
-        affected file to be run through the preprocessor, using any ``DEFINES``
-        set. It is used like this::
-
-           RESOURCE_FILES.fonts += ['baz.res.in']
-           RESOURCE_FILES.fonts['baz.res.in'].preprocess = True
         """, None),
 
     'SDK_LIBRARY': (bool, bool,
@@ -1144,7 +1250,7 @@ VARIABLES = {
         complete.
         """, None),
 
-    'CONFIGURE_SUBST_FILES': (StrictOrderingOnAppendList, list,
+    'CONFIGURE_SUBST_FILES': (ContextDerivedTypedList(SourcePath, StrictOrderingOnAppendList), list,
         """Output files that will be generated using configure-like substitution.
 
         This is a substitute for ``AC_OUTPUT`` in autoconf. For each path in this
@@ -1154,7 +1260,7 @@ VARIABLES = {
         ``AC_SUBST`` variables declared during configure.
         """, None),
 
-    'CONFIGURE_DEFINE_FILES': (StrictOrderingOnAppendList, list,
+    'CONFIGURE_DEFINE_FILES': (ContextDerivedTypedList(SourcePath, StrictOrderingOnAppendList), list,
         """Output files generated from configure/config.status.
 
         This is a substitute for ``AC_CONFIG_HEADER`` in autoconf. This is very
@@ -1162,7 +1268,7 @@ VARIABLES = {
         into account the values of ``AC_DEFINE`` instead of ``AC_SUBST``.
         """, None),
 
-    'EXPORTS': (HierarchicalStringList, list,
+    'EXPORTS': (ContextDerivedTypedHierarchicalStringList(Path), list,
         """List of files to be exported, and in which subdirectories.
 
         ``EXPORTS`` is generally used to list the include files to be exported to
@@ -1175,6 +1281,10 @@ VARIABLES = {
 
            EXPORTS += ['foo.h']
            EXPORTS.mozilla.dom += ['bar.h']
+
+        Entries in ``EXPORTS`` are paths, so objdir paths may be used, but
+        any files listed from the objdir must also be listed in
+        ``GENERATED_FILES``.
         """, None),
 
     'PROGRAM' : (unicode, unicode,
@@ -1465,6 +1575,11 @@ VARIABLES = {
            appear in the moz.build file.
         """, None),
 
+    'HOST_DEFINES': (OrderedDict, dict,
+        """Dictionary of compiler defines to declare for host compilation.
+        See ``DEFINES`` for specifics.
+        """, None),
+
     'CMFLAGS': (List, list,
         """Flags passed to the Objective-C compiler for all of the Objective-C
            source files declared in this directory.
@@ -1489,6 +1604,24 @@ VARIABLES = {
 
            Note that the ordering of flags matters here; these flags will be
            added to the assembler's command line in the same order as they
+           appear in the moz.build file.
+        """, None),
+
+    'HOST_CFLAGS': (List, list,
+        """Flags passed to the host C compiler for all of the C source files
+           declared in this directory.
+
+           Note that the ordering of flags matters here, these flags will be
+           added to the compiler's command line in the same order as they
+           appear in the moz.build file.
+        """, None),
+
+    'HOST_CXXFLAGS': (List, list,
+        """Flags passed to the host C++ compiler for all of the C++ source files
+           declared in this directory.
+
+           Note that the ordering of flags matters here; these flags will be
+           added to the compiler's command line in the same order as they
            appear in the moz.build file.
         """, None),
 
@@ -1538,6 +1671,11 @@ VARIABLES = {
     'NO_EXPAND_LIBS': (bool, bool,
         """Forces to build a real static library, and no corresponding fake
            library.
+        """, None),
+
+    'NO_COMPONENTS_MANIFEST': (bool, bool,
+        """Do not create a binary-component manifest entry for the
+        corresponding XPCOMBinaryComponent.
         """, None),
 }
 
@@ -1795,6 +1933,73 @@ SPECIAL_VARIABLES = {
 
         Access to an unknown variable will return None.
         """),
+
+    'EXTRA_COMPONENTS': (lambda context: context['FINAL_TARGET_FILES'].components._strings, list,
+        """Additional component files to distribute.
+
+       This variable contains a list of files to copy into
+       ``$(FINAL_TARGET)/components/``.
+        """),
+
+    'EXTRA_PP_COMPONENTS': (lambda context: context['FINAL_TARGET_PP_FILES'].components._strings, list,
+        """Javascript XPCOM files.
+
+       This variable contains a list of files to preprocess.  Generated
+       files will be installed in the ``/components`` directory of the distribution.
+        """),
+
+    'JS_PREFERENCE_FILES': (lambda context: context['FINAL_TARGET_FILES'].defaults.pref._strings, list,
+        """Exported javascript files.
+
+        A list of files copied into the dist directory for packaging and installation.
+        Path will be defined for gre or application prefs dir based on what is building.
+        """),
+
+    'JS_PREFERENCE_PP_FILES': (lambda context: context['FINAL_TARGET_PP_FILES'].defaults.pref._strings, list,
+        """Like JS_PREFERENCE_FILES, preprocessed..
+        """),
+
+    'RESOURCE_FILES': (lambda context: context['FINAL_TARGET_FILES'].res, list,
+        """List of resources to be exported, and in which subdirectories.
+
+        ``RESOURCE_FILES`` is used to list the resource files to be exported to
+        ``dist/bin/res``, but it can be used for other files as well. This variable
+        behaves as a list when appending filenames for resources in the top-level
+        directory. Files can also be appended to a field to indicate which
+        subdirectory they should be exported to. For example, to export
+        ``foo.res`` to the top-level directory, and ``bar.res`` to ``fonts/``,
+        append to ``RESOURCE_FILES`` like so::
+
+           RESOURCE_FILES += ['foo.res']
+           RESOURCE_FILES.fonts += ['bar.res']
+        """),
+
+    'EXTRA_JS_MODULES': (lambda context: context['FINAL_TARGET_FILES'].modules, list,
+        """Additional JavaScript files to distribute.
+
+        This variable contains a list of files to copy into
+        ``$(FINAL_TARGET)/modules.
+        """),
+
+    'EXTRA_PP_JS_MODULES': (lambda context: context['FINAL_TARGET_PP_FILES'].modules, list,
+        """Additional JavaScript files to distribute.
+
+        This variable contains a list of files to copy into
+        ``$(FINAL_TARGET)/modules``, after preprocessing.
+        """),
+
+    'TESTING_JS_MODULES': (lambda context: context['TESTING_FILES'].modules, list,
+        """JavaScript modules to install in the test-only destination.
+
+        Some JavaScript modules (JSMs) are test-only and not distributed
+        with Firefox. This variable defines them.
+
+        To install modules in a subdirectory, use properties of this
+        variable to control the final destination. e.g.
+
+        ``TESTING_JS_MODULES.foo += ['module.jsm']``.
+        """),
+
 }
 
 # Deprecation hints.
@@ -1926,6 +2131,26 @@ DEPRECATION_HINTS = {
         instead of
 
             GENERATED_SOURCES += [ 'foo.cpp']
+    ''',
+
+    'GENERATED_INCLUDES': '''
+        Please use
+
+            LOCAL_INCLUDES += [ '!foo' ]
+
+        instead of
+
+            GENERATED_INCLUDES += [ 'foo' ]
+    ''',
+
+    'DIST_FILES': '''
+        Please use
+
+            FINAL_TARGET_PP_FILES += [ 'foo' ]
+
+        instead of
+
+            DIST_FILES += [ 'foo' ]
     ''',
 }
 

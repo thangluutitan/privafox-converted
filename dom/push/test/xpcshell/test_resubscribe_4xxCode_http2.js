@@ -72,7 +72,9 @@ add_task(function* test1() {
     subscriptionUri: serverURL + '/subscription4xxCode',
     pushEndpoint: serverURL + '/pushEndpoint',
     pushReceiptEndpoint: serverURL + '/pushReceiptEndpoint',
-    scope: 'https://example.com/page'
+    scope: 'https://example.com/page',
+    originAttributes: '',
+    quota: Infinity,
   }];
 
   for (let record of records) {
@@ -81,7 +83,6 @@ add_task(function* test1() {
 
   PushService.init({
     serverURI: serverURL + "/subscribe",
-    service: PushServiceHttp2,
     db
   });
 

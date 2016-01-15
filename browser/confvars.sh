@@ -7,9 +7,9 @@ MOZ_APP_BASENAME=Privafox
 MOZ_APP_VENDOR=Privacore
 MOZ_UPDATER=1
 MOZ_PHOENIX=1
+
 if test "$OS_ARCH" = "WINNT"; then
   MOZ_MAINTENANCE_SERVICE=1
-  MOZ_VERIFY_MAR_SIGNATURE=1
   if ! test "$HAVE_64BIT_BUILD"; then
     if test "$MOZ_UPDATE_CHANNEL" = "nightly" -o \
             "$MOZ_UPDATE_CHANNEL" = "aurora" -o \
@@ -20,8 +20,6 @@ if test "$OS_ARCH" = "WINNT"; then
       fi
     fi
   fi
-elif test "$OS_ARCH" = "Darwin"; then
-  MOZ_VERIFY_MAR_SIGNATURE=1
 fi
 
 # Enable building ./signmar and running libmar signature tests
@@ -32,14 +30,12 @@ MOZ_DISABLE_EXPORT_JS=1
 #MOZ_SAFE_BROWSING=1
 MOZ_SERVICES_COMMON=1
 MOZ_SERVICES_CRYPTO=1
+#MOZ_SERVICES_HEALTHREPORT=1
 MOZ_SERVICES_METRICS=1
-MOZ_SERVICES_SYNC=1
+#MOZ_SERVICES_SYNC=1
 MOZ_SERVICES_CLOUDSYNC=1
-PRIVAFOX_WEB_DEVELOPER=1
-PRIVAFOX_DEV=1
-# MOZ_DEV_EDITION=1
 MOZ_APP_VERSION=$FIREFOX_VERSION
-MOZ_APP_VERSION_ABOUT=$FIREFOX_VERSION_ABOUT
+MOZ_APP_VERSION_DISPLAY=$FIREFOX_VERSION_DISPLAY
 MOZ_EXTENSIONS_DEFAULT=" gio"
 # MOZ_APP_DISPLAYNAME will be set by branding/configure.sh
 # MOZ_BRANDING_DIRECTORY is the default branding directory used when none is
@@ -47,16 +43,15 @@ MOZ_EXTENSIONS_DEFAULT=" gio"
 # For mozilla-beta, mozilla-release, or mozilla-central repositories, use
 # "unofficial" branding.
 # For the mozilla-aurora repository, use "aurora".
-MOZ_BRANDING_DIRECTORY=browser/branding/privafox
-MOZ_OFFICIAL_BRANDING_DIRECTORY=browser/branding/privafox
+MOZ_BRANDING_DIRECTORY=browser/branding/unofficial
+MOZ_OFFICIAL_BRANDING_DIRECTORY=browser/branding/official
 MOZ_APP_ID={ec8030f7-c20a-464f-9b0e-13a3a9e97384}
 # This should usually be the same as the value MAR_CHANNEL_ID.
 # If more than one ID is needed, then you should use a comma separated list
 # of values.
-# ACCEPTED_MAR_CHANNEL_IDS=privafox-privacore-central
-ACCEPTED_MAR_CHANNEL_IDS=privafox-privacore-central
+ACCEPTED_MAR_CHANNEL_IDS=privafox-mozilla-central
 # The MAR_CHANNEL_ID must not contain the following 3 characters: ",\t "
-MAR_CHANNEL_ID=privafox-privacore-central
+MAR_CHANNEL_ID=privafox-mozilla-central
 MOZ_PROFILE_MIGRATOR=1
 MOZ_APP_STATIC_INI=1
 MOZ_WEBAPP_RUNTIME=1
@@ -68,13 +63,10 @@ MOZ_PAY=1
 MOZ_ACTIVITIES=1
 MOZ_JSDOWNLOADS=1
 MOZ_WEBM_ENCODER=1
+MOZ_RUST_MP4PARSE=1
 
 # Enable checking that add-ons are signed by the trusted root
 MOZ_ADDON_SIGNING=1
-if test "$MOZ_OFFICIAL_BRANDING"; then
-  if test "$MOZ_UPDATE_CHANNEL" = "beta" -o \
-          "$MOZ_UPDATE_CHANNEL" = "release" -o \
-          "$MOZ_UPDATE_CHANNEL" = "esr"; then
-    MOZ_REQUIRE_SIGNING=1
-  fi
-fi
+
+# Include the DevTools client, not just the server (which is the default)
+MOZ_DEVTOOLS=all

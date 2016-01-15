@@ -12,7 +12,7 @@ Cu.import("resource://gre/modules/AddonManager.jsm");
 Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/AppConstants.jsm");
 
-let Experiments;
+var Experiments;
 try {
   Experiments = Cu.import("resource:///modules/experiments/Experiments.jsm").Experiments;
 }
@@ -47,7 +47,6 @@ const PREFS_WHITELIST = [
   "browser.fixup.",
   "browser.history_expire_",
   "browser.link.open_newwindow",
-  "browser.newtab.url",
   "browser.places.",
   "browser.privatebrowsing.",
   "browser.search.context.loadInBackground",
@@ -86,10 +85,19 @@ const PREFS_WHITELIST = [
   "print.",
   "privacy.",
   "security.",
+  "services.sync.declinedEngines",
+  "services.sync.lastPing",
+  "services.sync.lastSync",
+  "services.sync.numClients",
+  "services.sync.engine.",
   "social.enabled",
   "storage.vacuum.last.",
   "svg.",
   "toolkit.startup.recent_crashes",
+  "ui.osk.enabled",
+  "ui.osk.detect_physical_keyboard",
+  "ui.osk.require_tablet_mode",
+  "ui.osk.debug.keyboardDisplayReason",
   "webgl.",
 ];
 
@@ -167,12 +175,12 @@ this.Troubleshoot = {
 // generate the provider's data.  The function is passed a "done" callback, and
 // when done, it must pass its data to the callback.  The resulting snapshot
 // object will contain a name => data entry for each provider.
-let dataProviders = {
+var dataProviders = {
 
   application: function application(done) {
     let data = {
       name: Services.appinfo.name,
-      version: Services.appinfo.version,
+      version: AppConstants.MOZ_APP_VERSION_DISPLAY,
       buildID: Services.appinfo.appBuildID,
       userAgent: Cc["@mozilla.org/network/protocol;1?name=http"].
                  getService(Ci.nsIHttpProtocolHandler).
@@ -181,7 +189,7 @@ let dataProviders = {
     };
 
     if (AppConstants.MOZ_UPDATER)
-      data.updateChannel = Cu.import("resource://gre/modules/UpdateChannel.jsm", {}).UpdateChannel.get();
+      data.updateChannel = Cu.import("resource://gre/modules/UpdateUtils.jsm", {}).UpdateUtils.UpdateChannel;
 
     try {
       data.vendor = Services.prefs.getCharPref("app.support.vendor");
@@ -304,11 +312,15 @@ let dataProviders = {
     data.numAcceleratedWindows = 0;
     let winEnumer = Services.ww.getWindowEnumerator();
     while (winEnumer.hasMoreElements()) {
-      data.numTotalWindows++;
       let winUtils = winEnumer.getNext().
                      QueryInterface(Ci.nsIInterfaceRequestor).
                      getInterface(Ci.nsIDOMWindowUtils);
       try {
+        // NOTE: windowless browser's windows should not be reported in the graphics troubleshoot report
+        if (winUtils.layerManagerType == "None") {
+          continue;
+        }
+        data.numTotalWindows++;
         data.windowLayerManagerType = winUtils.layerManagerType;
         data.windowLayerManagerRemote = winUtils.layerManagerRemote;
         data.supportsHardwareH264 = winUtils.supportsHardwareH264Decoding;

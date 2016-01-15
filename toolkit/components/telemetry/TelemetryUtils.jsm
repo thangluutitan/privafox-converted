@@ -10,9 +10,35 @@ this.EXPORTED_SYMBOLS = [
 
 const {classes: Cc, interfaces: Ci, results: Cr, utils: Cu} = Components;
 
+Cu.import("resource://gre/modules/Preferences.jsm", this);
+
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 
+const PREF_TELEMETRY_ENABLED = "toolkit.telemetry.enabled";
+
+const IS_CONTENT_PROCESS = (function() {
+  // We cannot use Services.appinfo here because in telemetry xpcshell tests,
+  // appinfo is initially unavailable, and becomes available only later on.
+  let runtime = Cc["@mozilla.org/xre/app-info;1"].getService(Ci.nsIXULRuntime);
+  return runtime.processType == Ci.nsIXULRuntime.PROCESS_TYPE_CONTENT;
+})();
+
 this.TelemetryUtils = {
+  /**
+   * True if this is a content process.
+   */
+  get isContentProcess() {
+    return IS_CONTENT_PROCESS;
+  },
+
+  /**
+   * Returns the state of the Telemetry enabled preference, making sure
+   * it correctly evaluates to a boolean type.
+   */
+  get isTelemetryEnabled() {
+    return Preferences.get(PREF_TELEMETRY_ENABLED, false) === true;
+  },
+
   /**
    * Turn a millisecond timestamp into a day timestamp.
    *

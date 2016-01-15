@@ -45,7 +45,7 @@ struct PatchableBackedgeInfo
 };
 
 struct ReciprocalMulConstants {
-    int32_t multiplier;
+    int64_t multiplier;
     int32_t shiftAmount;
 };
 
@@ -55,8 +55,8 @@ struct ReciprocalMulConstants {
 struct NativeToTrackedOptimizations
 {
     // [startOffset, endOffset]
-    CodeOffsetLabel startOffset;
-    CodeOffsetLabel endOffset;
+    CodeOffset startOffset;
+    CodeOffset endOffset;
     const TrackedOptimizations* optimizations;
 };
 
@@ -83,7 +83,12 @@ class CodeGeneratorShared : public LElementVisitor
     uint32_t lastOsiPointOffset_;
     SafepointWriter safepoints_;
     Label invalidate_;
-    CodeOffsetLabel invalidateEpilogueData_;
+    CodeOffset invalidateEpilogueData_;
+
+    // Label for the common return path.
+    NonAssertingLabel returnLabel_;
+
+    FallbackICStubSpace stubSpace_;
 
     js::Vector<SafepointIndex, 0, SystemAllocPolicy> safepointIndices_;
     js::Vector<OsiIndex, 0, SystemAllocPolicy> osiIndices_;
@@ -101,13 +106,13 @@ class CodeGeneratorShared : public LElementVisitor
     Vector<PatchableBackedgeInfo, 0, SystemAllocPolicy> patchableBackedges_;
 
 #ifdef JS_TRACE_LOGGING
-    js::Vector<CodeOffsetLabel, 0, SystemAllocPolicy> patchableTraceLoggers_;
-    js::Vector<CodeOffsetLabel, 0, SystemAllocPolicy> patchableTLScripts_;
+    js::Vector<CodeOffset, 0, SystemAllocPolicy> patchableTraceLoggers_;
+    js::Vector<CodeOffset, 0, SystemAllocPolicy> patchableTLScripts_;
 #endif
 
   public:
     struct NativeToBytecode {
-        CodeOffsetLabel nativeOffset;
+        CodeOffset nativeOffset;
         InlineScriptTree* tree;
         jsbytecode* pc;
     };
@@ -170,7 +175,7 @@ class CodeGeneratorShared : public LElementVisitor
 
   protected:
 #ifdef CHECK_OSIPOINT_REGISTERS
-    // See js_JitOptions.checkOsiPointRegisters. We set this here to avoid
+    // See JitOptions.checkOsiPointRegisters. We set this here to avoid
     // races when enableOsiPointRegisterChecks is called while we're generating
     // code off-thread.
     bool checkOsiPointRegisters;
@@ -298,7 +303,7 @@ class CodeGeneratorShared : public LElementVisitor
 
     // Encode all encountered safepoints in CG-order, and resolve |indices| for
     // safepoint offsets.
-    void encodeSafepoints();
+    bool encodeSafepoints();
 
     // Fixup offsets of native-to-bytecode map.
     bool createNativeToBytecodeScriptList(JSContext* cx);
@@ -447,9 +452,12 @@ class CodeGeneratorShared : public LElementVisitor
 
     void addCache(LInstruction* lir, size_t cacheIndex);
     size_t addCacheLocations(const CacheLocationList& locs, size_t* numLocs);
-    ReciprocalMulConstants computeDivisionConstants(int d);
+    ReciprocalMulConstants computeDivisionConstants(uint32_t d, int maxLog);
 
   protected:
+    bool generatePrologue();
+    bool generateEpilogue();
+
     void addOutOfLineCode(OutOfLineCode* code, const MInstruction* mir);
     void addOutOfLineCode(OutOfLineCode* code, const BytecodeSite* site);
     bool generateOutOfLineCode();
@@ -463,7 +471,7 @@ class CodeGeneratorShared : public LElementVisitor
     void jumpToBlock(MBasicBlock* mir);
 
 // This function is not used for MIPS. MIPS has branchToBlock.
-#ifndef JS_CODEGEN_MIPS
+#if !defined(JS_CODEGEN_MIPS32) && !defined(JS_CODEGEN_MIPS64)
     void jumpToBlock(MBasicBlock* mir, Assembler::Condition cond);
 #endif
 

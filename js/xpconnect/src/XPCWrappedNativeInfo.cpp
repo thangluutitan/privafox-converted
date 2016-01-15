@@ -27,7 +27,7 @@ XPCNativeMember::GetCallInfo(JSObject* funobj,
                              XPCNativeMember**    pMember)
 {
     funobj = js::UncheckedUnwrap(funobj);
-    jsval memberVal =
+    Value memberVal =
         js::GetFunctionNativeReserved(funobj,
                                       XPC_FUNCTION_NATIVE_MEMBER_SLOT);
 
@@ -40,7 +40,7 @@ XPCNativeMember::GetCallInfo(JSObject* funobj,
 bool
 XPCNativeMember::NewFunctionObject(XPCCallContext& ccx,
                                    XPCNativeInterface* iface, HandleObject parent,
-                                   jsval* pval)
+                                   Value* pval)
 {
     MOZ_ASSERT(!IsConstant(), "Only call this if you're sure this is not a constant!");
 
@@ -49,7 +49,7 @@ XPCNativeMember::NewFunctionObject(XPCCallContext& ccx,
 
 bool
 XPCNativeMember::Resolve(XPCCallContext& ccx, XPCNativeInterface* iface,
-                         HandleObject parent, jsval* vp)
+                         HandleObject parent, Value* vp)
 {
     MOZ_ASSERT(iface == GetInterface());
     if (IsConstant()) {
@@ -236,20 +236,20 @@ XPCNativeInterface::NewInstance(nsIInterfaceInfo* aInfo)
     bool mainProcessScriptableOnly;
     if (NS_FAILED(aInfo->IsMainProcessScriptableOnly(&mainProcessScriptableOnly)))
         return nullptr;
-    if (mainProcessScriptableOnly && XRE_GetProcessType() != GeckoProcessType_Default) {
+    if (mainProcessScriptableOnly && !XRE_IsParentProcess()) {
         nsCOMPtr<nsIConsoleService> console(do_GetService(NS_CONSOLESERVICE_CONTRACTID));
         if (console) {
-            char* intfNameChars;
-            aInfo->GetName(&intfNameChars);
+            const char* intfNameChars;
+            aInfo->GetNameShared(&intfNameChars);
             nsPrintfCString errorMsg("Use of %s in content process is deprecated.", intfNameChars);
 
             nsAutoString filename;
-            uint32_t lineno = 0;
-            nsJSUtils::GetCallingLocation(cx, filename, &lineno);
+            uint32_t lineno = 0, column = 0;
+            nsJSUtils::GetCallingLocation(cx, filename, &lineno, &column);
             nsCOMPtr<nsIScriptError> error(do_CreateInstance(NS_SCRIPTERROR_CONTRACTID));
             error->Init(NS_ConvertUTF8toUTF16(errorMsg),
                         filename, EmptyString(),
-                        lineno, 0, nsIScriptError::warningFlag, "chrome javascript");
+                        lineno, column, nsIScriptError::warningFlag, "chrome javascript");
             console->LogMessage(error);
         }
     }

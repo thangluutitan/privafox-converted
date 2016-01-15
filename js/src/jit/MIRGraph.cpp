@@ -18,10 +18,8 @@ using namespace js::jit;
 using mozilla::Swap;
 
 MIRGenerator::MIRGenerator(CompileCompartment* compartment, const JitCompileOptions& options,
-                           TempAllocator* alloc, MIRGraph* graph, CompileInfo* info,
+                           TempAllocator* alloc, MIRGraph* graph, const CompileInfo* info,
                            const OptimizationInfo* optimizationInfo,
-                           Label* outOfBoundsLabel,
-                           Label* conversionErrorLabel,
                            bool usesSignalHandlersForAsmJSOOB)
   : compartment(compartment),
     info_(info),
@@ -38,13 +36,10 @@ MIRGenerator::MIRGenerator(CompileCompartment* compartment, const JitCompileOpti
     performsCall_(false),
     usesSimd_(false),
     usesSimdCached_(false),
-    minAsmJSHeapLength_(0),
     modifiesFrameArguments_(false),
     instrumentedProfiling_(false),
     instrumentedProfilingIsCached_(false),
     safeForMinorGC_(true),
-    outOfBoundsLabel_(outOfBoundsLabel),
-    conversionErrorLabel_(conversionErrorLabel),
 #if defined(ASMJS_MAY_USE_SIGNAL_HANDLERS_FOR_OOB)
     usesSignalHandlersForAsmJSOOB_(usesSignalHandlersForAsmJSOOB),
 #endif
@@ -108,8 +103,9 @@ MIRGenerator::addAbortedPreliminaryGroup(ObjectGroup* group)
         if (group == abortedPreliminaryGroups_[i])
             return;
     }
+    AutoEnterOOMUnsafeRegion oomUnsafe;
     if (!abortedPreliminaryGroups_.append(group))
-        CrashAtUnhandlableOOM("addAbortedPreliminaryGroup");
+        oomUnsafe.crash("addAbortedPreliminaryGroup");
 }
 
 bool
@@ -118,9 +114,10 @@ MIRGenerator::needsAsmJSBoundsCheckBranch(const MAsmJSHeapAccess* access) const
     // A heap access needs a bounds-check branch if we're not relying on signal
     // handlers to catch errors, and if it's not proven to be within bounds.
     // We use signal-handlers on x64, but on x86 there isn't enough address
-    // space for a guard region.
+    // space for a guard region.  Also, on x64 the atomic loads and stores
+    // can't (yet) use the signal handlers.
 #if defined(ASMJS_MAY_USE_SIGNAL_HANDLERS_FOR_OOB)
-    if (usesSignalHandlersForAsmJSOOB_)
+    if (usesSignalHandlersForAsmJSOOB_ && !access->isAtomicAccess())
         return false;
 #endif
     return access->needsBoundsCheck();
@@ -252,7 +249,7 @@ MIRGraph::unmarkBlocks()
 }
 
 MBasicBlock*
-MBasicBlock::New(MIRGraph& graph, BytecodeAnalysis* analysis, CompileInfo& info,
+MBasicBlock::New(MIRGraph& graph, BytecodeAnalysis* analysis, const CompileInfo& info,
                  MBasicBlock* pred, BytecodeSite* site, Kind kind)
 {
     MOZ_ASSERT(site->pc() != nullptr);
@@ -268,7 +265,7 @@ MBasicBlock::New(MIRGraph& graph, BytecodeAnalysis* analysis, CompileInfo& info,
 }
 
 MBasicBlock*
-MBasicBlock::NewPopN(MIRGraph& graph, CompileInfo& info,
+MBasicBlock::NewPopN(MIRGraph& graph, const CompileInfo& info,
                      MBasicBlock* pred, BytecodeSite* site, Kind kind, uint32_t popped)
 {
     MBasicBlock* block = new(graph.alloc()) MBasicBlock(graph, info, site, kind);
@@ -282,7 +279,7 @@ MBasicBlock::NewPopN(MIRGraph& graph, CompileInfo& info,
 }
 
 MBasicBlock*
-MBasicBlock::NewWithResumePoint(MIRGraph& graph, CompileInfo& info,
+MBasicBlock::NewWithResumePoint(MIRGraph& graph, const CompileInfo& info,
                                 MBasicBlock* pred, BytecodeSite* site,
                                 MResumePoint* resumePoint)
 {
@@ -304,7 +301,7 @@ MBasicBlock::NewWithResumePoint(MIRGraph& graph, CompileInfo& info,
 }
 
 MBasicBlock*
-MBasicBlock::NewPendingLoopHeader(MIRGraph& graph, CompileInfo& info,
+MBasicBlock::NewPendingLoopHeader(MIRGraph& graph, const CompileInfo& info,
                                   MBasicBlock* pred, BytecodeSite* site,
                                   unsigned stackPhiCount)
 {
@@ -321,7 +318,7 @@ MBasicBlock::NewPendingLoopHeader(MIRGraph& graph, CompileInfo& info,
 }
 
 MBasicBlock*
-MBasicBlock::NewSplitEdge(MIRGraph& graph, CompileInfo& info, MBasicBlock* pred)
+MBasicBlock::NewSplitEdge(MIRGraph& graph, const CompileInfo& info, MBasicBlock* pred)
 {
     return pred->pc()
            ? MBasicBlock::New(graph, nullptr, info, pred,
@@ -331,7 +328,7 @@ MBasicBlock::NewSplitEdge(MIRGraph& graph, CompileInfo& info, MBasicBlock* pred)
 }
 
 MBasicBlock*
-MBasicBlock::NewAsmJS(MIRGraph& graph, CompileInfo& info, MBasicBlock* pred, Kind kind)
+MBasicBlock::NewAsmJS(MIRGraph& graph, const CompileInfo& info, MBasicBlock* pred, Kind kind)
 {
     BytecodeSite* site = new(graph.alloc()) BytecodeSite();
     MBasicBlock* block = new(graph.alloc()) MBasicBlock(graph, info, site, kind);
@@ -344,17 +341,28 @@ MBasicBlock::NewAsmJS(MIRGraph& graph, CompileInfo& info, MBasicBlock* pred, Kin
         if (block->kind_ == PENDING_LOOP_HEADER) {
             size_t nphis = block->stackPosition_;
 
+            size_t nfree = graph.phiFreeListLength();
+
             TempAllocator& alloc = graph.alloc();
-            MPhi* phis = (MPhi*)alloc.allocateArray<sizeof(MPhi)>(nphis);
-            if (!phis)
-                return nullptr;
+            MPhi* phis = nullptr;
+            if (nphis > nfree) {
+                phis = alloc.allocateArray<MPhi>(nphis - nfree);
+                if (!phis)
+                    return nullptr;
+            }
 
             // Note: Phis are inserted in the same order as the slots.
             for (size_t i = 0; i < nphis; i++) {
                 MDefinition* predSlot = pred->getSlot(i);
 
                 MOZ_ASSERT(predSlot->type() != MIRType_Value);
-                MPhi* phi = new(phis + i) MPhi(alloc, predSlot->type());
+
+                MPhi* phi;
+                if (i < nfree)
+                    phi = graph.takePhiFromFreeList();
+                else
+                    phi = phis + (i - nfree);
+                new(phi) MPhi(alloc, predSlot->type());
 
                 phi->addInput(predSlot);
 
@@ -373,7 +381,7 @@ MBasicBlock::NewAsmJS(MIRGraph& graph, CompileInfo& info, MBasicBlock* pred, Kin
     return block;
 }
 
-MBasicBlock::MBasicBlock(MIRGraph& graph, CompileInfo& info, BytecodeSite* site, Kind kind)
+MBasicBlock::MBasicBlock(MIRGraph& graph, const CompileInfo& info, BytecodeSite* site, Kind kind)
   : unreachable_(false),
     graph_(graph),
     info_(info),
@@ -382,6 +390,7 @@ MBasicBlock::MBasicBlock(MIRGraph& graph, CompileInfo& info, BytecodeSite* site,
     numDominated_(0),
     pc_(site->pc()),
     lir_(nullptr),
+    callerResumePoint_(nullptr),
     entryResumePoint_(nullptr),
     outerResumePoint_(nullptr),
     successorWithPhis_(nullptr),
@@ -391,7 +400,9 @@ MBasicBlock::MBasicBlock(MIRGraph& graph, CompileInfo& info, BytecodeSite* site,
     mark_(false),
     immediatelyDominated_(graph.alloc()),
     immediateDominator_(nullptr),
-    trackedSite_(site)
+    trackedSite_(site),
+    hitCount_(0),
+    hitState_(HitState::NotDefined)
 #if defined (JS_ION_PERF)
     , lineno_(0u),
     columnIndex_(0u)
@@ -605,8 +616,9 @@ MBasicBlock::linkOsrValues(MStart* start)
             MOZ_ASSERT(def->isOsrValue() || def->isGetArgumentsObjectArg() || def->isConstant() ||
                        def->isParameter());
 
-            // A constant Undefined can show up here for an argument slot when the function uses
-            // a heavyweight argsobj, but the argument in question is stored on the scope chain.
+            // A constant Undefined can show up here for an argument slot when
+            // the function has an arguments object, but the argument in
+            // question is stored on the scope chain.
             MOZ_ASSERT_IF(def->isConstant(), def->toConstant()->value() == UndefinedValue());
 
             if (def->isOsrValue())
@@ -1136,16 +1148,18 @@ MBasicBlock::addPredecessorSameInputsAs(MBasicBlock* pred, MBasicBlock* existing
     MOZ_ASSERT(pred->hasLastIns());
     MOZ_ASSERT(!pred->successorWithPhis());
 
+    AutoEnterOOMUnsafeRegion oomUnsafe;
+
     if (!phisEmpty()) {
         size_t existingPosition = indexForPredecessor(existingPred);
         for (MPhiIterator iter = phisBegin(); iter != phisEnd(); iter++) {
             if (!iter->addInputSlow(iter->getOperand(existingPosition)))
-                CrashAtUnhandlableOOM("MBasicBlock::addPredecessorAdjustPhis");
+                oomUnsafe.crash("MBasicBlock::addPredecessorAdjustPhis");
         }
     }
 
     if (!predecessors_.append(pred))
-        CrashAtUnhandlableOOM("MBasicBlock::addPredecessorAdjustPhis");
+        oomUnsafe.crash("MBasicBlock::addPredecessorAdjustPhis");
 }
 
 bool

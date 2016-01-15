@@ -15,6 +15,7 @@
 #include "nsTArray.h"
 #include "mozilla/dom/EventTarget.h"
 #include "js/TypeDecls.h"
+#include "nsRefPtrHashtable.h"
 
 #define DOM_WINDOW_DESTROYED_TOPIC "dom-window-destroyed"
 #define DOM_WINDOW_FROZEN_TOPIC "dom-window-frozen"
@@ -22,6 +23,7 @@
 
 class nsIArray;
 class nsIContent;
+class nsICSSDeclaration;
 class nsIDocShell;
 class nsIDocument;
 class nsIIdleObserver;
@@ -36,11 +38,12 @@ namespace mozilla {
 namespace dom {
 class AudioContext;
 class Element;
-}
+class ServiceWorkerRegistrationMainThread;
+} // namespace dom
 namespace gfx {
 class VRHMDInfo;
-}
-}
+} // namespace gfx
+} // namespace mozilla
 
 // Popup control state enum. The values in this enum must go from most
 // permissive to least permissive so that it's safe to push state in
@@ -62,8 +65,8 @@ enum UIStateChangeType
 };
 
 #define NS_PIDOMWINDOW_IID \
-{ 0x0df7578f, 0x31d4, 0x4391, \
-  { 0x98, 0xd4, 0xf3, 0x7d, 0x51, 0x8e, 0xa4, 0x37 } }
+{ 0x775dabc9, 0x8f43, 0x4277, \
+  { 0x9a, 0xdb, 0xf1, 0x99, 0x0d, 0x77, 0xcf, 0xfb } }
 
 class nsPIDOMWindow : public nsIDOMWindowInternal
 {
@@ -76,6 +79,23 @@ public:
   virtual void ActivateOrDeactivate(bool aActivate) = 0;
 
   // this is called GetTopWindowRoot to avoid conflicts with nsIDOMWindow::GetWindowRoot
+  /**
+   * |top| gets the root of the window hierarchy.
+   *
+   * This function does not cross chrome-content boundaries, so if this
+   * window's parent is of a different type, |top| will return this window.
+   *
+   * When script reads the top property, we run GetScriptableTop, which
+   * will not cross an <iframe mozbrowser> boundary.
+   *
+   * In contrast, C++ calls to GetTop are forwarded to GetRealTop, which
+   * ignores <iframe mozbrowser> boundaries.
+   */
+
+  virtual already_AddRefed<nsPIDOMWindow> GetTop() = 0; // Outer only
+  virtual already_AddRefed<nsPIDOMWindow> GetParent() = 0;
+  virtual nsPIDOMWindow* GetScriptableTop() = 0;
+  virtual nsPIDOMWindow* GetScriptableParent() = 0;
   virtual already_AddRefed<nsPIWindowRoot> GetTopWindowRoot() = 0;
 
   // Inner windows only.
@@ -185,7 +205,8 @@ public:
   float GetAudioVolume() const;
   nsresult SetAudioVolume(float aVolume);
 
-  float GetAudioGlobalVolume();
+  bool GetAudioCaptured() const;
+  nsresult SetAudioCapture(bool aCapture);
 
   virtual void SetServiceWorkersTestingEnabled(bool aEnabled)
   {
@@ -198,6 +219,10 @@ public:
     MOZ_ASSERT(IsOuterWindow());
     return mServiceWorkersTestingEnabled;
   }
+
+  already_AddRefed<mozilla::dom::ServiceWorkerRegistrationMainThread>
+    GetServiceWorkerRegistration(const nsAString& aScope);
+  void InvalidateServiceWorkerRegistration(const nsAString& aScope);
 
 protected:
   // Lazily instantiate an about:blank document if necessary, and if
@@ -290,10 +315,12 @@ public:
 
   // Suspend timeouts in this window and in child windows.
   virtual void SuspendTimeouts(uint32_t aIncrease = 1,
-                               bool aFreezeChildren = true) = 0;
+                               bool aFreezeChildren = true,
+                               bool aFreezeWorkers = true) = 0;
 
   // Resume suspended timeouts in this window and in child windows.
-  virtual nsresult ResumeTimeouts(bool aThawChildren = true) = 0;
+  virtual nsresult ResumeTimeouts(bool aThawChildren = true,
+                                  bool aThawWorkers = true) = 0;
 
   virtual uint32_t TimeoutSuspendCount() = 0;
 
@@ -367,7 +394,7 @@ public:
   /**
    * Get the docshell in this window.
    */
-  nsIDocShell *GetDocShell()
+  nsIDocShell *GetDocShell() const
   {
     if (mOuterWindow) {
       return mOuterWindow->mDocShell;
@@ -461,24 +488,35 @@ public:
     }
   }
 
+  enum FullscreenReason
+  {
+    // Toggling the fullscreen mode requires trusted context.
+    eForFullscreenMode,
+    // Fullscreen API is the API provided to untrusted content.
+    eForFullscreenAPI,
+    // This reason can only be used with exiting fullscreen.
+    // It is otherwise identical to eForFullscreenAPI except it would
+    // suppress the fullscreen transition.
+    eForForceExitFullscreen
+  };
+
   /**
    * Moves the top-level window into fullscreen mode if aIsFullScreen is true,
-   * otherwise exits fullscreen. If aFullscreenMode is true, this method is
-   * called for fullscreen mode instead of DOM fullscreen, which means it can
-   * only change window state in a context trusted for write.
+   * otherwise exits fullscreen.
    *
    * If aHMD is not null, the window is made full screen on the given VR HMD
    * device instead of its currrent display.
    *
    * Outer windows only.
    */
-  virtual nsresult SetFullScreenInternal(bool aIsFullscreen, bool aFullscreenMode,
-                                         mozilla::gfx::VRHMDInfo *aHMD = nullptr) = 0;
+  virtual nsresult SetFullscreenInternal(
+    FullscreenReason aReason, bool aIsFullscreen,
+    mozilla::gfx::VRHMDInfo *aHMD = nullptr) = 0;
 
   /**
    * This function should be called when the fullscreen state is flipped.
    * If no widget is involved the fullscreen change, this method is called
-   * by SetFullScreenInternal, otherwise, it is called when the widget
+   * by SetFullscreenInternal, otherwise, it is called when the widget
    * finishes its change to or from fullscreen.
    *
    * @param aIsFullscreen indicates whether the widget is in fullscreen.
@@ -621,6 +659,11 @@ public:
    */
   virtual void DisableDeviceSensor(uint32_t aType) = 0;
 
+#if defined(MOZ_WIDGET_ANDROID) || defined(MOZ_WIDGET_GONK)
+  virtual void EnableOrientationChangeListener() = 0;
+  virtual void DisableOrientationChangeListener() = 0;
+#endif
+
   virtual void EnableTimeChangeNotifications() = 0;
   virtual void DisableTimeChangeNotifications() = 0;
 
@@ -631,7 +674,7 @@ public:
    *
    * Inner windows only.
    */
-  virtual void EnableNetworkEvent(uint32_t aType) = 0;
+  virtual void EnableNetworkEvent(mozilla::EventMessage aEventMessage) = 0;
 
   /**
    * Tell the window that it should stop to listen to the network event of the
@@ -639,7 +682,7 @@ public:
    *
    * Inner windows only.
    */
-  virtual void DisableNetworkEvent(uint32_t aType) = 0;
+  virtual void DisableNetworkEvent(mozilla::EventMessage aEventMessage) = 0;
 #endif // MOZ_B2G
 
   /**
@@ -710,7 +753,7 @@ public:
                         const nsAString& aPopupWindowFeatures) = 0;
 
   // Inner windows only.
-  void AddAudioContext(mozilla::dom::AudioContext* aAudioContext);
+  bool AddAudioContext(mozilla::dom::AudioContext* aAudioContext);
   void RemoveAudioContext(mozilla::dom::AudioContext* aAudioContext);
   void MuteAudioContexts();
   void UnmuteAudioContexts();
@@ -743,6 +786,38 @@ public:
   {
     return mMarkedCCGeneration;
   }
+
+  virtual nsIDOMScreen* GetScreen() = 0;
+  virtual nsIDOMNavigator* GetNavigator() = 0;
+  virtual nsIDOMLocation* GetLocation() = 0;
+  virtual nsresult GetPrompter(nsIPrompt** aPrompt) = 0;
+  virtual nsresult GetControllers(nsIControllers** aControllers) = 0;
+  virtual already_AddRefed<nsISelection> GetSelection() = 0;
+  virtual already_AddRefed<nsPIDOMWindow> GetOpener() = 0;
+  virtual already_AddRefed<nsIDOMWindowCollection> GetFrames() = 0;
+  virtual nsresult Open(const nsAString& aUrl, const nsAString& aName,
+                        const nsAString& aOptions, nsPIDOMWindow **_retval) = 0;
+  virtual nsresult OpenDialog(const nsAString& aUrl, const nsAString& aName,
+                              const nsAString& aOptions,
+                              nsISupports* aExtraArgument, nsIDOMWindow** _retval) = 0;
+
+  virtual nsresult GetDevicePixelRatio(float* aRatio) = 0;
+  virtual nsresult GetInnerWidth(int32_t* aWidth) = 0;
+  virtual nsresult GetInnerHeight(int32_t* aHeight) = 0;
+  virtual already_AddRefed<nsICSSDeclaration>
+    GetComputedStyle(mozilla::dom::Element& aElt, const nsAString& aPseudoElt,
+                     mozilla::ErrorResult& aError) = 0;
+  virtual already_AddRefed<nsIDOMElement> GetFrameElement() = 0;
+  virtual already_AddRefed<nsIDOMOfflineResourceList> GetApplicationCache() = 0;
+  virtual bool Closed() = 0;
+  virtual bool GetFullScreen() = 0;
+  virtual nsresult SetFullScreen(bool aFullScreen) = 0;
+
+  virtual nsresult Focus() = 0;
+  virtual nsresult Close() = 0;
+
+  virtual nsresult MoveBy(int32_t aXDif, int32_t aYDif) = 0;
+  virtual nsresult UpdateCommands(const nsAString& anAction, nsISelection* aSel, int16_t aReason) = 0;
 
 protected:
   // The nsPIDOMWindow constructor. The aOuterWindow argument should
@@ -778,10 +853,18 @@ protected:
 
   // These members are only used on outer windows.
   nsCOMPtr<mozilla::dom::Element> mFrameElement;
-  nsIDocShell           *mDocShell;  // Weak Reference
+  // This reference is used by the subclass nsGlobalWindow, and cleared in it's
+  // DetachFromDocShell() method. This method is called by nsDocShell::Destroy(),
+  // which is called before the nsDocShell is destroyed.
+  nsIDocShell* MOZ_NON_OWNING_REF mDocShell;  // Weak Reference
 
   // mPerformance is only used on inner windows.
-  nsRefPtr<nsPerformance>       mPerformance;
+  RefPtr<nsPerformance>       mPerformance;
+
+  typedef nsRefPtrHashtable<nsStringHashKey,
+                            mozilla::dom::ServiceWorkerRegistrationMainThread>
+          ServiceWorkerRegistrationTable;
+  ServiceWorkerRegistrationTable mServiceWorkerRegistrationTable;
 
   uint32_t               mModalStateDepth;
 
@@ -813,6 +896,8 @@ protected:
 
   bool                   mAudioMuted;
   float                  mAudioVolume;
+
+  bool                   mAudioCaptured;
 
   // current desktop mode flag.
   bool                   mDesktopModeViewport;

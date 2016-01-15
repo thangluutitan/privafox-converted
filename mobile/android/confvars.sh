@@ -1,12 +1,13 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
-MOZ_APP_DEFINE_PRIVAFOX=1
+
 MOZ_APP_BASENAME=Privafox
 MOZ_APP_VENDOR=Privacore
 
-MOZ_APP_VERSION=42.0.1
-MOZ_APP_UA_NAME=FireFox
+MOZ_APP_VERSION=$FIREFOX_VERSION
+MOZ_APP_VERSION_DISPLAY=$FIREFOX_VERSION_DISPLAY
+MOZ_APP_UA_NAME=Firefox
 
 MOZ_BRANDING_DIRECTORY=mobile/android/branding/privafox
 MOZ_OFFICIAL_BRANDING_DIRECTORY=mobile/android/branding/privafox
@@ -21,7 +22,7 @@ MOZ_ANDROID_MIN_SDK_VERSION=9
 MOZ_ANDROID_APPLICATION_CLASS=org.mozilla.gecko.GeckoApplication
 MOZ_ANDROID_BROWSER_INTENT_CLASS=org.mozilla.gecko.BrowserApp
 MOZ_ANDROID_SEARCH_INTENT_CLASS=org.mozilla.search.SearchActivity
-
+#Privafox -remove 
 # MOZ_SAFE_BROWSING=1
 
 MOZ_NO_SMART_CARDS=1
@@ -32,11 +33,7 @@ MOZ_MEDIA_NAVIGATOR=1
 # Enable NFC permission
 MOZ_ANDROID_BEAM=1
 
-if test "$LIBXUL_SDK"; then
-MOZ_XULRUNNER=1
-else
 MOZ_XULRUNNER=
-fi
 
 MOZ_CAPTURE=1
 MOZ_RAW=1
@@ -62,6 +59,7 @@ fi
 MOZ_PAY=1
 
 # Enable UI for healthreporter
+# Privafox -remove
 # MOZ_SERVICES_HEALTHREPORT=1
 
 # Enable runtime locale switching.
@@ -90,33 +88,35 @@ MOZ_WEBGL_CONFORMANT=1
 # Enable the Search Activity.
 MOZ_ANDROID_SEARCH_ACTIVITY=1
 
-# Enable the share handler.
-MOZ_ANDROID_SHARE_OVERLAY=1
-
 # Enable the Mozilla Location Service stumbler.
 MOZ_ANDROID_MLS_STUMBLER=1
 
-# Enable adding to the system downloads list in pre-release builds.
+# Enable adding to the system downloads list.
 MOZ_ANDROID_DOWNLOADS_INTEGRATION=1
 
 # Enable Tab Queue
-if test "$NIGHTLY_BUILD"; then
-  MOZ_ANDROID_TAB_QUEUE=1
-fi
+MOZ_ANDROID_TAB_QUEUE=1
 
 # Use the low-memory GC tuning.
 export JS_GC_SMALL_CHUNK_SIZE=1
 
-# Enable FxAccount Avatar
+# Enable GCM registration on Nightly builds only.
 if test "$NIGHTLY_BUILD"; then
-  MOZ_ANDROID_FIREFOX_ACCOUNT_PROFILES=1
+  MOZ_ANDROID_GCM=1
+fi
+
+# Enable C++ APZ on Nightly builds only.
+if test "$NIGHTLY_BUILD"; then
+  MOZ_ANDROID_APZ=1
 fi
 
 # Enable checking that add-ons are signed by the trusted root
 MOZ_ADDON_SIGNING=1
-if test "$MOZ_OFFICIAL_BRANDING"; then
-  if test "$MOZ_UPDATE_CHANNEL" = "beta" -o \
-          "$MOZ_UPDATE_CHANNEL" = "release"; then
-    MOZ_REQUIRE_SIGNING=1
-  fi
-fi
+
+# Enable the Switchboard A/B framework code.
+# Note: The framework is always included in the app. This flag controls
+# usage of the framework.
+MOZ_SWITCHBOARD=1
+
+# Disable GeckoView by default.
+export MOZ_DISABLE_GECKOVIEW=1

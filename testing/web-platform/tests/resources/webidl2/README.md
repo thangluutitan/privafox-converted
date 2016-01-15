@@ -223,6 +223,7 @@ A dictionary looks like this:
             {
                 "type": "field",
                 "name": "fillPattern",
+                "required": false,
                 "idlType": {
                     "sequence": false,
                     "generic": null,
@@ -255,6 +256,7 @@ All the members are fields as follows:
 
 * `type`: Always "field".
 * `name`: The name of the field.
+* `required`: Boolean indicating whether this is a [required](https://heycam.github.io/webidl/#required-dictionary-member) field.
 * `idlType`: An [IDL Type](#idl-type) describing what field's type.
 * `extAttrs`: A list of [extended attributes](#extended-attributes).
 * `default`: A [default value](#default-and-const-values), absent if there is none.
@@ -669,11 +671,11 @@ The fields are as follows:
 Dictionary fields and operation arguments can take default values, and constants take
 values, all of which have the following fields:
 
-* `type`: One of string, number, boolean, null, Infinity, or NaN.
+* `type`: One of string, number, boolean, null, Infinity, NaN, or sequence.
 
-For string, number, and boolean:
+For string, number, boolean, and sequence:
 
-* `value`: The value of the given type.
+* `value`: The value of the given type. For sequence, the only possible value is `[]`.
 
 For Infinity:
 

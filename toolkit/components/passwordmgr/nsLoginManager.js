@@ -298,14 +298,14 @@ LoginManager.prototype = {
     var logins = this.findLogins({}, login.hostname, login.formSubmitURL,
                                  login.httpRealm);
 
-    if (logins.some(function(l) login.matches(l, true)))
+    if (logins.some(l => login.matches(l, true)))
       throw new Error("This login already exists.");
 
     log("Adding login");
     return this._storage.addLogin(login);
   },
 
-   /*
+  /*
    * ImportLogin
    *
    * Import login to login storage.

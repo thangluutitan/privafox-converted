@@ -206,13 +206,44 @@ this.ReaderMode = {
         if (meta) {
           let content = meta.getAttribute("content");
           if (content) {
-            let urlIndex = content.indexOf("URL=");
+            let urlIndex = content.toUpperCase().indexOf("URL=");
             if (urlIndex > -1) {
               let url = content.substring(urlIndex + 4);
-              this._downloadDocument(url).then((doc) => resolve(doc));
+              let ssm = Services.scriptSecurityManager;
+              let flags = ssm.LOAD_IS_AUTOMATIC_DOCUMENT_REPLACEMENT |
+                          ssm.DISALLOW_INHERIT_PRINCIPAL;
+              try {
+                ssm.checkLoadURIStrWithPrincipal(doc.nodePrincipal, url, flags);
+              } catch (ex) {
+                let errorMsg = "Reader mode disallowed meta refresh (reason: " + ex + ").";
+
+                if (Services.prefs.getBoolPref("reader.errors.includeURLs"))
+                  errorMsg += " Refresh target URI: '" + url + "'.";
+                reject(errorMsg);
+                return;
+              }
+              // Otherwise, pass an object indicating our new URL:
+              reject({newURL: url});
               return;
             }
           }
+        }
+        let responseURL = xhr.responseURL;
+        let givenURL = url;
+        // Convert these to real URIs to make sure the escaping (or lack
+        // thereof) is identical:
+        try {
+          responseURL = Services.io.newURI(responseURL, null, null).spec;
+        } catch (ex) { /* Ignore errors - we'll use what we had before */ }
+        try {
+          givenURL = Services.io.newURI(givenURL, null, null).spec;
+        } catch (ex) { /* Ignore errors - we'll use what we had before */ }
+
+        if (responseURL != givenURL) {
+          // We were redirected without a meta refresh tag.
+          // Force redirect to the correct place:
+          reject({newURL: xhr.responseURL});
+          return;
         }
         resolve(doc);
         histogram.add(DOWNLOAD_SUCCESS);
@@ -235,7 +266,9 @@ this.ReaderMode = {
     try {
       let array = yield OS.File.read(path);
       return JSON.parse(new TextDecoder().decode(array));
-    } catch (e if e instanceof OS.File.Error && e.becauseNoSuchFile) {
+    } catch (e) {
+      if (!(e instanceof OS.File.Error) || !e.becauseNoSuchFile)
+        throw e;
       return null;
     }
   }),

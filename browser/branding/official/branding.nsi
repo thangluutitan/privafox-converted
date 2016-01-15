@@ -8,8 +8,8 @@
 
 # BrandFullNameInternal is used for some registry and file system values
 # instead of BrandFullName and typically should not be modified.
-!define BrandFullNameInternal "Privacore Privacore"
-!define CompanyName           "Privacore"
+!define BrandFullNameInternal "Mozilla Firefox"
+!define CompanyName           "Mozilla Corporation"
 !define URLInfoAbout          "https://www.mozilla.org"
 !define URLUpdateInfo         "https://www.mozilla.org/firefox/${AppVersion}/releasenotes"
 !define HelpLink              "https://support.mozilla.org"
@@ -24,7 +24,7 @@
 
 # The installer's certificate name and issuer expected by the stub installer
 !define CertNameDownload   "Mozilla Corporation"
-!define CertIssuerDownload "DigiCert Assured ID Code Signing CA-1"
+!define CertIssuerDownload "DigiCert SHA2 Assured ID Code Signing CA"
 
 # Dialog units are used so the UI displays correctly with the system's DPI
 # settings.

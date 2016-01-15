@@ -108,7 +108,9 @@
       class="header"
       hidden="true"
       data-category="paneGeneral">
-  <label class="header-name">&paneGeneral.title;</label>
+  <label class="header-name" flex="1">&paneGeneral.title;</label>
+  <button class="help-button"
+          aria-label="&helpButton.label;"/>
 </hbox>
 
 <!-- Startup -->
@@ -117,6 +119,16 @@
           hidden="true">
   <caption><label>&startup.label;</label></caption>
 
+#ifdef MOZ_DEV_EDITION
+  <vbox id="separateProfileBox">
+    <checkbox id="separateProfileMode"
+              label="&separateProfileMode.label;"/>
+    <hbox align="center" class="indent">
+      <label id="useFirefoxSync">&useFirefoxSync.label;</label>
+      <label id="getStarted" class="text-link">&getStarted.label;</label>
+    </hbox>
+  </vbox>
+#endif
 
 #ifdef E10S_TESTING_ONLY
   <checkbox id="e10sAutoStart"

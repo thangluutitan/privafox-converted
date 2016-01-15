@@ -13,6 +13,7 @@
 #include "mozilla/ipc/UnixSocketWatcher.h"
 #include "mozilla/FileUtils.h"
 #include "mozilla/RefPtr.h"
+#include "nsISupportsImpl.h" // for MOZ_COUNT_CTOR, MOZ_COUNT_DTOR
 #include "nsXULAppAPI.h"
 
 using namespace mozilla::ipc;
@@ -39,7 +40,7 @@ EnsureBluetoothSocketHalLoad()
 }
 
 class mozilla::dom::bluetooth::DroidSocketImpl
-  : public ipc::UnixFdWatcher
+  : public mozilla::ipc::UnixFdWatcher
   , public DataSocketIO
 {
 public:
@@ -73,16 +74,20 @@ public:
   DroidSocketImpl(MessageLoop* aConsumerLoop,
                   MessageLoop* aIOLoop,
                   BluetoothSocket* aConsumer)
-    : ipc::UnixFdWatcher(aIOLoop)
+    : mozilla::ipc::UnixFdWatcher(aIOLoop)
     , DataSocketIO(aConsumerLoop)
     , mConsumer(aConsumer)
     , mShuttingDownOnIOThread(false)
     , mConnectionStatus(SOCKET_IS_DISCONNECTED)
-  { }
+  {
+    MOZ_COUNT_CTOR_INHERITED(DroidSocketImpl, DataSocketIO);
+  }
 
   ~DroidSocketImpl()
   {
     MOZ_ASSERT(IsConsumerThread());
+
+    MOZ_COUNT_DTOR_INHERITED(DroidSocketImpl, DataSocketIO);
   }
 
   void Send(UnixSocketIOBuffer* aBuffer)
@@ -109,7 +114,7 @@ public:
 
   BluetoothSocket* GetBluetoothSocket()
   {
-    return mConsumer.get();
+    return mConsumer;
   }
 
   DataSocket* GetDataSocket()
@@ -118,11 +123,11 @@ public:
   }
 
   /**
-   * Consumer pointer. Non-thread safe RefPtr, so should only be manipulated
+   * Consumer pointer. Non-thread-safe pointer, so should only be manipulated
    * directly from consumer thread. All non-consumer-thread accesses should
    * happen with mImpl as container.
    */
-  RefPtr<BluetoothSocket> mConsumer;
+  BluetoothSocket* mConsumer;
 
   // Methods for |DataSocket|
   //
@@ -381,7 +386,7 @@ public:
     MOZ_ASSERT(mImpl);
   }
 
-  void Accept(int aFd, const nsAString& aBdAddress,
+  void Accept(int aFd, const BluetoothAddress& aBdAddress,
               int aConnectionStatus) override
   {
     MOZ_ASSERT(mImpl->IsConsumerThread());
@@ -582,8 +587,14 @@ BluetoothSocket::BluetoothSocket(BluetoothSocketObserver* aObserver)
 {
   MOZ_ASSERT(aObserver);
 
+  MOZ_COUNT_CTOR_INHERITED(BluetoothSocket, DataSocket);
+
   EnsureBluetoothSocketHalLoad();
-  mDeviceAddress.AssignLiteral(BLUETOOTH_ADDRESS_NONE);
+}
+
+BluetoothSocket::~BluetoothSocket()
+{
+  MOZ_COUNT_DTOR_INHERITED(BluetoothSocket, DataSocket);
 }
 
 class ConnectSocketResultHandler final : public BluetoothSocketResultHandler
@@ -595,7 +606,7 @@ public:
     MOZ_ASSERT(mImpl);
   }
 
-  void Connect(int aFd, const nsAString& aBdAddress,
+  void Connect(int aFd, const BluetoothAddress& aBdAddress,
                int aConnectionStatus) override
   {
     MOZ_ASSERT(mImpl->IsConsumerThread());
@@ -634,7 +645,7 @@ private:
 };
 
 nsresult
-BluetoothSocket::Connect(const nsAString& aDeviceAddress,
+BluetoothSocket::Connect(const BluetoothAddress& aDeviceAddress,
                          const BluetoothUuid& aServiceUuid,
                          BluetoothSocketType aType,
                          int aChannel,
@@ -653,14 +664,14 @@ BluetoothSocket::Connect(const nsAString& aDeviceAddress,
 
   sBluetoothSocketInterface->Connect(
     aDeviceAddress, aType,
-    aServiceUuid.mUuid, aChannel,
+    aServiceUuid, aChannel,
     aEncrypt, aAuth, res);
 
   return NS_OK;
 }
 
 nsresult
-BluetoothSocket::Connect(const nsAString& aDeviceAddress,
+BluetoothSocket::Connect(const BluetoothAddress& aDeviceAddress,
                          const BluetoothUuid& aServiceUuid,
                          BluetoothSocketType aType,
                          int aChannel,
@@ -708,6 +719,12 @@ BluetoothSocket::Listen(const nsAString& aServiceName,
 {
   MOZ_ASSERT(!mImpl);
 
+  BluetoothServiceName serviceName;
+  nsresult rv = StringToServiceName(aServiceName, serviceName);
+  if (NS_FAILED(rv)) {
+    return rv;
+  }
+
   SetConnectionStatus(SOCKET_LISTENING);
 
   mImpl = new DroidSocketImpl(aConsumerLoop, aIOLoop, this);
@@ -717,7 +734,7 @@ BluetoothSocket::Listen(const nsAString& aServiceName,
 
   sBluetoothSocketInterface->Listen(
     aType,
-    aServiceName, aServiceUuid.mUuid, aChannel,
+    serviceName, aServiceUuid, aChannel,
     aEncrypt, aAuth, res);
 
   return NS_OK;

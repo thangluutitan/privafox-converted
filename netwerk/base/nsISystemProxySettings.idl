@@ -25,27 +25,21 @@ interface nsISystemProxySettings : nsISupports
     readonly attribute bool mainThreadOnly;
 
     /**
-     * If non-empty, use this PAC file. If empty, call getProxyForURI instead.readonly attribute AUTF8String PROXYSERVERINFO;
+     * If non-empty, use this PAC file. If empty, call getProxyForURI instead.
      */
     readonly attribute AUTF8String PACURI;
-	
     
     /**
      * See ProxyAutoConfig::getProxyForURI; this function behaves similarly except
      * a more relaxed return string is allowed that includes full urls instead of just
      * host:port syntax. e.g. "PROXY http://www.foo.com:8080" instead of
-     * "PROXY www.foo.com:8080" AUTF8String getProxyServerInfo(t);
-	 AUTF8String getSystemProxyServer(in AUTF8String testSpec,
-                               in AUTF8String testScheme,
-                               in AUTF8String testHost,
-                               in int32_t     testPort);
+     * "PROXY www.foo.com:8080"
      */
     AUTF8String getProxyForURI(in AUTF8String testSpec,
                                in AUTF8String testScheme,
                                in AUTF8String testHost,
                                in int32_t     testPort);
-							   
 	AUTF8String setSystemProxyServer(in AUTF8String proxyInfo,
                                in AUTF8String flagsInfo,
-                               in AUTF8String pacURI);					   
+                               in AUTF8String pacURI);								   
 };

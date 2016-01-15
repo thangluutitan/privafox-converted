@@ -8,11 +8,13 @@
 
 #include "mozilla/DebugOnly.h"
 
+#include "jit/BaselineIC.h"
 #include "jit/JitcodeMap.h"
 #include "jit/Linker.h"
 #include "jit/PerfSpewer.h"
 
 #include "jit/JitFrames-inl.h"
+#include "jit/MacroAssembler-inl.h"
 #include "vm/Stack-inl.h"
 
 using namespace js;
@@ -285,7 +287,7 @@ CollectInterpreterStackScripts(JSContext* cx, const Debugger::ExecutionObservabl
     return true;
 }
 
-#ifdef DEBUG
+#ifdef JS_JITSPEW
 static const char*
 ICEntryKindToString(ICEntry::Kind kind)
 {
@@ -310,7 +312,7 @@ ICEntryKindToString(ICEntry::Kind kind)
         MOZ_CRASH("bad ICEntry kind");
     }
 }
-#endif // DEBUG
+#endif // JS_JITSPEW
 
 static void
 SpewPatchBaselineFrame(uint8_t* oldReturnAddress, uint8_t* newReturnAddress,
@@ -319,7 +321,7 @@ SpewPatchBaselineFrame(uint8_t* oldReturnAddress, uint8_t* newReturnAddress,
     JitSpew(JitSpew_BaselineDebugModeOSR,
             "Patch return %p -> %p on BaselineJS frame (%s:%d) from %s at %s",
             oldReturnAddress, newReturnAddress, script->filename(), script->lineno(),
-            ICEntryKindToString(frameKind), js_CodeName[(JSOp)*pc]);
+            ICEntryKindToString(frameKind), CodeName[(JSOp)*pc]);
 }
 
 static void
@@ -329,7 +331,7 @@ SpewPatchBaselineFrameFromExceptionHandler(uint8_t* oldReturnAddress, uint8_t* n
     JitSpew(JitSpew_BaselineDebugModeOSR,
             "Patch return %p -> %p on BaselineJS frame (%s:%d) from exception handler at %s",
             oldReturnAddress, newReturnAddress, script->filename(), script->lineno(),
-            js_CodeName[(JSOp)*pc]);
+            CodeName[(JSOp)*pc]);
 }
 
 static void
@@ -688,24 +690,19 @@ RecompileBaselineScriptForDebugMode(JSContext* cx, JSScript* script,
     _(Call_ScriptedApplyArray)                  \
     _(Call_ScriptedApplyArguments)              \
     _(Call_ScriptedFunCall)                     \
-    _(GetElem_NativePrototypeCallNative)        \
-    _(GetElem_NativePrototypeCallScripted)      \
+    _(GetElem_NativePrototypeCallNativeName)    \
+    _(GetElem_NativePrototypeCallNativeSymbol)  \
+    _(GetElem_NativePrototypeCallScriptedName)  \
+    _(GetElem_NativePrototypeCallScriptedSymbol) \
     _(GetProp_CallScripted)                     \
     _(GetProp_CallNative)                       \
+    _(GetProp_CallNativeGlobal)                 \
     _(GetProp_CallDOMProxyNative)               \
     _(GetProp_CallDOMProxyWithGenerationNative) \
     _(GetProp_DOMProxyShadowed)                 \
     _(GetProp_Generic)                          \
     _(SetProp_CallScripted)                     \
     _(SetProp_CallNative)
-
-#if JS_HAS_NO_SUCH_METHOD
-#define PATCHABLE_NSM_ICSTUB_KIND_LIST(_)       \
-    _(GetElem_Dense)                            \
-    _(GetElem_Arguments)                        \
-    _(GetProp_NativePrototype)                  \
-    _(GetProp_Native)
-#endif
 
 static bool
 CloneOldBaselineStub(JSContext* cx, DebugModeOSREntryVector& entries, size_t entryIndex)
@@ -772,9 +769,6 @@ CloneOldBaselineStub(JSContext* cx, DebugModeOSREntryVector& entries, size_t ent
                                             *oldStub->to##kindName());       \
         break;
         PATCHABLE_ICSTUB_KIND_LIST(CASE_KIND)
-#if JS_HAS_NO_SUCH_METHOD
-        PATCHABLE_NSM_ICSTUB_KIND_LIST(CASE_KIND)
-#endif
 #undef CASE_KIND
 
       default:
@@ -798,8 +792,10 @@ InvalidateScriptsInZone(JSContext* cx, Zone* zone, const Vector<DebugModeOSREntr
             continue;
 
         if (script->hasIonScript()) {
-            if (!invalid.append(script->ionScript()->recompileInfo()))
+            if (!invalid.append(script->ionScript()->recompileInfo())) {
+                ReportOutOfMemory(cx);
                 return false;
+            }
         }
 
         // Cancel off-thread Ion compile for anything that has a
@@ -1075,7 +1071,7 @@ EmitBaselineDebugModeOSRHandlerTail(MacroAssembler& masm, Register temp, bool re
     masm.push(Address(temp, offsetof(BaselineDebugModeOSRInfo, resumeAddr)));
 
     // Call a stub to free the allocated info.
-    masm.setupUnalignedABICall(1, temp);
+    masm.setupUnalignedABICall(temp);
     masm.loadBaselineFramePtr(BaselineFrameReg, temp);
     masm.passABIArg(temp);
     masm.callWithABI(JS_FUNC_TO_DATA_PTR(void*, FinishBaselineDebugModeOSR));
@@ -1119,7 +1115,7 @@ JitRuntime::generateBaselineDebugModeOSRHandler(JSContext* cx, uint32_t* noFrame
 
     // Not all patched baseline frames are returning from a situation where
     // the frame reg is already fixed up.
-    CodeOffsetLabel noFrameRegPopOffset(masm.currentOffset());
+    CodeOffset noFrameRegPopOffset(masm.currentOffset());
 
     // Record the stack pointer for syncing.
     masm.moveStackPtrTo(syncedStackStart);
@@ -1127,7 +1123,7 @@ JitRuntime::generateBaselineDebugModeOSRHandler(JSContext* cx, uint32_t* noFrame
     masm.push(BaselineFrameReg);
 
     // Call a stub to fully initialize the info.
-    masm.setupUnalignedABICall(3, temp);
+    masm.setupUnalignedABICall(temp);
     masm.loadBaselineFramePtr(BaselineFrameReg, temp);
     masm.passABIArg(temp);
     masm.passABIArg(syncedStackStart);
@@ -1160,7 +1156,6 @@ JitRuntime::generateBaselineDebugModeOSRHandler(JSContext* cx, uint32_t* noFrame
     if (!code)
         return nullptr;
 
-    noFrameRegPopOffset.fixup(&masm);
     *noFrameRegPopOffsetOut = noFrameRegPopOffset.offset();
 
 #ifdef JS_ION_PERF

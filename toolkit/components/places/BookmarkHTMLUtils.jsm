@@ -89,7 +89,7 @@ const MICROSEC_PER_SEC = 1000000;
 const EXPORT_INDENT = "    "; // four spaces
 
 // Counter used to build fake favicon urls.
-let serialNumber = 0;
+var serialNumber = 0;
 
 function base64EncodeString(aString) {
   let stream = Cc["@mozilla.org/io/string-input-stream;1"]
@@ -517,6 +517,7 @@ BookmarkImporter.prototype = {
     let generatedTitle = this._safeTrim(aElt.getAttribute("generated_title"));
     let dateAdded = this._safeTrim(aElt.getAttribute("add_date"));
     let lastModified = this._safeTrim(aElt.getAttribute("last_modified"));
+    let tags = this._safeTrim(aElt.getAttribute("tags"));
 
     // For feeds, get the feed URL.  If it is invalid, mPreviousFeed will be
     // NULL and we'll create it as a normal bookmark.
@@ -573,6 +574,15 @@ BookmarkImporter.prototype = {
       try {
         PlacesUtils.bookmarks.setItemDateAdded(frame.previousId,
           this._convertImportedDateToInternalDate(dateAdded));
+      } catch(e) {
+      }
+    }
+
+    // Adds tags to the URI, if there are any.
+    if (tags) {
+      try {
+        let tagsArray = tags.split(",");
+        PlacesUtils.tagging.tagURI(frame.previousLink, tagsArray);
       } catch(e) {
       }
     }
@@ -829,9 +839,10 @@ BookmarkImporter.prototype = {
     // worry about data
     if (aIconURI) {
       if (aIconURI.schemeIs("chrome")) {
-        PlacesUtils.favicons.setAndFetchFaviconForPage(aPageURI, aIconURI,
-                                                       false,
-                                                       PlacesUtils.favicons.FAVICON_LOAD_NON_PRIVATE);
+        PlacesUtils.favicons.setAndFetchFaviconForPage(aPageURI, aIconURI, false,
+                                                       PlacesUtils.favicons.FAVICON_LOAD_NON_PRIVATE, null,
+                                                       Services.scriptSecurityManager.getSystemPrincipal());
+
         return;
       }
     }
@@ -860,8 +871,11 @@ BookmarkImporter.prototype = {
     // This could fail if the favicon is bigger than defined limit, in such a
     // case neither the favicon URI nor the favicon data will be saved.  If the
     // bookmark is visited again later, the URI and data will be fetched.
-    PlacesUtils.favicons.replaceFaviconDataFromDataURL(faviconURI, aData);
-    PlacesUtils.favicons.setAndFetchFaviconForPage(aPageURI, faviconURI, false, PlacesUtils.favicons.FAVICON_LOAD_NON_PRIVATE);
+    PlacesUtils.favicons.replaceFaviconDataFromDataURL(faviconURI, aData, 0,
+                                                       Services.scriptSecurityManager.getSystemPrincipal());
+    PlacesUtils.favicons.setAndFetchFaviconForPage(aPageURI, faviconURI, false,
+                                                   PlacesUtils.favicons.FAVICON_LOAD_NON_PRIVATE, null,
+                                                   Services.scriptSecurityManager.getSystemPrincipal());
   },
 
   /**

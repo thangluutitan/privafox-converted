@@ -17,7 +17,7 @@
 
 // This is the schema version. Update it at any schema change and add a
 // corresponding migrateVxx method below.
-#define DATABASE_SCHEMA_VERSION 29
+#define DATABASE_SCHEMA_VERSION 30
 
 // Fired after Places inited.
 #define TOPIC_PLACES_INIT_COMPLETE "places-init-complete"
@@ -94,10 +94,7 @@ public:
    *
    * @return Singleton instance of this class.
    */
-  static already_AddRefed<Database> GetDatabase()
-  {
-    return GetSingleton();
-  }
+  static already_AddRefed<Database> GetDatabase();
 
   /**
    * Returns last known database status.
@@ -255,9 +252,7 @@ protected:
    * Helpers used by schema upgrades.
    */
   nsresult MigrateV13Up();
-  nsresult MigrateV14Up();
   nsresult MigrateV15Up();
-  nsresult MigrateV16Up();
   nsresult MigrateV17Up();
   nsresult MigrateV18Up();
   nsresult MigrateV19Up();
@@ -270,7 +265,7 @@ protected:
   nsresult MigrateV26Up();
   nsresult MigrateV27Up();
   nsresult MigrateV28Up();
-  nsresult MigrateV29Up();
+  nsresult MigrateV30Up();
 
   nsresult UpdateBookmarkRootTitles();
 
@@ -309,7 +304,7 @@ private:
    * Cycles between `this` and `mConnectionShutdown` are broken
    * in `Shutdown()`.
    */
-  nsRefPtr<DatabaseShutdown> mConnectionShutdown;
+  RefPtr<DatabaseShutdown> mConnectionShutdown;
 };
 
 } // namespace places

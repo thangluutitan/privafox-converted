@@ -81,7 +81,5 @@ pref("services.sync.enabled", false);
 //pref("services.sync.log.logger.userapi", "Debug");
 //pref("services.sync.log.cryptoDebug", false);
 
-//pref("services.sync.tokenServerURI", "http://removed.in.privafox");
-
-//pref("services.sync.fxa.termsURL", "http://removed.in.privafox");
-//pref("services.sync.fxa.privacyURL", "http://removed.in.privafox");
+//pref("services.sync.fxa.termsURL", "https://accounts.firefox.com/legal/terms");
+//pref("services.sync.fxa.privacyURL", "https://accounts.firefox.com/legal/privacy");

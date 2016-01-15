@@ -7,9 +7,12 @@
 #include "ServiceWorkerManagerParent.h"
 #include "ServiceWorkerManagerService.h"
 #include "mozilla/AppProcessChecker.h"
+#include "mozilla/dom/ContentParent.h"
+#include "mozilla/dom/ServiceWorkerRegistrar.h"
 #include "mozilla/ipc/BackgroundParent.h"
 #include "mozilla/ipc/BackgroundUtils.h"
 #include "mozilla/unused.h"
+#include "nsThreadUtils.h"
 
 namespace mozilla {
 
@@ -46,13 +49,13 @@ public:
     AssertIsInMainProcess();
     AssertIsOnBackgroundThread();
 
-    nsRefPtr<dom::ServiceWorkerRegistrar> service =
+    RefPtr<dom::ServiceWorkerRegistrar> service =
       dom::ServiceWorkerRegistrar::Get();
     MOZ_ASSERT(service);
 
     service->RegisterServiceWorker(mData);
 
-    nsRefPtr<ServiceWorkerManagerService> managerService =
+    RefPtr<ServiceWorkerManagerService> managerService =
       ServiceWorkerManagerService::Get();
     if (managerService) {
       managerService->PropagateRegistration(mParentID, mData);
@@ -84,7 +87,7 @@ public:
     AssertIsInMainProcess();
     AssertIsOnBackgroundThread();
 
-    nsRefPtr<dom::ServiceWorkerRegistrar> service =
+    RefPtr<dom::ServiceWorkerRegistrar> service =
       dom::ServiceWorkerRegistrar::Get();
     MOZ_ASSERT(service);
 
@@ -136,17 +139,18 @@ public:
   }
 
 private:
-  nsRefPtr<ContentParent> mContentParent;
+  RefPtr<ContentParent> mContentParent;
   PrincipalInfo mPrincipalInfo;
-  nsRefPtr<nsRunnable> mCallback;
+  RefPtr<nsRunnable> mCallback;
   nsCOMPtr<nsIThread> mBackgroundThread;
 };
 
-} // anonymous namespace
+} // namespace
 
 ServiceWorkerManagerParent::ServiceWorkerManagerParent()
   : mService(ServiceWorkerManagerService::GetOrCreate())
   , mID(++sServiceWorkerManagerParentID)
+  , mActorDestroyed(false)
 {
   AssertIsOnBackgroundThread();
   mService->RegisterActor(this);
@@ -155,6 +159,17 @@ ServiceWorkerManagerParent::ServiceWorkerManagerParent()
 ServiceWorkerManagerParent::~ServiceWorkerManagerParent()
 {
   AssertIsOnBackgroundThread();
+}
+
+already_AddRefed<ContentParent>
+ServiceWorkerManagerParent::GetContentParent() const
+{
+  AssertIsOnBackgroundThread();
+
+  // This object must be released on main-thread.
+  RefPtr<ContentParent> parent =
+    BackgroundParent::GetContentParent(Manager());
+  return parent.forget();
 }
 
 bool
@@ -172,10 +187,10 @@ ServiceWorkerManagerParent::RecvRegister(
     return false;
   }
 
-  nsRefPtr<RegisterServiceWorkerCallback> callback =
+  RefPtr<RegisterServiceWorkerCallback> callback =
     new RegisterServiceWorkerCallback(aData, mID);
 
-  nsRefPtr<ContentParent> parent =
+  RefPtr<ContentParent> parent =
     BackgroundParent::GetContentParent(Manager());
 
   // If the ContentParent is null we are dealing with a same-process actor.
@@ -184,7 +199,7 @@ ServiceWorkerManagerParent::RecvRegister(
     return true;
   }
 
-  nsRefPtr<CheckPrincipalWithCallbackRunnable> runnable =
+  RefPtr<CheckPrincipalWithCallbackRunnable> runnable =
     new CheckPrincipalWithCallbackRunnable(parent.forget(), aData.principal(),
                                            callback);
   nsresult rv = NS_DispatchToMainThread(runnable);
@@ -207,10 +222,10 @@ ServiceWorkerManagerParent::RecvUnregister(const PrincipalInfo& aPrincipalInfo,
     return false;
   }
 
-  nsRefPtr<UnregisterServiceWorkerCallback> callback =
+  RefPtr<UnregisterServiceWorkerCallback> callback =
     new UnregisterServiceWorkerCallback(aPrincipalInfo, aScope);
 
-  nsRefPtr<ContentParent> parent =
+  RefPtr<ContentParent> parent =
     BackgroundParent::GetContentParent(Manager());
 
   // If the ContentParent is null we are dealing with a same-process actor.
@@ -219,7 +234,7 @@ ServiceWorkerManagerParent::RecvUnregister(const PrincipalInfo& aPrincipalInfo,
     return true;
   }
 
-  nsRefPtr<CheckPrincipalWithCallbackRunnable> runnable =
+  RefPtr<CheckPrincipalWithCallbackRunnable> runnable =
     new CheckPrincipalWithCallbackRunnable(parent.forget(), aPrincipalInfo,
                                            callback);
   nsresult rv = NS_DispatchToMainThread(runnable);
@@ -229,7 +244,7 @@ ServiceWorkerManagerParent::RecvUnregister(const PrincipalInfo& aPrincipalInfo,
 }
 
 bool
-ServiceWorkerManagerParent::RecvPropagateSoftUpdate(const OriginAttributes& aOriginAttributes,
+ServiceWorkerManagerParent::RecvPropagateSoftUpdate(const PrincipalOriginAttributes& aOriginAttributes,
                                                     const nsString& aScope)
 {
   AssertIsOnBackgroundThread();
@@ -294,7 +309,7 @@ ServiceWorkerManagerParent::RecvShutdown()
   mService->UnregisterActor(this);
   mService = nullptr;
 
-  unused << Send__delete__(this);
+  Unused << Send__delete__(this);
   return true;
 }
 
@@ -303,6 +318,8 @@ ServiceWorkerManagerParent::ActorDestroy(ActorDestroyReason aWhy)
 {
   AssertIsOnBackgroundThread();
 
+  mActorDestroyed = true;
+
   if (mService) {
     // This object is about to be released and with it, also mService will be
     // released too.
@@ -310,6 +327,6 @@ ServiceWorkerManagerParent::ActorDestroy(ActorDestroyReason aWhy)
   }
 }
 
-} // workers namespace
-} // dom namespace
-} // mozilla namespace
+} // namespace workers
+} // namespace dom
+} // namespace mozilla

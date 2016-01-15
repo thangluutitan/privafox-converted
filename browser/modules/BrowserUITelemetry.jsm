@@ -28,6 +28,7 @@ XPCOMUtils.defineLazyGetter(this, "Timer", function() {
 const MS_SECOND = 1000;
 const MS_MINUTE = MS_SECOND * 60;
 const MS_HOUR = MS_MINUTE * 60;
+// Privafox - remove Social-share
 
 XPCOMUtils.defineLazyGetter(this, "DEFAULT_AREA_PLACEMENTS", function() {
   let result = {
@@ -91,7 +92,6 @@ XPCOMUtils.defineLazyGetter(this, "PALETTE_ITEMS", function() {
     "feed-button",
     "email-link-button",
     "sync-button",
-    "tabview-button",
     "web-apps-button",
   ];
 
@@ -489,12 +489,14 @@ this.BrowserUITelemetry = {
     // Determine if the Bookmarks bar is currently visible
     let bookmarksBar = document.getElementById("PersonalToolbar");
     result.bookmarksBarEnabled = bookmarksBar && !bookmarksBar.collapsed;
+
     // Determine if the menubar is currently visible. On OS X, the menubar
     // is never shown, despite not having the collapsed attribute set.
     let menuBar = document.getElementById("toolbar-menubar");
     result.menuBarEnabled =
       menuBar && Services.appinfo.OS != "Darwin"
               && menuBar.getAttribute("autohide") != "true";
+
     // Determine if the titlebar is currently visible.
     result.titleBarEnabled = !Services.prefs.getBoolPref("browser.tabs.drawInTitlebar");
 
@@ -532,8 +534,12 @@ this.BrowserUITelemetry = {
     // items are in there.
     let paletteItems =
       CustomizableUI.getUnusedWidgets(aWindow.gNavToolbox.palette);
-    let defaultRemoved = [item.id for (item of paletteItems)
-                          if (DEFAULT_ITEMS.indexOf(item.id) != -1)];
+    let defaultRemoved = [];
+    for (let item of paletteItems) {
+      if (DEFAULT_ITEMS.indexOf(item.id) != -1) {
+        defaultRemoved.push(item.id);
+      }
+    }
 
     result.defaultKept = defaultKept;
     result.defaultMoved = defaultMoved;
@@ -568,7 +574,7 @@ this.BrowserUITelemetry = {
     if (Components.isSuccessCode(searchResult)) {
       result.currentSearchEngine = Services.search.currentEngine.name;
     }
-    result.oneOffSearchEnabled = Services.prefs.getBoolPref("browser.search.showOneOffButtons");
+
     return result;
   },
 
@@ -710,18 +716,24 @@ this.BrowserUITelemetry = {
   /**
    * Default bucket name, when no other bucket is active.
    */
-  get BUCKET_DEFAULT() BUCKET_DEFAULT,
+  get BUCKET_DEFAULT() {
+    return BUCKET_DEFAULT;
+  },
 
   /**
    * Bucket prefix, for named buckets.
    */
-  get BUCKET_PREFIX() BUCKET_PREFIX,
+  get BUCKET_PREFIX() {
+    return BUCKET_PREFIX;
+  },
 
   /**
    * Standard separator to use between different parts of a bucket name, such
    * as primary name and the time step string.
    */
-  get BUCKET_SEPARATOR() BUCKET_SEPARATOR,
+  get BUCKET_SEPARATOR() {
+    return BUCKET_SEPARATOR;
+  },
 
   get currentBucket() {
     return this._bucket;

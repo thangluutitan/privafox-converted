@@ -14,6 +14,7 @@
 #include <vorbis/codec.h>
 #endif
 #include "MediaDecoderReader.h"
+#include "MediaResource.h"
 #include "OggCodecState.h"
 #include "VideoUtils.h"
 #include "mozilla/Monitor.h"
@@ -49,7 +50,7 @@ protected:
   ~OggReader();
 
 public:
-  virtual nsresult Init(MediaDecoderReader* aCloneDonor) override;
+  virtual nsresult Init() override;
   virtual nsresult ResetDecode() override;
   virtual bool DecodeAudioData() override;
 
@@ -57,26 +58,24 @@ public:
   // until one with a granulepos has been captured, to ensure that all packets
   // read have valid time info.
   virtual bool DecodeVideoFrame(bool &aKeyframeSkip,
-                                  int64_t aTimeThreshold) override;
+                                int64_t aTimeThreshold) override;
 
-  virtual bool HasAudio() override {
+  virtual nsresult ReadMetadata(MediaInfo* aInfo,
+                                MetadataTags** aTags) override;
+  virtual RefPtr<SeekPromise>
+  Seek(int64_t aTime, int64_t aEndTime) override;
+  virtual media::TimeIntervals GetBuffered() override;
+
+private:
+  bool HasAudio() {
     return (mVorbisState != 0 && mVorbisState->mActive) ||
            (mOpusState != 0 && mOpusState->mActive);
   }
 
-  virtual bool HasVideo() override {
+  bool HasVideo() {
     return mTheoraState != 0 && mTheoraState->mActive;
   }
 
-  virtual nsresult ReadMetadata(MediaInfo* aInfo,
-                                MetadataTags** aTags) override;
-  virtual nsRefPtr<SeekPromise>
-  Seek(int64_t aTime, int64_t aEndTime) override;
-  virtual media::TimeIntervals GetBuffered() override;
-
-  virtual bool IsMediaSeekable() override;
-
-private:
   // TODO: DEPRECATED. This uses synchronous decoding.
   // Stores the presentation time of the first frame we'd be able to play if
   // we started playback at the current position. Returns the first video
@@ -253,7 +252,7 @@ private:
 
   // Set this media as being a chain and notifies the state machine that the
   // media is no longer seekable.
-  void SetChained(bool aIsChained);
+  void SetChained();
 
   // Returns the next Ogg packet for an bitstream/codec state. Returns a
   // pointer to an ogg_packet on success, or nullptr if the read failed.
@@ -316,6 +315,8 @@ private:
 
   // Number of audio frames decoded so far.
   int64_t mDecodedAudioFrames;
+
+  MediaResourceIndex mResource;
 };
 
 } // namespace mozilla

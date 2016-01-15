@@ -22,7 +22,7 @@
 namespace mozilla {
 namespace gl {
 class SurfaceFactory;
-}
+} // namespace gl
 
 namespace layers {
 
@@ -44,7 +44,7 @@ protected:
   virtual ~ClientCanvasLayer();
 
 public:
-  virtual void SetVisibleRegion(const nsIntRegion& aRegion) override
+  virtual void SetVisibleRegion(const LayerIntRegion& aRegion) override
   {
     NS_ASSERTION(ClientManager()->InConstruction(),
                  "Can only set properties in construction phase");
@@ -97,11 +97,11 @@ protected:
 
   TextureFlags mFlags;
 
-  friend class DeprecatedCanvasClient2D;
   friend class CanvasClient2D;
   friend class CanvasClientSharedSurface;
 };
-}
-}
+
+} // namespace layers
+} // namespace mozilla
 
 #endif

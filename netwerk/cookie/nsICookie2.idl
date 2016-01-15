@@ -46,7 +46,7 @@ interface nsICookie2 : nsICookie
     readonly attribute boolean isHttpOnly;
 
 	/**
-	* true if the cookie is an Saved Password
+	* Privafox true if the cookie is an Saved Password
 	*/
 	readonly attribute boolean isSavedPassword;
 

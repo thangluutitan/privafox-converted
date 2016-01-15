@@ -13,10 +13,9 @@
 #include "nsIServiceManager.h"
 #include "mozilla/ModuleUtils.h"
 #include "nsPrintfCString.h"
-#include "nsNetUtil.h"
+#include "nsNetCID.h"
 #include "nsISupportsPrimitives.h"
 #include "nsIURI.h"
-
 
 class nsWindowsSystemProxySettings final : public nsISystemProxySettings
 {
@@ -64,7 +63,6 @@ static void SetProxyResultPrivafox(const char* aType, const nsACString& aHostPor
     aResult.AssignASCII(aType);
     aResult.Append(aHostPort);
 }
-
 static void SetProxyResultDirect(nsACString& aResult)
 {
     // For whatever reason, a proxy is not to be used.
@@ -273,7 +271,7 @@ nsWindowsSystemProxySettings::GetProxyForURI(const nsACString & aSpec,
     nsAutoCString socksProxy;
     int32_t start = 0;
     int32_t end = cbuf.Length();
-	
+
     while (true) {
         int32_t delimiter = cbuf.FindCharInSet(" ;", start);
 		if (aScheme.EqualsLiteral("all")){

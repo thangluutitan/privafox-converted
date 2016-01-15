@@ -19,7 +19,9 @@
 #include "mozilla/Likely.h"
 #include "mozilla/Poison.h"
 #include "mozilla/Preferences.h"
+#include "mozilla/Services.h"
 #include "mozilla/Telemetry.h"
+#include "mozilla/MemoryChecking.h"
 
 #include "nsAppRunner.h"
 #include "mozilla/AppData.h"
@@ -47,6 +49,7 @@
 #include "prprf.h"
 #include "prproces.h"
 #include "prenv.h"
+#include "prtime.h"
 
 #include "nsIAppShellService.h"
 #include "nsIAppStartup.h"
@@ -75,6 +78,7 @@
 #include "nsIToolkitProfile.h"
 #include "nsIToolkitProfileService.h"
 #include "nsIURI.h"
+#include "nsIURL.h"
 #include "nsIWindowCreator.h"
 #include "nsIWindowMediator.h"
 #include "nsIWindowWatcher.h"
@@ -205,6 +209,10 @@
 #include "AndroidBridge.h"
 #endif
 
+#if defined(MOZ_SANDBOX) && defined(XP_LINUX) && !defined(ANDROID)
+#include "mozilla/SandboxInfo.h"
+#endif
+
 extern uint32_t gRestartMode;
 extern void InstallSignalHandlers(const char *ProgramName);
 
@@ -230,6 +238,7 @@ static char **gQtOnlyArgv;
 #endif
 
 #if defined(MOZ_WIDGET_GTK)
+#include <glib.h>
 #if defined(DEBUG) || defined(NS_BUILD_REFCNT_LOGGING)
 #define CLEANUP_MEMORY 1
 #define PANGO_ENABLE_BACKEND
@@ -250,10 +259,10 @@ extern "C" MFBT_API bool IsSignalHandlingBroken();
 
 namespace mozilla {
 int (*RunGTest)() = 0;
-}
+} // namespace mozilla
 
 using namespace mozilla;
-using mozilla::unused;
+using mozilla::Unused;
 using mozilla::scache::StartupCache;
 using mozilla::dom::ContentParent;
 using mozilla::dom::ContentChild;
@@ -619,9 +628,9 @@ static void
 SetUpSandboxEnvironment()
 {
   // A low integrity temp only currently makes sense for Vista and later, e10s
-  // and sandbox pref level 1.
+  // and sandbox pref level >= 1.
   if (!IsVistaOrLater() || !BrowserTabsRemoteAutostart() ||
-      Preferences::GetInt("security.sandbox.content.level") != 1) {
+      Preferences::GetInt("security.sandbox.content.level") < 1) {
     return;
   }
 
@@ -754,9 +763,7 @@ bool gSafeMode = false;
  * singleton.
  */
 class nsXULAppInfo : public nsIXULAppInfo,
-#ifdef E10S_TESTING_ONLY
                      public nsIObserver,
-#endif
 #ifdef XP_WIN
                      public nsIWinAppHelper,
 #endif
@@ -772,9 +779,7 @@ public:
   NS_DECL_ISUPPORTS_INHERITED
   NS_DECL_NSIXULAPPINFO
   NS_DECL_NSIXULRUNTIME
-#ifdef E10S_TESTING_ONLY
   NS_DECL_NSIOBSERVER
-#endif
 #ifdef MOZ_CRASHREPORTER
   NS_DECL_NSICRASHREPORTER
   NS_DECL_NSIFINISHDUMPINGCALLBACK
@@ -787,9 +792,7 @@ public:
 NS_INTERFACE_MAP_BEGIN(nsXULAppInfo)
   NS_INTERFACE_MAP_ENTRY_AMBIGUOUS(nsISupports, nsIXULRuntime)
   NS_INTERFACE_MAP_ENTRY(nsIXULRuntime)
-#ifdef E10S_TESTING_ONLY
   NS_INTERFACE_MAP_ENTRY(nsIObserver)
-#endif
 #ifdef XP_WIN
   NS_INTERFACE_MAP_ENTRY(nsIWinAppHelper)
 #endif
@@ -798,7 +801,7 @@ NS_INTERFACE_MAP_BEGIN(nsXULAppInfo)
   NS_INTERFACE_MAP_ENTRY(nsIFinishDumpingCallback)
 #endif
   NS_INTERFACE_MAP_ENTRY_CONDITIONAL(nsIXULAppInfo, gAppData || 
-                                     XRE_GetProcessType() == GeckoProcessType_Content)
+                                     XRE_IsContentProcess())
 NS_INTERFACE_MAP_END
 
 NS_IMETHODIMP_(MozExternalRefCountType)
@@ -816,7 +819,7 @@ nsXULAppInfo::Release()
 NS_IMETHODIMP
 nsXULAppInfo::GetVendor(nsACString& aResult)
 {
-  if (XRE_GetProcessType() == GeckoProcessType_Content) {
+  if (XRE_IsContentProcess()) {
     ContentChild* cc = ContentChild::GetSingleton();
     aResult = cc->GetAppInfo().vendor;
     return NS_OK;
@@ -829,7 +832,7 @@ nsXULAppInfo::GetVendor(nsACString& aResult)
 NS_IMETHODIMP
 nsXULAppInfo::GetName(nsACString& aResult)
 {
-  if (XRE_GetProcessType() == GeckoProcessType_Content) {
+  if (XRE_IsContentProcess()) {
     ContentChild* cc = ContentChild::GetSingleton();
     aResult = cc->GetAppInfo().name;
     return NS_OK;
@@ -842,7 +845,7 @@ nsXULAppInfo::GetName(nsACString& aResult)
 NS_IMETHODIMP
 nsXULAppInfo::GetID(nsACString& aResult)
 {
-  if (XRE_GetProcessType() == GeckoProcessType_Content) {
+  if (XRE_IsContentProcess()) {
     ContentChild* cc = ContentChild::GetSingleton();
     aResult = cc->GetAppInfo().ID;
     return NS_OK;
@@ -855,7 +858,7 @@ nsXULAppInfo::GetID(nsACString& aResult)
 NS_IMETHODIMP
 nsXULAppInfo::GetVersion(nsACString& aResult)
 {
-  if (XRE_GetProcessType() == GeckoProcessType_Content) {
+  if (XRE_IsContentProcess()) {
     ContentChild* cc = ContentChild::GetSingleton();
     aResult = cc->GetAppInfo().version;
     return NS_OK;
@@ -876,7 +879,7 @@ nsXULAppInfo::GetPlatformVersion(nsACString& aResult)
 NS_IMETHODIMP
 nsXULAppInfo::GetAppBuildID(nsACString& aResult)
 {
-  if (XRE_GetProcessType() == GeckoProcessType_Content) {
+  if (XRE_IsContentProcess()) {
     ContentChild* cc = ContentChild::GetSingleton();
     aResult = cc->GetAppInfo().buildID;
     return NS_OK;
@@ -897,7 +900,7 @@ nsXULAppInfo::GetPlatformBuildID(nsACString& aResult)
 NS_IMETHODIMP
 nsXULAppInfo::GetUAName(nsACString& aResult)
 {
-  if (XRE_GetProcessType() == GeckoProcessType_Content) {
+  if (XRE_IsContentProcess()) {
     ContentChild* cc = ContentChild::GetSingleton();
     aResult = cc->GetAppInfo().UAName;
     return NS_OK;
@@ -993,7 +996,6 @@ static bool gBrowserTabsRemoteAutostart = false;
 static nsString gBrowserTabsRemoteDisabledReason;
 static bool gBrowserTabsRemoteAutostartInitialized = false;
 
-#ifdef E10S_TESTING_ONLY
 NS_IMETHODIMP
 nsXULAppInfo::Observe(nsISupports *aSubject, const char *aTopic, const char16_t *aData) {
   if (!nsCRT::strcmp(aTopic, "getE10SBlocked")) {
@@ -1007,7 +1009,6 @@ nsXULAppInfo::Observe(nsISupports *aSubject, const char *aTopic, const char16_t 
   }
   return NS_ERROR_FAILURE;
 }
-#endif
 
 NS_IMETHODIMP
 nsXULAppInfo::GetBrowserTabsRemoteAutostart(bool* aResult)
@@ -1028,24 +1029,6 @@ nsXULAppInfo::GetAccessibilityEnabled(bool* aResult)
 }
 
 NS_IMETHODIMP
-nsXULAppInfo::GetAccessibilityIsBlacklistedForE10S(bool* aResult)
-{
-  *aResult = false;
-#if defined(ACCESSIBILITY)
-#if defined(XP_WIN)
-  if (GetAccService() && mozilla::a11y::Compatibility::IsBlacklistedForE10S()) {
-    *aResult = true;
-  }
-#elif defined(XP_MACOSX)
-  if (GetAccService()) {
-    *aResult = true;
-  }
-#endif
-#endif // defined(ACCESSIBILITY)
-  return NS_OK;
-}
-
-NS_IMETHODIMP
 nsXULAppInfo::GetIs64Bit(bool* aResult)
 {
 #ifdef HAVE_64BIT_BUILD
@@ -1059,10 +1042,10 @@ nsXULAppInfo::GetIs64Bit(bool* aResult)
 NS_IMETHODIMP
 nsXULAppInfo::EnsureContentProcess()
 {
-  if (XRE_GetProcessType() != GeckoProcessType_Default)
+  if (!XRE_IsParentProcess())
     return NS_ERROR_NOT_AVAILABLE;
 
-  nsRefPtr<ContentParent> unused = ContentParent::GetNewOrUsedBrowserProcess();
+  RefPtr<ContentParent> unused = ContentParent::GetNewOrUsedBrowserProcess();
   return NS_OK;
 }
 
@@ -1788,8 +1771,8 @@ RemoteCommandLine(const char* aDesktopStartupID)
 
   ar = CheckArg("p", false, &profile, false);
   if (ar == ARG_BAD) {
-    PR_fprintf(PR_STDERR, "Error: argument -p requires a profile name\n");
-    return REMOTE_ARG_BAD;
+    // Leave it to the normal command line handling to handle this situation.
+    return REMOTE_NOT_FOUND;
   }
 
   const char *temp = nullptr;
@@ -1965,7 +1948,7 @@ private:
   nsresult mRv;
 };
 
-} // anonymous namespace
+} // namespace
 
 static ReturnAbortOnError
 ProfileLockedDialog(nsIFile* aProfileDir, nsIFile* aProfileLocalDir,
@@ -3069,7 +3052,6 @@ public:
 
   ~XREMain() {
     mScopedXPCOM = nullptr;
-    mStatisticsRecorder = nullptr;
     mAppData = nullptr;
   }
 
@@ -3088,7 +3070,6 @@ public:
 #endif
 
   UniquePtr<ScopedXPCOMStartup> mScopedXPCOM;
-  UniquePtr<base::StatisticsRecorder> mStatisticsRecorder;
   nsAutoPtr<mozilla::ScopedAppData> mAppData;
 
   nsXREDirProvider mDirProvider;
@@ -3120,7 +3101,17 @@ XREMain::XRE_mainInit(bool* aExitFlag)
 
   StartupTimeline::Record(StartupTimeline::MAIN);
 
-  if (ChaosMode::isActive(ChaosMode::Any)) {
+  if (PR_GetEnv("MOZ_CHAOSMODE")) {
+    ChaosFeature feature = ChaosFeature::Any;
+    long featureInt = strtol(PR_GetEnv("MOZ_CHAOSMODE"), nullptr, 16);
+    if (featureInt) {
+      // NOTE: MOZ_CHAOSMODE=0 or a non-hex value maps to Any feature.
+      feature = static_cast<ChaosFeature>(featureInt);
+    }
+    ChaosMode::SetChaosFeature(feature);
+  }
+
+  if (ChaosMode::isActive(ChaosFeature::Any)) {
     printf_stderr("*** You are running in chaos test mode. See ChaosMode.h. ***\n");
   }
 
@@ -3502,7 +3493,7 @@ XREMain::XRE_mainInit(bool* aExitFlag)
  */
 static void AnnotateSystemManufacturer()
 {
-  nsRefPtr<IWbemLocator> locator;
+  RefPtr<IWbemLocator> locator;
 
   HRESULT hr = CoCreateInstance(CLSID_WbemLocator, nullptr, CLSCTX_INPROC_SERVER,
                                 IID_IWbemLocator, getter_AddRefs(locator));
@@ -3511,7 +3502,7 @@ static void AnnotateSystemManufacturer()
     return;
   }
 
-  nsRefPtr<IWbemServices> services;
+  RefPtr<IWbemServices> services;
 
   hr = locator->ConnectServer(_bstr_t(L"ROOT\\CIMV2"), nullptr, nullptr, nullptr,
                               0, nullptr, nullptr, getter_AddRefs(services));
@@ -3528,7 +3519,7 @@ static void AnnotateSystemManufacturer()
     return;
   }
 
-  nsRefPtr<IEnumWbemClassObject> enumerator;
+  RefPtr<IEnumWbemClassObject> enumerator;
 
   hr = services->ExecQuery(_bstr_t(L"WQL"), _bstr_t(L"SELECT * FROM Win32_BIOS"),
                            WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
@@ -3538,7 +3529,7 @@ static void AnnotateSystemManufacturer()
     return;
   }
 
-  nsRefPtr<IWbemClassObject> classObject;
+  RefPtr<IWbemClassObject> classObject;
   ULONG results;
 
   hr = enumerator->Next(WBEM_INFINITE, 1, getter_AddRefs(classObject), &results);
@@ -3577,7 +3568,7 @@ static void PR_CALLBACK AnnotateSystemManufacturer_ThreadStart(void*)
 
 namespace mozilla {
   ShutdownChecksMode gShutdownChecks = SCM_NOTHING;
-}
+} // namespace mozilla
 
 static void SetShutdownChecks() {
   // Set default first. On debug builds we crash. On nightly and local
@@ -3687,6 +3678,13 @@ XREMain::XRE_mainStartup(bool* aExitFlag)
   }
 
   // Initialize GTK here for splash.
+
+#if (MOZ_WIDGET_GTK == 3) && defined(MOZ_X11)
+  // Disable XInput2 support due to focus bugginess. See bugs 1182700, 1170342.
+  const char* useXI2 = PR_GetEnv("MOZ_USE_XINPUT2");
+  if (!useXI2 || (*useXI2 == '0'))
+    gdk_disable_multidevice();
+#endif
 
   // Open the display ourselves instead of using gtk_init, so that we can
   // close it without fear that one day gtk might clean up the display it
@@ -4095,6 +4093,14 @@ XREMain::XRE_mainRun()
     file->AppendNative(NS_LITERAL_CSTRING("override.ini"));
     nsINIParser parser;
     nsresult rv = parser.Init(file);
+    // if override.ini doesn't exist, also check for distribution.ini
+    if (NS_FAILED(rv)) {
+      bool persistent;
+      mDirProvider.GetFile(XRE_APP_DISTRIBUTION_DIR, &persistent,
+                           getter_AddRefs(file));
+      file->AppendNative(NS_LITERAL_CSTRING("distribution.ini"));
+      rv = parser.Init(file);
+    }
     if (NS_SUCCEEDED(rv)) {
       nsAutoCString buf;
       rv = parser.GetString("XRE", "EnableProfileMigrator", buf);
@@ -4146,7 +4152,11 @@ XREMain::XRE_mainRun()
 
 #ifdef MOZ_CRASHREPORTER
   nsCString userAgentLocale;
-  if (NS_SUCCEEDED(Preferences::GetCString("general.useragent.locale", &userAgentLocale))) {
+  // Try a localized string first. This pref is always a localized string in
+  // Fennec, and might be elsewhere, too.
+  if (NS_SUCCEEDED(Preferences::GetLocalizedCString("general.useragent.locale", &userAgentLocale))) {
+    CrashReporter::AnnotateCrashReport(NS_LITERAL_CSTRING("useragent_locale"), userAgentLocale);
+  } else if (NS_SUCCEEDED(Preferences::GetCString("general.useragent.locale", &userAgentLocale))) {
     CrashReporter::AnnotateCrashReport(NS_LITERAL_CSTRING("useragent_locale"), userAgentLocale);
   }
 #endif
@@ -4286,6 +4296,25 @@ XREMain::XRE_mainRun()
   return rv;
 }
 
+#if MOZ_WIDGET_GTK == 2
+void XRE_GlibInit()
+{
+  static bool ran_once = false;
+
+  // glib < 2.24 doesn't want g_thread_init to be invoked twice, so ensure
+  // we only do it once. No need for thread safety here, since this is invoked
+  // well before any thread is spawned.
+  if (!ran_once) {
+    // glib version < 2.36 doesn't initialize g_slice in a static initializer.
+    // Ensure this happens through g_thread_init (glib version < 2.32) or
+    // g_type_init (2.32 <= gLib version < 2.36)."
+    g_thread_init(nullptr);
+    g_type_init();
+    ran_once = true;
+  }
+}
+#endif
+
 /*
  * XRE_main - A class based main entry point used by most platforms.
  *            Note that on OSX, aAppData->xreDirectory will point to
@@ -4295,6 +4324,10 @@ int
 XREMain::XRE_main(int argc, char* argv[], const nsXREAppData* aAppData)
 {
   ScopedLogging log;
+
+#if defined(MOZ_SANDBOX) && defined(XP_LINUX) && !defined(ANDROID)
+  SandboxInfo::ThreadingCheck();
+#endif
 
   char aLocal;
   GeckoProfilerInitRAII profilerGuard(&aLocal);
@@ -4309,10 +4342,6 @@ XREMain::XRE_main(int argc, char* argv[], const nsXREAppData* aAppData)
 
   NS_ENSURE_TRUE(aAppData, 2);
 
-  // A initializer to initialize histogram collection, a chromium
-  // thing used by Telemetry.
-  mStatisticsRecorder = MakeUnique<base::StatisticsRecorder>();
-
   mAppData = new ScopedAppData(aAppData);
   if (!mAppData)
     return 1;
@@ -4324,14 +4353,8 @@ XREMain::XRE_main(int argc, char* argv[], const nsXREAppData* aAppData)
 
   mozilla::IOInterposerInit ioInterposerGuard;
 
-#if defined(MOZ_WIDGET_GTK)
-#if defined(MOZ_MEMORY) || defined(__FreeBSD__) || defined(__NetBSD__)
-  // Disable the slice allocator, since jemalloc already uses similar layout
-  // algorithms, and using a sub-allocator tends to increase fragmentation.
-  // This must be done before g_thread_init() is called.
-  g_slice_set_config(G_SLICE_CONFIG_ALWAYS_MALLOC, 1);
-#endif
-  g_thread_init(nullptr);
+#if MOZ_WIDGET_GTK == 2
+  XRE_GlibInit();
 #endif
 
   // init
@@ -4383,7 +4406,6 @@ XREMain::XRE_main(int argc, char* argv[], const nsXREAppData* aAppData)
   }
 
   mScopedXPCOM = nullptr;
-  mStatisticsRecorder = nullptr;
 
   // unlock the profile after ScopedXPCOMStartup object (xpcom) 
   // has gone out of scope.  see bug #386739 for more details
@@ -4441,10 +4463,24 @@ XRE_StopLateWriteChecks(void) {
   mozilla::StopLateWriteChecks();
 }
 
+// Separate stub function to let us specifically suppress it in Valgrind
+void
+XRE_CreateStatsObject()
+{
+  // A initializer to initialize histogram collection, a chromium
+  // thing used by Telemetry (and effectively a global; it's all static).
+  // Note: purposely leaked
+  base::StatisticsRecorder* statistics_recorder = new base::StatisticsRecorder();
+  MOZ_LSAN_INTENTIONALLY_LEAK_OBJECT(statistics_recorder);
+  Unused << statistics_recorder;
+}
+
 int
 XRE_main(int argc, char* argv[], const nsXREAppData* aAppData, uint32_t aFlags)
 {
   XREMain main;
+
+  XRE_CreateStatsObject();
   int result = main.XRE_main(argc, argv, aAppData);
   mozilla::RecordShutdownEndTimeStamp();
   return result;
@@ -4547,7 +4583,12 @@ XRE_IsParentProcess()
   return XRE_GetProcessType() == GeckoProcessType_Default;
 }
 
-#ifdef E10S_TESTING_ONLY
+bool
+XRE_IsContentProcess()
+{
+  return XRE_GetProcessType() == GeckoProcessType_Content;
+}
+
 static void
 LogE10sBlockedReason(const char *reason) {
   gBrowserTabsRemoteDisabledReason.Assign(NS_ConvertASCIItoUTF16(reason));
@@ -4560,7 +4601,6 @@ LogE10sBlockedReason(const char *reason) {
     console->LogStringMessage(msg.get());
   }
 }
-#endif
 
 enum {
   kE10sEnabledByUser = 0,
@@ -4571,6 +4611,21 @@ enum {
   kE10sDisabledForMacGfx = 5,
 };
 
+#ifdef XP_WIN
+const char* kAccessibilityLastRunDatePref = "accessibility.lastLoadDate";
+const char* kAccessibilityLoadedLastSessionPref = "accessibility.loadedInLastSession";
+#endif // XP_WIN
+const char* kForceEnableE10sPref = "browser.tabs.remote.force-enable";
+
+#ifdef XP_WIN
+static inline uint32_t
+PRTimeToSeconds(PRTime t_usec)
+{
+  PRTime usec_per_sec = PR_USEC_PER_SEC;
+  return uint32_t(t_usec /= usec_per_sec);
+}
+#endif // XP_WIN
+
 bool
 mozilla::BrowserTabsRemoteAutostart()
 {
@@ -4578,6 +4633,37 @@ mozilla::BrowserTabsRemoteAutostart()
     return gBrowserTabsRemoteAutostart;
   }
   gBrowserTabsRemoteAutostartInitialized = true;
+
+  bool disabledForA11y = false;
+#ifdef XP_WIN
+  /**
+   * Avoids enabling e10s if accessibility has recently loaded. Performs the
+   * following checks:
+   * 1) Checks a pref indicating if a11y loaded in the last session. This pref
+   * is set in nsBrowserGlue.js. If a11y was loaded in the last session we
+   * do not enable e10s in this session.
+   * 2) Accessibility stores a last run date (PR_IntervalNow) when it is
+   * initialized (see nsBaseWidget.cpp). We check if this pref exists and
+   * compare it to now. If a11y hasn't run in an extended period of time or
+   * if the date pref does not exist we load e10s.
+   */
+  disabledForA11y = Preferences::GetBool(kAccessibilityLoadedLastSessionPref, false);
+  if (!disabledForA11y  &&
+      Preferences::HasUserValue(kAccessibilityLastRunDatePref)) {
+    #define ONE_WEEK_IN_SECONDS (60*60*24*7)
+    uint32_t a11yRunDate = Preferences::GetInt(kAccessibilityLastRunDatePref, 0);
+    MOZ_ASSERT(0 != a11yRunDate);
+    // If a11y hasn't run for a period of time, clear the pref and load e10s
+    uint32_t now = PRTimeToSeconds(PR_Now());
+    uint32_t difference = now - a11yRunDate;
+    if (difference > ONE_WEEK_IN_SECONDS || !a11yRunDate) {
+      Preferences::ClearUser(kAccessibilityLastRunDatePref);
+    } else {
+      disabledForA11y = true;
+    }
+  }
+#endif // XP_WIN
+
   bool optInPref = Preferences::GetBool("browser.tabs.remote.autostart", false);
   bool trialPref = Preferences::GetBool("browser.tabs.remote.autostart.2", false);
   bool prefEnabled = optInPref || trialPref;
@@ -4589,46 +4675,44 @@ mozilla::BrowserTabsRemoteAutostart()
   } else {
     status = kE10sDisabledByUser;
   }
-#if !defined(E10S_TESTING_ONLY)
-  // When running tests with 'layers.offmainthreadcomposition.testing.enabled' and
-  // autostart set to true, return enabled.  These tests must be allowed to run
-  // remotely. Otherwise remote isn't allowed in non-nightly builds.
-  bool testPref = Preferences::GetBool("layers.offmainthreadcomposition.testing.enabled", false);
-  if (testPref && optInPref) {
-    gBrowserTabsRemoteAutostart = true;
-  }
+
+#ifdef E10S_TESTING_ONLY
+  bool e10sAllowed = true;
 #else
-  // Nightly builds, update gBrowserTabsRemoteAutostart based on all the
-  // e10s remote relayed prefs we watch.
-  bool disabledForA11y = Preferences::GetBool("browser.tabs.remote.disabled-for-a11y", false);
+  // When running tests with 'layers.offmainthreadcomposition.testing.enabled', e10s must be
+  // allowed because these tests must be allowed to run remotely.
+  // We are also allowing e10s to be enabled on Beta (which doesn't have E10S_TESTING_ONLY defined.
+  bool e10sAllowed = Preferences::GetDefaultCString("app.update.channel").EqualsLiteral("beta") ||
+                     gfxPrefs::GetSingleton().LayersOffMainThreadCompositionTestingEnabled();
+#endif
+
   // Disable for VR
   bool disabledForVR = Preferences::GetBool("dom.vr.enabled", false);
 
-  if (prefEnabled) {
+  if (e10sAllowed && prefEnabled) {
     if (disabledForA11y) {
       status = kE10sDisabledForAccessibility;
-      LogE10sBlockedReason("An accessibility tool is or was active. See bug 1115956.");
+      LogE10sBlockedReason("An accessibility tool is or was active. See bug 1198459.");
     } else if (disabledForVR) {
       LogE10sBlockedReason("Experimental VR interfaces are enabled");
     } else {
       gBrowserTabsRemoteAutostart = true;
     }
   }
-#endif
 
 #if defined(XP_MACOSX)
   // If for any reason we suspect acceleration will be disabled, disabled
   // e10s auto start on mac.
   if (gBrowserTabsRemoteAutostart) {
     // Check prefs
-    bool accelDisabled = Preferences::GetBool("layers.acceleration.disabled", false) &&
-                         !Preferences::GetBool("layers.acceleration.force-enabled", false);
+    bool accelDisabled = gfxPrefs::GetSingleton().LayersAccelerationDisabled() &&
+                         !gfxPrefs::LayersAccelerationForceEnabled();
 
     accelDisabled = accelDisabled || !nsCocoaFeatures::AccelerateByDefault();
 
     // Check for blocked drivers
     if (!accelDisabled) {
-      nsCOMPtr<nsIGfxInfo> gfxInfo = do_GetService("@mozilla.org/gfx/info;1");
+      nsCOMPtr<nsIGfxInfo> gfxInfo = services::GetGfxInfo();
       if (gfxInfo) {
         int32_t status;
         if (NS_SUCCEEDED(gfxInfo->GetFeatureStatus(nsIGfxInfo::FEATURE_OPENGL_LAYERS, &status)) &&
@@ -4650,12 +4734,17 @@ mozilla::BrowserTabsRemoteAutostart()
       gBrowserTabsRemoteAutostart = false;
 
       status = kE10sDisabledForMacGfx;
-#ifdef E10S_TESTING_ONLY
       LogE10sBlockedReason("Hardware acceleration is disabled");
-#endif
     }
   }
 #endif // defined(XP_MACOSX)
+
+  // Uber override pref for manual testing purposes
+  if (Preferences::GetBool(kForceEnableE10sPref, false)) {
+    gBrowserTabsRemoteAutostart = true;
+    prefEnabled = true;
+    status = kE10sEnabledByUser;
+  }
 
   mozilla::Telemetry::Accumulate(mozilla::Telemetry::E10S_AUTOSTART, gBrowserTabsRemoteAutostart);
   mozilla::Telemetry::Accumulate(mozilla::Telemetry::E10S_AUTOSTART_STATUS, status);

@@ -17,11 +17,12 @@
 #include "nsTHashtable.h"
 
 #include "nsWeakPtr.h"
+#include "nsIWindowProvider.h"
 
 
 struct ChromePackage;
 class nsIObserver;
-struct ResourceMapping;
+struct SubstitutionMapping;
 struct OverrideMapping;
 class nsIDomainPolicy;
 
@@ -47,6 +48,7 @@ class ClonedMessageData;
 class TabChild;
 
 class ContentChild final : public PContentChild
+                         , public nsIWindowProvider
                          , public nsIContentChild
 {
     typedef mozilla::dom::ClonedMessageData ClonedMessageData;
@@ -55,6 +57,8 @@ class ContentChild final : public PContentChild
     typedef mozilla::ipc::URIParams URIParams;
 
 public:
+    NS_DECL_NSIWINDOWPROVIDER
+
     ContentChild();
     virtual ~ContentChild();
     NS_IMETHOD QueryInterface(REFNSIID aIID, void** aInstancePtr) override;
@@ -71,11 +75,26 @@ public:
         nsCString vendor;
     };
 
+    nsresult
+    ProvideWindowCommon(TabChild* aTabOpener,
+                        nsIDOMWindow* aOpener,
+                        bool aIframeMoz,
+                        uint32_t aChromeFlags,
+                        bool aCalledFromJS,
+                        bool aPositionSpecified,
+                        bool aSizeSpecified,
+                        nsIURI* aURI,
+                        const nsAString& aName,
+                        const nsACString& aFeatures,
+                        bool* aWindowIsNew,
+                        nsIDOMWindow** aReturn);
+
     bool Init(MessageLoop* aIOLoop,
               base::ProcessId aParentPid,
               IPC::Channel* aChannel);
     void InitProcessAttributes();
     void InitXPCOM();
+    void InitGraphicsDeviceData();
 
     static ContentChild* GetSingleton() {
         return sSingleton;
@@ -96,7 +115,7 @@ public:
         mLastBridge = nullptr;
         return parent;
     }
-    nsRefPtr<ContentBridgeParent> mLastBridge;
+    RefPtr<ContentBridgeParent> mLastBridge;
 
     PPluginModuleParent *
     AllocPPluginModuleParent(mozilla::ipc::Transport* transport,
@@ -129,7 +148,7 @@ public:
     AllocPProcessHangMonitorChild(Transport* aTransport,
                                   ProcessId aOtherProcess) override;
 
-    virtual bool RecvSetProcessSandbox() override;
+    virtual bool RecvSetProcessSandbox(const MaybeFileDesc& aBroker) override;
 
     PBackgroundChild*
     AllocPBackgroundChild(Transport* aTransport, ProcessId aOtherProcess)
@@ -166,6 +185,9 @@ public:
     virtual PHalChild* AllocPHalChild() override;
     virtual bool DeallocPHalChild(PHalChild*) override;
 
+    virtual PHeapSnapshotTempFileHelperChild* AllocPHeapSnapshotTempFileHelperChild() override;
+    virtual bool DeallocPHeapSnapshotTempFileHelperChild(PHeapSnapshotTempFileHelperChild*) override;
+
     PIccChild*
     SendPIccConstructor(PIccChild* aActor, const uint32_t& aServiceId);
     virtual PIccChild*
@@ -200,8 +222,11 @@ public:
                                          const FileDescriptor& aGCLog,
                                          const FileDescriptor& aCCLog) override;
 
-    virtual bool
-    RecvAudioChannelNotify() override;
+    virtual PWebBrowserPersistDocumentChild* AllocPWebBrowserPersistDocumentChild(PBrowserChild* aBrowser, const uint64_t& aOuterWindowID) override;
+    virtual bool RecvPWebBrowserPersistDocumentConstructor(PWebBrowserPersistDocumentChild *aActor,
+                                                           PBrowserChild *aBrowser,
+                                                           const uint64_t& aOuterWindowID) override;
+    virtual bool DeallocPWebBrowserPersistDocumentChild(PWebBrowserPersistDocumentChild* aActor) override;
 
     virtual bool
     RecvDataStoreNotify(const uint32_t& aAppId, const nsString& aName,
@@ -248,6 +273,9 @@ public:
             PBrowserChild* aBrowser) override;
     virtual bool DeallocPExternalHelperAppChild(PExternalHelperAppChild *aService) override;
 
+    virtual PHandlerServiceChild* AllocPHandlerServiceChild() override;
+    virtual bool DeallocPHandlerServiceChild(PHandlerServiceChild*) override;
+
     virtual PCellBroadcastChild* AllocPCellBroadcastChild() override;
     PCellBroadcastChild* SendPCellBroadcastConstructor(PCellBroadcastChild* aActor);
     virtual bool DeallocPCellBroadcastChild(PCellBroadcastChild* aActor) override;
@@ -274,18 +302,19 @@ public:
     virtual PFMRadioChild* AllocPFMRadioChild() override;
     virtual bool DeallocPFMRadioChild(PFMRadioChild* aActor) override;
 
-    virtual PAsmJSCacheEntryChild* AllocPAsmJSCacheEntryChild(
-                                 const asmjscache::OpenMode& aOpenMode,
-                                 const asmjscache::WriteParams& aWriteParams,
-                                 const IPC::Principal& aPrincipal) override;
-    virtual bool DeallocPAsmJSCacheEntryChild(
-                                    PAsmJSCacheEntryChild* aActor) override;
+    virtual PPresentationChild* AllocPPresentationChild() override;
+    virtual bool DeallocPPresentationChild(PPresentationChild* aActor) override;
+    virtual bool RecvNotifyPresentationReceiverLaunched(PBrowserChild* aIframe,
+                                                        const nsString& aSessionId) override;
+    virtual bool RecvNotifyPresentationReceiverCleanUp(const nsString& aSessionId) override;
+
+    virtual bool RecvNotifyGMPsChanged() override;
 
     virtual PSpeechSynthesisChild* AllocPSpeechSynthesisChild() override;
     virtual bool DeallocPSpeechSynthesisChild(PSpeechSynthesisChild* aActor) override;
 
     virtual bool RecvRegisterChrome(InfallibleTArray<ChromePackage>&& packages,
-                                    InfallibleTArray<ResourceMapping>&& resources,
+                                    InfallibleTArray<SubstitutionMapping>&& resources,
                                     InfallibleTArray<OverrideMapping>&& overrides,
                                     const nsCString& locale,
                                     const bool& reset) override;
@@ -303,8 +332,6 @@ public:
 
     virtual bool RecvBidiKeyboardNotify(const bool& isLangRTL) override;
 
-    virtual bool RecvUpdateServiceWorkerRegistrations() override;
-
     virtual bool RecvNotifyVisited(const URIParams& aURI) override;
     // auto remove when alertfinished is received.
     nsresult AddRemoteAlertObserver(const nsString& aData, nsIObserver* aObserver);
@@ -313,6 +340,13 @@ public:
                                            const uint32_t& aMemoryAvailable) override;
 
     virtual bool RecvPreferenceUpdate(const PrefSetting& aPref) override;
+
+    virtual bool RecvDataStoragePut(const nsString& aFilename,
+                                    const DataStorageItem& aItem) override;
+    virtual bool RecvDataStorageRemove(const nsString& aFilename,
+                                       const nsCString& aKey,
+                                       const DataStorageType& aType) override;
+    virtual bool RecvDataStorageClear(const nsString& aFilename) override;
 
     virtual bool RecvNotifyAlertsObserver(const nsCString& aType,
                                           const nsString& aData) override;
@@ -332,7 +366,7 @@ public:
 
     virtual bool RecvAddPermission(const IPC::Permission& permission) override;
 
-    virtual bool RecvScreenSizeChanged(const gfxIntSize &size) override;
+    virtual bool RecvScreenSizeChanged(const gfx::IntSize &size) override;
 
     virtual bool RecvFlushMemory(const nsString& reason) override;
 
@@ -366,8 +400,6 @@ public:
                                       const bool& aIsHotSwappable) override;
     virtual bool RecvVolumeRemoved(const nsString& aFsName) override;
 
-    virtual bool RecvNuwaFork() override;
-
     virtual bool
     RecvNotifyProcessPriorityChanged(const hal::ProcessPriority& aPriority) override;
     virtual bool RecvMinimizeMemoryUsage() override;
@@ -392,10 +424,8 @@ public:
                                       const bool& aResult) override;
     virtual bool RecvUpdateWindow(const uintptr_t& aChildId) override;
 
-    virtual bool RecvStartProfiler(const uint32_t& aEntries,
-                                   const double& aInterval,
-                                   nsTArray<nsCString>&& aFeatures,
-                                   nsTArray<nsCString>&& aThreadNameFilters) override;
+    virtual bool RecvStartProfiler(const ProfilerInitParams& params) override;
+    virtual bool RecvPauseProfiler(const bool& aPause) override;
     virtual bool RecvStopProfiler() override;
     virtual bool RecvGatherProfile() override;
     virtual bool RecvDomainSetChanged(const uint32_t& aSetType, const uint32_t& aChangeType,
@@ -408,7 +438,7 @@ public:
     virtual bool RecvEndDragSession(const bool& aDoneDrag,
                                     const bool& aUserCancelled) override;
 #ifdef ANDROID
-    gfxIntSize GetScreenSize() { return mScreenSize; }
+    gfx::IntSize GetScreenSize() { return mScreenSize; }
 #endif
 
     // Get the directory for IndexedDB files. We query the parent for this and
@@ -454,6 +484,7 @@ public:
     virtual POfflineCacheUpdateChild* AllocPOfflineCacheUpdateChild(
             const URIParams& manifestURI,
             const URIParams& documentURI,
+            const PrincipalInfo& aLoadingPrincipalInfo,
             const bool& stickDocument,
             const TabId& aTabId) override;
     virtual bool
@@ -471,6 +502,8 @@ public:
 
     virtual bool RecvGamepadUpdate(const GamepadChangeEvent& aGamepadEvent) override;
 
+    virtual bool RecvTestGraphicsDeviceReset(const uint32_t& aResetReason) override;
+
 private:
     virtual void ActorDestroy(ActorDestroyReason why) override;
 
@@ -483,7 +516,7 @@ private:
     MOZ_NORETURN void QuickExit();
 
     InfallibleTArray<nsAutoPtr<AlertObserver> > mAlertObservers;
-    nsRefPtr<ConsoleListener> mConsoleListener;
+    RefPtr<ConsoleListener> mConsoleListener;
 
     nsTHashtable<nsPtrHashKey<nsIObserver>> mIdleObservers;
 
@@ -501,7 +534,7 @@ private:
     AppInfo mAppInfo;
 
 #ifdef ANDROID
-    gfxIntSize mScreenSize;
+    gfx::IntSize mScreenSize;
 #endif
 
     bool mIsForApp;
@@ -516,6 +549,9 @@ private:
 
     DISALLOW_EVIL_CONSTRUCTORS(ContentChild);
 };
+
+void
+InitOnContentProcessCreated();
 
 uint64_t
 NextWindowID();

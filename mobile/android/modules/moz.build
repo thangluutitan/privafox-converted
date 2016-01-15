@@ -17,9 +17,9 @@ EXTRA_JS_MODULES += [
     'JavaAddonManager.jsm',
     'JNI.jsm',
     'LightweightThemeConsumer.jsm',
-    'MatchstickApp.jsm',
     'MediaPlayerApp.jsm',
     'Messaging.jsm',
+    'MulticastDNS.jsm',
     'NetErrorHelper.jsm',
     'Notifications.jsm',
     'OrderedBroadcast.jsm',
@@ -27,8 +27,14 @@ EXTRA_JS_MODULES += [
     'Prompt.jsm',
     'Sanitizer.jsm',
     'SharedPreferences.jsm',
+    'Snackbars.jsm',
     'SSLExceptions.jsm',
     'TabMirror.jsm',
     'WebappManager.jsm',
     'WebappManagerWorker.js',
 ]
+
+if not CONFIG['MOZ_B2GDROID']:
+    EXTRA_JS_MODULES += [
+        'FxAccountsWebChannel.jsm',
+    ]

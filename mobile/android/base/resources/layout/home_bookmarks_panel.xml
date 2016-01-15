@@ -11,11 +11,12 @@
               android:layout="@layout/home_empty_panel"
               android:layout_width="match_parent"
               android:layout_height="match_parent"/>
+<!--Privafox : Add Button EnterMasterPassword -->			  
     <Button
         android:id="@+id/button_mp"
         style="@style/FxAccountProgressButton"
-        android:text="@string/button_bookmark_mp" />
-
+        android:text="@string/button_bookmark_mp" />			  
+<!--Privafox : Bookmark default visiblity is gone  -->
     <org.mozilla.gecko.home.BookmarksListView
             android:id="@+id/bookmarks_list"
             android:visibility="gone"

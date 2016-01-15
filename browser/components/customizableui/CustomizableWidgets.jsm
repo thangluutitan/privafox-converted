@@ -30,6 +30,8 @@ XPCOMUtils.defineLazyModuleGetter(this, "AddonManager",
   "resource://gre/modules/AddonManager.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "SocialService",
   "resource://gre/modules/SocialService.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "SyncedTabs",
+  "resource://services-sync/SyncedTabs.jsm");
 
 XPCOMUtils.defineLazyGetter(this, "CharsetBundle", function() {
   const kCharsetBundle = "chrome://global/locale/charsetMenu.properties";
@@ -44,9 +46,11 @@ const kNSXUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 const kPrefCustomizationDebug = "browser.uiCustomization.debug";
 const kWidePanelItemClass = "panel-wide-item";
 
-let gModuleName = "[CustomizableWidgets]";
+var gModuleName = "[CustomizableWidgets]";
 #include logging.js
-
+/*
+* Privafox remove : Button Developer/Socical/Sync/History
+*/
 function setAttributes(aNode, aAttrs) {
   let doc = aNode.ownerDocument;
   for (let [name, value] of Iterator(aAttrs)) {
@@ -180,8 +184,8 @@ const CustomizableWidgets = [
       let win = aEvent.target &&
                 aEvent.target.ownerDocument &&
                 aEvent.target.ownerDocument.defaultView;
-      if (win && typeof win.saveDocument == "function") {
-        win.saveDocument(win.gBrowser.selectedBrowser.contentDocumentAsCPOW);
+      if (win && typeof win.saveBrowser == "function") {
+        win.saveBrowser(win.gBrowser.selectedBrowser);
       }
     }
   }, {
@@ -236,47 +240,6 @@ const CustomizableWidgets = [
       let sidebarItems = doc.getElementById("PanelUI-sidebarItems");
       clearSubview(sidebarItems);
       fillSubviewFromMenuItems([...menu.children], sidebarItems);
-    }
-  }, {
-    id: "social-share-button",
-    // custom build our button so we can attach to the share command
-    type: "custom",
-    onBuild: function(aDocument) {
-      let node = aDocument.createElementNS(kNSXUL, "toolbarbutton");
-      node.setAttribute("id", this.id);
-      node.classList.add("toolbarbutton-1");
-      node.classList.add("chromeclass-toolbar-additional");
-      node.setAttribute("label", CustomizableUI.getLocalizedProperty(this, "label"));
-      node.setAttribute("tooltiptext", CustomizableUI.getLocalizedProperty(this, "tooltiptext"));
-      node.setAttribute("removable", "true");
-      node.setAttribute("observes", "Social:PageShareOrMark");
-      node.setAttribute("command", "Social:SharePage");
-
-      let listener = {
-        onWidgetAdded: (aWidgetId) => {
-          if (aWidgetId != this.id)
-            return;
-
-          Services.obs.notifyObservers(null, "social:" + this.id + "-added", null);
-        },
-
-        onWidgetRemoved: aWidgetId => {
-          if (aWidgetId != this.id)
-            return;
-
-          Services.obs.notifyObservers(null, "social:" + this.id + "-removed", null);
-        },
-
-        onWidgetInstanceRemoved: (aWidgetId, aDoc) => {
-          if (aWidgetId != this.id || aDoc != aDocument)
-            return;
-
-          CustomizableUI.removeListener(listener);
-        }
-      };
-      CustomizableUI.addListener(listener);
-
-      return node;
     }
   }, {
     id: "add-ons-button",
@@ -788,6 +751,18 @@ const CustomizableWidgets = [
       let win = aEvent.view;
       win.MailIntegration.sendLinkForBrowser(win.gBrowser.selectedBrowser)
     }
+  }, {
+    id: "web-apps-button",
+    label: "web-apps-button.label",
+    tooltiptext: "web-apps-button.tooltiptext",
+    onCommand: function(aEvent) {
+      let win = aEvent.target &&
+                aEvent.target.ownerDocument &&
+                aEvent.target.ownerDocument.defaultView;
+      if (win && typeof win.BrowserOpenApps == "function") {
+        win.BrowserOpenApps();
+      }
+    }
   }];
 
 if (Services.prefs.getBoolPref("privacy.panicButton.enabled")) {
@@ -917,7 +892,7 @@ if (Services.prefs.getBoolPref("browser.pocket.enabled")) {
 }
 
 #ifdef E10S_TESTING_ONLY
-let e10sDisabled = false;
+var e10sDisabled = false;
 #ifdef XP_MACOSX
 // On OS X, "Disable Hardware Acceleration" also disables OMTC and forces
 // a fallback to Basic Layers. This is incompatible with e10s.

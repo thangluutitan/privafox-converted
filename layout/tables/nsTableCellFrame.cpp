@@ -308,7 +308,7 @@ nsTableCellFrame::DecorateForSelection(nsRenderingContext& aRenderingContext,
   nsPresContext* presContext = PresContext();
   displaySelection = DisplaySelection(presContext);
   if (displaySelection) {
-    nsRefPtr<nsFrameSelection> frameSelection =
+    RefPtr<nsFrameSelection> frameSelection =
       presContext->PresShell()->FrameSelection();
 
     if (frameSelection->GetTableCellSelection()) {
@@ -596,10 +596,10 @@ void nsTableCellFrame::BlockDirAlignChild(WritingMode aWM, nscoord aMaxAscent)
 
   nscoord bSize = BSize(aWM);
   nsIFrame* firstKid = mFrames.FirstChild();
-  nscoord containerWidth = mRect.width;
+  nsSize containerSize = mRect.Size();
   NS_ASSERTION(firstKid, "Frame construction error, a table cell always has "
                          "an inner cell frame");
-  LogicalRect kidRect = firstKid->GetLogicalRect(aWM, containerWidth);
+  LogicalRect kidRect = firstKid->GetLogicalRect(aWM, containerSize);
   nscoord childBSize = kidRect.BSize(aWM);
 
   // Vertically align the child
@@ -627,8 +627,9 @@ void nsTableCellFrame::BlockDirAlignChild(WritingMode aWM, nscoord aMaxAscent)
       // Align the middle of the child frame with the middle of the content area,
       kidBStart = (bSize - childBSize - bEndInset + bStartInset) / 2;
   }
-  // if the content is larger than the cell bsize, align from bstart
-  kidBStart = std::max(0, kidBStart);
+  // If the content is larger than the cell bsize, align from bStartInset
+  // (cell's content-box bstart edge).
+  kidBStart = std::max(bStartInset, kidBStart);
 
   if (kidBStart != kidRect.BStart(aWM)) {
     // Invalidate at the old position first
@@ -636,7 +637,7 @@ void nsTableCellFrame::BlockDirAlignChild(WritingMode aWM, nscoord aMaxAscent)
   }
 
   firstKid->SetPosition(aWM, LogicalPoint(aWM, kidRect.IStart(aWM),
-                                          kidBStart), containerWidth);
+                                          kidBStart), containerSize);
   nsHTMLReflowMetrics desiredSize(aWM);
   desiredSize.SetSize(aWM, GetLogicalSize(aWM));
 
@@ -824,10 +825,9 @@ void DebugCheckChildSize(nsIFrame*            aChild,
 // it is the bsize (minus border, padding) of the cell's first in flow during its final
 // reflow without an unconstrained bsize.
 static nscoord
-CalcUnpaginatedBSize(nsPresContext*     aPresContext,
-                      nsTableCellFrame& aCellFrame,
-                      nsTableFrame&     aTableFrame,
-                      nscoord           aBlockDirBorderPadding)
+CalcUnpaginatedBSize(nsTableCellFrame& aCellFrame,
+                     nsTableFrame&     aTableFrame,
+                     nscoord           aBlockDirBorderPadding)
 {
   const nsTableCellFrame* firstCellInFlow =
     static_cast<nsTableCellFrame*>(aCellFrame.FirstInFlow());
@@ -851,7 +851,7 @@ CalcUnpaginatedBSize(nsPresContext*     aPresContext,
       break;
     }
     else if (rowX >= rowIndex) {
-      computedBSize += row->GetUnpaginatedBSize(aPresContext);
+      computedBSize += row->GetUnpaginatedBSize();
     }
   }
   return computedBSize;
@@ -909,7 +909,7 @@ nsTableCellFrame::Reflow(nsPresContext*           aPresContext,
   }
   else if (aPresContext->IsPaginated()) {
     nscoord computedUnpaginatedBSize =
-      CalcUnpaginatedBSize(aPresContext, (nsTableCellFrame&)*this,
+      CalcUnpaginatedBSize((nsTableCellFrame&)*this,
                            *tableFrame, borderPadding.BStartEnd(wm));
     if (computedUnpaginatedBSize > 0) {
       const_cast<nsHTMLReflowState&>(aReflowState).SetComputedBSize(computedUnpaginatedBSize);
@@ -944,14 +944,9 @@ nsTableCellFrame::Reflow(nsPresContext*           aPresContext,
     kidReflowState.SetBResize(true);
   }
 
-  nscoord containerWidth;
-  if (aReflowState.ComputedWidth() == NS_UNCONSTRAINEDSIZE) {
-    containerWidth = 0; // avoid passing unconstrained container width to
-                        // ReflowChild; but position will not be valid
-  } else {
-    containerWidth = aReflowState.ComputedWidth() +
-      aReflowState.ComputedPhysicalBorderPadding().LeftRight();
-  }
+  nsSize containerSize =
+    aReflowState.ComputedSizeAsContainerIfConstrained();
+
   LogicalPoint kidOrigin(wm, borderPadding.IStart(wm),
                          borderPadding.BStart(wm));
   nsRect origRect = firstKid->GetRect();
@@ -959,7 +954,7 @@ nsTableCellFrame::Reflow(nsPresContext*           aPresContext,
   bool firstReflow = firstKid->HasAnyStateBits(NS_FRAME_FIRST_REFLOW);
 
   ReflowChild(firstKid, aPresContext, kidSize, kidReflowState,
-              wm, kidOrigin, containerWidth, 0, aStatus);
+              wm, kidOrigin, containerSize, 0, aStatus);
   if (NS_FRAME_OVERFLOW_IS_INCOMPLETE(aStatus)) {
     // Don't pass OVERFLOW_INCOMPLETE through tables until they can actually handle it
     //XXX should paginate overflow as overflow, but not in this patch (bug 379349)
@@ -989,7 +984,7 @@ nsTableCellFrame::Reflow(nsPresContext*           aPresContext,
 
   // Place the child
   FinishReflowChild(firstKid, aPresContext, kidSize, &kidReflowState,
-                    wm, kidOrigin, containerWidth, 0);
+                    wm, kidOrigin, containerSize, 0);
 
   nsTableFrame::InvalidateTableFrame(firstKid, origRect, origVisualOverflow,
                                      firstReflow);

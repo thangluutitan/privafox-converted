@@ -8,15 +8,47 @@
                                     !('@mozilla.org/widget/nativemenuservice;1' in Cc))
                                   this.setAttribute('openedwithkey',
                                                     event.target.parentNode.openedWithKey);"
-                style="border:0px;padding:0px;margin:0px;-moz-appearance:block">
+                style="border:0px;padding:0px;margin:0px;-moz-appearance:none">
             <menu id="file-menu" label="&fileMenu.label;"
                   accesskey="&fileMenu.accesskey;">
-              <menupopup id="menu_FilePopup">
+              <menupopup id="menu_FilePopup"
+                         onpopupshowing="updateUserContextUIVisibility();">
                 <menuitem id="menu_newNavigatorTab"
                           label="&tabCmd.label;"
                           command="cmd_newNavigatorTab"
                           key="key_newNavigatorTab"
                           accesskey="&tabCmd.accesskey;"/>
+                <menu id="menu_newUserContext"
+                      label="&newUserContext.label;"
+                      accesskey="&newUserContext.accesskey;"
+                      hidden="true">
+                  <menupopup>
+                    <menuitem id="menu_newUserContextTabPersonal"
+                              usercontextid="1"
+                              class="menuitem-iconic"
+                              label="&userContextPersonal.label;"
+                              command="Browser:NewUserContextTab"
+                              accesskey="&userContextPersonal.accesskey;"/>
+                    <menuitem id="menu_newUserContextTabWork"
+                              usercontextid="2"
+                              class="menuitem-iconic"
+                              label="&userContextWork.label;"
+                              command="Browser:NewUserContextTab"
+                              accesskey="&userContextWork.accesskey;"/>
+                    <menuitem id="menu_newUserContextTabBanking"
+                              usercontextid="3"
+                              class="menuitem-iconic"
+                              label="&userContextBanking.label;"
+                              command="Browser:NewUserContextTab"
+                              accesskey="&userContextBanking.accesskey;"/>
+                    <menuitem id="menu_newUserContextTabShopping"
+                              usercontextid="4"
+                              class="menuitem-iconic"
+                              label="&userContextShopping.label;"
+                              command="Browser:NewUserContextTab"
+                              accesskey="&userContextShopping.accesskey;"/>
+                  </menupopup>
+                </menu>
                 <menuitem id="menu_newNavigator"
                           label="&newNavigatorCmd.label;"
                           accesskey="&newNavigatorCmd.accesskey;"
@@ -211,10 +243,6 @@
                               key="key_gotoHistory"
                               observes="viewHistorySidebar"
                               label="&historyButton.label;"/> -->
-                    <menuitem id="menu_readingListSidebar"
-                              key="key_readingListSidebar"
-                              observes="readingListSidebar"
-                              label="&readingList.label;"/>
 
                     <!-- Service providers with sidebars are inserted between these two menuseperators -->
                     <menuseparator hidden="true"/>
@@ -338,13 +366,11 @@
                           key="key_sanitize"
                           command="Tools:Sanitize"/>
                 <menuseparator id="sanitizeSeparator"/>
-#ifdef MOZ_SERVICES_SYNC
                 <menuitem id="sync-tabs-menuitem"
                           class="syncTabsMenuItem"
-                          label="&syncTabsMenu2.label;"
+                          label="&syncTabsMenu3.label;"
                           oncommand="BrowserOpenSyncTabs();"
-                          disabled="true"/>
-#endif
+                          hidden="true"/>
                 <menuitem id="historyRestoreLastSession"
                           label="&historyRestoreLastSession.label;"
                           command="Browser:RestoreLastSession"/>
@@ -372,7 +398,7 @@
                                class="hide-if-empty-places-result"/>
               </menupopup>
             </menu> -->
-		
+
   <menu id="bookmarksMenu"
         label="&bookmarksMenu.label;"
         accesskey="&bookmarksMenu.accesskey;"
@@ -446,30 +472,6 @@
                    onpopupshowing="if (!this.parentNode._placesView)
                                      new PlacesMenu(event, 'place:folder=TOOLBAR');"/>
       </menu>
-#ifndef XP_MACOSX
-# Disabled on Mac because we can't fill native menupopups asynchronously
-      <menuseparator id="menu_readingListSeparator">
-        <observes element="readingListSidebar" attribute="hidden"/>
-      </menuseparator>
-      <menu id="menu_readingList"
-            class="menu-iconic bookmark-item"
-            label="&readingList.label;"
-            container="true">
-        <observes element="readingListSidebar" attribute="hidden"/>
-        <menupopup id="readingListPopup"
-#ifndef XP_MACOSX
-                   placespopup="true"
-#endif
-                   onpopupshowing="ReadingListUI.onReadingListPopupShowing(this);">
-          <menuseparator id="viewReadingListSidebarSeparator"/>
-          <menuitem id="viewReadingListSidebar" class="subviewbutton"
-                    oncommand="SidebarUI.toggle('readingListSidebar');"
-                    label="&readingList.showSidebar.label;">
-            <observes element="readingListSidebar" attribute="checked"/>
-          </menuitem>
-        </menupopup>
-      </menu>
-#endif
       <menuseparator id="bookmarksMenuItemsSeparator"/>
       <!-- Bookmarks menu items -->
       <menuseparator id="bookmarksPlacesResultSeparator" builder="end"
@@ -485,12 +487,10 @@
                   accesskey="&toolsMenu.accesskey;"
                   onpopupshowing="mirrorShow(this)">
               <menupopup id="menu_ToolsPopup"
-#ifdef MOZ_SERVICES_SYNC
 # We have to use setTimeout() here to avoid a flickering menu bar when opening
 # the Tools menu, see bug 970769. This can be removed once we got rid of the
 # event loop spinning in Weave.Status._authManager.
                          onpopupshowing="setTimeout(() => gSyncUI.updateUI());"
-#endif
                          >
               <menuitem id="menu_openDownloads"
                         label="&downloads.label;"
@@ -504,18 +504,16 @@
                         command="Tools:Addons"/>
             <!-- Privafox-MBT-2 : Remove Menu Apps -->
 #ifdef PRIVAFOX_DEV
-            <menuitem id="menu_openApps"
+              <menuitem id="menu_openApps"
                         label="&webapps.label;"
                         accesskey="&webapps.accesskey;"
                         oncommand="BrowserOpenApps();"/>
-#endif
-#ifdef MOZ_SERVICES_SYNC
-              <!-- only one of sync-setup or sync-menu will be showing at once 
+              <!-- only one of sync-setup, sync-syncnowitem or sync-reauthitem will be showing at once -->
               <menuitem id="sync-setup"
-                        label="&syncSetup.label;"
-                        accesskey="&syncSetup.accesskey;"
+                        label="&syncSignIn.label;"
+                        accesskey="&syncSignIn.accesskey;"
                         observes="sync-setup-state"
-                        oncommand="gSyncUI.openSetup(null, 'menubar')"/> -->
+                        oncommand="gSyncUI.openSetup(null, 'menubar')"/>
               <menuitem id="sync-syncnowitem"
                         label="&syncSyncNowItem.label;"
                         accesskey="&syncSyncNowItem.accesskey;"
@@ -526,11 +524,11 @@
                         accesskey="&syncReAuthItem.accesskey;"
                         observes="sync-reauth-state"
                         oncommand="gSyncUI.openSignInAgainPage('menubar');"/>
-#endif
+#endif						
               <menuseparator id="devToolsSeparator"/>
              <!-- Privafox-MBT-3 : Remove Menu Web Developer -->
 #ifdef PRIVAFOX_WEB_DEVELOPER
-             <menu id="webDeveloperMenu"
+              <menu id="webDeveloperMenu"
                     label="&webDeveloperMenu.label;"
                     accesskey="&webDeveloperMenu.accesskey;">
                 <menupopup id="menuWebDeveloperPopup">
@@ -541,9 +539,6 @@
                   <menuitem id="menu_devToolbar"
                             observes="devtoolsMenuBroadcaster_DevToolbar"
                             accesskey="&devToolbarMenu.accesskey;"/>
-                  <menuitem id="menu_devAppMgr"
-                            observes="devtoolsMenuBroadcaster_DevAppMgr"
-                            accesskey="&devAppMgrMenu.accesskey;"/>
                   <menuitem id="menu_webide"
                             observes="devtoolsMenuBroadcaster_webide"
                             accesskey="&webide.accesskey;"/>
@@ -584,7 +579,7 @@
                <menuitem id="menu_pageSource"
                             observes="devtoolsMenuBroadcaster_PageSource"
                             accesskey="&pageSourceCmd.accesskey;"/>
-                <menuitem id="menu_pageInfo"
+              <menuitem id="menu_pageInfo"
                         accesskey="&pageInfoCmd.accesskey;"
                         label="&pageInfoCmd.label;"
 #ifndef XP_WIN

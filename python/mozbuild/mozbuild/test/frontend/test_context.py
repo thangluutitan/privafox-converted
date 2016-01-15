@@ -8,9 +8,12 @@ import unittest
 from mozunit import main
 
 from mozbuild.frontend.context import (
+    AbsolutePath,
     Context,
+    ContextDerivedTypedHierarchicalStringList,
     ContextDerivedTypedList,
     ContextDerivedTypedListWithItems,
+    ContextDerivedTypedRecord,
     Files,
     FUNCTIONS,
     ObjDirPath,
@@ -454,6 +457,18 @@ class TestPaths(unittest.TestCase):
         path = Path(path)
         self.assertIsInstance(path, ObjDirPath)
 
+    def test_absolute_path(self):
+        config = self.config
+        ctxt = Context(config=config)
+        ctxt.push_source(mozpath.join(config.topsrcdir, 'foo', 'moz.build'))
+
+        path = AbsolutePath(ctxt, '%/qux')
+        self.assertEqual(path, '%/qux')
+        self.assertEqual(path.full_path, '/qux')
+
+        with self.assertRaises(ValueError):
+            path = AbsolutePath(ctxt, '%qux')
+
     def test_path_with_mixed_contexts(self):
         config = self.config
         ctxt1 = Context(config=config)
@@ -565,6 +580,83 @@ class TestPaths(unittest.TestCase):
             self.assertEqual(p_path, Path(ctxt1, p_str))
             self.assertEqual(l[p_str].foo, True)
             self.assertEqual(l[p_path].foo, True)
+
+    def test_path_typed_hierarchy_list(self):
+        config = self.config
+        ctxt1 = Context(config=config)
+        ctxt1.push_source(mozpath.join(config.topsrcdir, 'foo', 'moz.build'))
+        ctxt2 = Context(config=config)
+        ctxt2.push_source(mozpath.join(config.topsrcdir, 'bar', 'moz.build'))
+
+        paths = [
+            '!../bar/qux',
+            '!/qux/qux',
+            '!qux',
+            '../bar/qux',
+            '/qux/qux',
+            'qux',
+        ]
+
+        MyList = ContextDerivedTypedHierarchicalStringList(Path)
+        l = MyList(ctxt1)
+        l += paths
+        l.subdir += paths
+
+        for _, files in l.walk():
+            for p_str, p_path in zip(paths, files):
+                self.assertEqual(p_str, p_path)
+                self.assertEqual(p_path, Path(ctxt1, p_str))
+                self.assertEqual(p_path.join('foo'),
+                                 Path(ctxt1, mozpath.join(p_str, 'foo')))
+
+        l2 = MyList(ctxt2)
+        l2 += paths
+        l2.subdir += paths
+
+        for _, files in l2.walk():
+            for p_str, p_path in zip(paths, files):
+                self.assertEqual(p_str, p_path)
+                self.assertEqual(p_path, Path(ctxt2, p_str))
+
+        # Assigning with Paths from another context doesn't rebase them
+        l2 = MyList(ctxt2)
+        l2 += l
+
+        for _, files in l2.walk():
+            for p_str, p_path in zip(paths, files):
+                self.assertEqual(p_str, p_path)
+                self.assertEqual(p_path, Path(ctxt1, p_str))
+
+
+class TestTypedRecord(unittest.TestCase):
+
+    def test_fields(self):
+        T = ContextDerivedTypedRecord(('field1', unicode),
+                                      ('field2', list))
+        inst = T(None)
+        self.assertEqual(inst.field1, '')
+        self.assertEqual(inst.field2, [])
+
+        inst.field1 = 'foo'
+        inst.field2 += ['bar']
+
+        self.assertEqual(inst.field1, 'foo')
+        self.assertEqual(inst.field2, ['bar'])
+
+        with self.assertRaises(AttributeError):
+            inst.field3 = []
+
+    def test_coercion(self):
+        T = ContextDerivedTypedRecord(('field1', unicode),
+                                      ('field2', list))
+        inst = T(None)
+        inst.field1 = 3
+        inst.field2 += ('bar',)
+        self.assertEqual(inst.field1, '3')
+        self.assertEqual(inst.field2, ['bar'])
+
+        with self.assertRaises(TypeError):
+            inst.field2 = object()
 
 
 class TestFiles(unittest.TestCase):

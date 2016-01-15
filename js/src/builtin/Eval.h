@@ -30,12 +30,13 @@ DirectEval(JSContext* cx, const CallArgs& args);
 extern bool
 DirectEvalStringFromIon(JSContext* cx,
                         HandleObject scopeObj, HandleScript callerScript,
-                        HandleValue thisValue, HandleValue newTargetValue,
-                        HandleString str, jsbytecode * pc, MutableHandleValue vp);
+                        HandleValue newTargetValue, HandleString str,
+                        jsbytecode* pc, MutableHandleValue vp);
 
 // True iff fun is a built-in eval function.
 extern bool
 IsAnyBuiltinEval(JSFunction* fun);
 
-}  // namespace js
+} // namespace js
+
 #endif /* builtin_Eval_h */

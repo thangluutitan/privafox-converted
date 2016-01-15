@@ -32,12 +32,12 @@
   System::Call "kernel32::ProcessIdToSessionId(i $0, *i ${NSIS_MAX_STRLEN} r9)"
 
   ; Determine if we're the protected UserChoice default or not. If so fix the
-  ; start menu tile.  In case there are 2 Privafox installations, we only do
+  ; start menu tile.  In case there are 2 Firefox installations, we only do
   ; this if the application being updated is the default.
   ReadRegStr $0 HKCU "Software\Microsoft\Windows\Shell\Associations\UrlAssociations\http\UserChoice" "ProgId"
-  ${If} $0 == "PrivafoxURL"
+  ${If} $0 == "FirefoxURL"
   ${AndIf} $9 != 0 ; We're not running in session 0
-    ReadRegStr $0 HKCU "Software\Classes\PrivafoxURL\shell\open\command" ""
+    ReadRegStr $0 HKCU "Software\Classes\FirefoxURL\shell\open\command" ""
     ${GetPathFromString} "$0" $0
     ${GetParent} "$0" $0
     ${If} ${FileExists} "$0"
@@ -48,28 +48,28 @@
   ${CreateShortcutsLog}
 
   ; Remove registry entries for non-existent apps and for apps that point to our
-  ; install location in the Software\Privacore key and uninstall registry entries
+  ; install location in the Software\Mozilla key and uninstall registry entries
   ; that point to our install location for both HKCU and HKLM.
   SetShellVarContext current  ; Set SHCTX to the current user (e.g. HKCU)
-  ${RegCleanMain} "Software\Privacore"
+  ${RegCleanMain} "Software\Mozilla"
   ${RegCleanUninstall}
   ${UpdateProtocolHandlers}
 
   ; setup the application model id registration value
-  ${InitHashAppModelId} "$INSTDIR" "Software\Privacore\${AppName}\TaskBarIDs"
+  ${InitHashAppModelId} "$INSTDIR" "Software\Mozilla\${AppName}\TaskBarIDs"
 
   ; Win7 taskbar and start menu link maintenance
   Call FixShortcutAppModelIDs
 
   ClearErrors
-  WriteRegStr HKLM "Software\Privacore" "${BrandShortName}InstallerTest" "Write Test"
+  WriteRegStr HKLM "Software\Mozilla" "${BrandShortName}InstallerTest" "Write Test"
   ${If} ${Errors}
     StrCpy $TmpVal "HKCU" ; used primarily for logging
   ${Else}
     SetShellVarContext all    ; Set SHCTX to all users (e.g. HKLM)
-    DeleteRegValue HKLM "Software\Privacore" "${BrandShortName}InstallerTest"
+    DeleteRegValue HKLM "Software\Mozilla" "${BrandShortName}InstallerTest"
     StrCpy $TmpVal "HKLM" ; used primarily for logging
-    ${RegCleanMain} "Software\Privacore"
+    ${RegCleanMain} "Software\Mozilla"
     ${RegCleanUninstall}
     ${UpdateProtocolHandlers}
     ${FixShellIconHandler} "HKLM"
@@ -110,9 +110,9 @@
       ${EndIf}
     ${EndIf}
 
-    ReadRegStr $0 HKLM "Software\privacore.com\Privacore" "CurrentVersion"
+    ReadRegStr $0 HKLM "Software\mozilla.org\Mozilla" "CurrentVersion"
     ${If} "$0" != "${GREVersion}"
-      WriteRegStr HKLM "Software\privacore.com\Privacore" "CurrentVersion" "${GREVersion}"
+      WriteRegStr HKLM "Software\mozilla.org\Mozilla" "CurrentVersion" "${GREVersion}"
     ${EndIf}
   ${EndIf}
 
@@ -154,7 +154,7 @@
     ${If} ${RunningX64}
       SetRegView 64
     ${EndIf}
-    ReadRegDWORD $5 HKLM "Software\Privacore\MaintenanceService" "Attempted"
+    ReadRegDWORD $5 HKLM "Software\Mozilla\MaintenanceService" "Attempted"
     ClearErrors
     ${If} ${RunningX64}
       SetRegView lastused
@@ -189,8 +189,8 @@
 ${If} ${AtLeastWin8}
   ${RemoveDEHRegistration} ${DELEGATE_EXECUTE_HANDLER_ID} \
                            $AppUserModelID \
-                           "PrivafoxURL" \
-                           "PrivafoxHTML"
+                           "FirefoxURL" \
+                           "FirefoxHTML"
 ${EndIf}
 !macroend
 !define PostUpdate "!insertmacro PostUpdate"
@@ -350,12 +350,13 @@ ${EndIf}
   ClearErrors
   EnumRegKey $7 HKCR "${FILE_TYPE}" 0
   ${If} ${Errors}
-    WriteRegStr SHCTX "SOFTWARE\Classes\${FILE_TYPE}"  "" "PrivafoxHTML"
+    WriteRegStr SHCTX "SOFTWARE\Classes\${FILE_TYPE}"  "" "FirefoxHTML"
   ${EndIf}
+  WriteRegStr SHCTX "SOFTWARE\Classes\${FILE_TYPE}\OpenWithProgids" "FirefoxHTML" ""
 !macroend
 !define AddAssociationIfNoneExist "!insertmacro AddAssociationIfNoneExist"
 
-; Adds the protocol and file handler registry entries for making Privafox the
+; Adds the protocol and file handler registry entries for making Firefox the
 ; default handler (uses SHCTX).
 !macro SetHandlers
   ${GetLongPath} "$INSTDIR\${FileMainEXE}" $8
@@ -363,30 +364,30 @@ ${EndIf}
   StrCpy $0 "SOFTWARE\Classes"
   StrCpy $2 "$\"$8$\" -osint -url $\"%1$\""
 
-  ; Associate the file handlers with PrivafoxHTML
+  ; Associate the file handlers with FirefoxHTML
   ReadRegStr $6 SHCTX "$0\.htm" ""
-  ${If} "$6" != "PrivafoxHTML"
-    WriteRegStr SHCTX "$0\.htm"   "" "PrivafoxHTML"
+  ${If} "$6" != "FirefoxHTML"
+    WriteRegStr SHCTX "$0\.htm"   "" "FirefoxHTML"
   ${EndIf}
 
   ReadRegStr $6 SHCTX "$0\.html" ""
-  ${If} "$6" != "PrivafoxHTML"
-    WriteRegStr SHCTX "$0\.html"  "" "PrivafoxHTML"
+  ${If} "$6" != "FirefoxHTML"
+    WriteRegStr SHCTX "$0\.html"  "" "FirefoxHTML"
   ${EndIf}
 
   ReadRegStr $6 SHCTX "$0\.shtml" ""
-  ${If} "$6" != "PrivafoxHTML"
-    WriteRegStr SHCTX "$0\.shtml" "" "PrivafoxHTML"
+  ${If} "$6" != "FirefoxHTML"
+    WriteRegStr SHCTX "$0\.shtml" "" "FirefoxHTML"
   ${EndIf}
 
   ReadRegStr $6 SHCTX "$0\.xht" ""
-  ${If} "$6" != "PrivafoxHTML"
-    WriteRegStr SHCTX "$0\.xht"   "" "PrivafoxHTML"
+  ${If} "$6" != "FirefoxHTML"
+    WriteRegStr SHCTX "$0\.xht"   "" "FirefoxHTML"
   ${EndIf}
 
   ReadRegStr $6 SHCTX "$0\.xhtml" ""
-  ${If} "$6" != "PrivafoxHTML"
-    WriteRegStr SHCTX "$0\.xhtml" "" "PrivafoxHTML"
+  ${If} "$6" != "FirefoxHTML"
+    WriteRegStr SHCTX "$0\.xhtml" "" "FirefoxHTML"
   ${EndIf}
 
   ${AddAssociationIfNoneExist} ".pdf"
@@ -396,12 +397,12 @@ ${EndIf}
   ${AddAssociationIfNoneExist} ".pdf"
   ${AddAssociationIfNoneExist} ".webm"
 
-  ; An empty string is used for the 5th param because PrivafoxHTML is not a
+  ; An empty string is used for the 5th param because FirefoxHTML is not a
   ; protocol handler
-  ${AddDisabledDDEHandlerValues} "PrivafoxHTML" "$2" "$8,1" \
+  ${AddDisabledDDEHandlerValues} "FirefoxHTML" "$2" "$8,1" \
                                  "${AppRegName} HTML Document" ""
 
-  ${AddDisabledDDEHandlerValues} "PrivafoxURL" "$2" "$8,1" "${AppRegName} URL" \
+  ${AddDisabledDDEHandlerValues} "FirefoxURL" "$2" "$8,1" "${AppRegName} URL" \
                                  "true"
   ; An empty string is used for the 4th & 5th params because the following
   ; protocol handlers already have a display name and the additional keys
@@ -412,7 +413,7 @@ ${EndIf}
 !macroend
 !define SetHandlers "!insertmacro SetHandlers"
 
-; Adds the HKLM\Software\Clients\StartMenuInternet\PRIVAFOX.EXE registry
+; Adds the HKLM\Software\Clients\StartMenuInternet\FIREFOX.EXE registry
 ; entries (does not use SHCTX).
 ;
 ; The values for StartMenuInternet are only valid under HKLM and there can only
@@ -471,41 +472,41 @@ ${EndIf}
   WriteRegStr ${RegKey} "$0\Capabilities" "ApplicationIcon" "$8,0"
   WriteRegStr ${RegKey} "$0\Capabilities" "ApplicationName" "${BrandShortName}"
 
-  WriteRegStr ${RegKey} "$0\Capabilities\FileAssociations" ".htm"   "PrivafoxHTML"
-  WriteRegStr ${RegKey} "$0\Capabilities\FileAssociations" ".html"  "PrivafoxHTML"
-  WriteRegStr ${RegKey} "$0\Capabilities\FileAssociations" ".shtml" "PrivafoxHTML"
-  WriteRegStr ${RegKey} "$0\Capabilities\FileAssociations" ".xht"   "PrivafoxHTML"
-  WriteRegStr ${RegKey} "$0\Capabilities\FileAssociations" ".xhtml" "PrivafoxHTML"
+  WriteRegStr ${RegKey} "$0\Capabilities\FileAssociations" ".htm"   "FirefoxHTML"
+  WriteRegStr ${RegKey} "$0\Capabilities\FileAssociations" ".html"  "FirefoxHTML"
+  WriteRegStr ${RegKey} "$0\Capabilities\FileAssociations" ".shtml" "FirefoxHTML"
+  WriteRegStr ${RegKey} "$0\Capabilities\FileAssociations" ".xht"   "FirefoxHTML"
+  WriteRegStr ${RegKey} "$0\Capabilities\FileAssociations" ".xhtml" "FirefoxHTML"
 
   WriteRegStr ${RegKey} "$0\Capabilities\StartMenu" "StartMenuInternet" "$R9"
 
-  WriteRegStr ${RegKey} "$0\Capabilities\URLAssociations" "ftp"    "PrivafoxURL"
-  WriteRegStr ${RegKey} "$0\Capabilities\URLAssociations" "http"   "PrivafoxURL"
-  WriteRegStr ${RegKey} "$0\Capabilities\URLAssociations" "https"  "PrivafoxURL"
+  WriteRegStr ${RegKey} "$0\Capabilities\URLAssociations" "ftp"    "FirefoxURL"
+  WriteRegStr ${RegKey} "$0\Capabilities\URLAssociations" "http"   "FirefoxURL"
+  WriteRegStr ${RegKey} "$0\Capabilities\URLAssociations" "https"  "FirefoxURL"
 
   ; Vista Registered Application
   WriteRegStr ${RegKey} "Software\RegisteredApplications" "${AppRegName}" "$0\Capabilities"
 !macroend
 !define SetStartMenuInternet "!insertmacro SetStartMenuInternet"
 
-; The IconHandler reference for PrivafoxHTML can end up in an inconsistent state
+; The IconHandler reference for FirefoxHTML can end up in an inconsistent state
 ; due to changes not being detected by the IconHandler for side by side
 ; installs (see bug 268512). The symptoms can be either an incorrect icon or no
-; icon being displayed for files associated with Privafox (does not use SHCTX).
+; icon being displayed for files associated with Firefox (does not use SHCTX).
 !macro FixShellIconHandler RegKey
   ClearErrors
-  ReadRegStr $1 ${RegKey} "Software\Classes\PrivafoxHTML\ShellEx\IconHandler" ""
+  ReadRegStr $1 ${RegKey} "Software\Classes\FirefoxHTML\ShellEx\IconHandler" ""
   ${Unless} ${Errors}
-    ReadRegStr $1 ${RegKey} "Software\Classes\PrivafoxHTML\DefaultIcon" ""
+    ReadRegStr $1 ${RegKey} "Software\Classes\FirefoxHTML\DefaultIcon" ""
     ${GetLongPath} "$INSTDIR\${FileMainEXE}" $2
     ${If} "$1" != "$2,1"
-      WriteRegStr ${RegKey} "Software\Classes\PrivafoxHTML\DefaultIcon" "" "$2,1"
+      WriteRegStr ${RegKey} "Software\Classes\FirefoxHTML\DefaultIcon" "" "$2,1"
     ${EndIf}
   ${EndUnless}
 !macroend
 !define FixShellIconHandler "!insertmacro FixShellIconHandler"
 
-; Add Software\Privacore\ registry entries (uses SHCTX).
+; Add Software\Mozilla\ registry entries (uses SHCTX).
 !macro SetAppKeys
   ; Check if this is an ESR release and if so add registry values so it is
   ; possible to determine that this is an ESR install (bug 726781).
@@ -518,14 +519,14 @@ ${EndIf}
   ${EndIf}
 
   ${GetLongPath} "$INSTDIR" $8
-  StrCpy $0 "Software\Privacore\${BrandFullNameInternal}\${AppVersion}$3 (${ARCH} ${AB_CD})\Main"
+  StrCpy $0 "Software\Mozilla\${BrandFullNameInternal}\${AppVersion}$3 (${ARCH} ${AB_CD})\Main"
   ${WriteRegStr2} $TmpVal "$0" "Install Directory" "$8" 0
   ${WriteRegStr2} $TmpVal "$0" "PathToExe" "$8\${FileMainEXE}" 0
 
-  StrCpy $0 "Software\Privacore\${BrandFullNameInternal}\${AppVersion}$3 (${ARCH} ${AB_CD})\Uninstall"
+  StrCpy $0 "Software\Mozilla\${BrandFullNameInternal}\${AppVersion}$3 (${ARCH} ${AB_CD})\Uninstall"
   ${WriteRegStr2} $TmpVal "$0" "Description" "${BrandFullNameInternal} ${AppVersion}$3 (${ARCH} ${AB_CD})" 0
 
-  StrCpy $0 "Software\Privacore\${BrandFullNameInternal}\${AppVersion}$3 (${ARCH} ${AB_CD})"
+  StrCpy $0 "Software\Mozilla\${BrandFullNameInternal}\${AppVersion}$3 (${ARCH} ${AB_CD})"
   ${WriteRegStr2} $TmpVal  "$0" "" "${AppVersion}$3 (${ARCH} ${AB_CD})" 0
   ${If} "$3" == ""
     DeleteRegValue SHCTX "$0" "ESR"
@@ -533,14 +534,14 @@ ${EndIf}
     ${WriteRegDWORD2} $TmpVal "$0" "ESR" 1 0
   ${EndIf}
 
-  StrCpy $0 "Software\Privacore\${BrandFullNameInternal} ${AppVersion}$3\bin"
+  StrCpy $0 "Software\Mozilla\${BrandFullNameInternal} ${AppVersion}$3\bin"
   ${WriteRegStr2} $TmpVal "$0" "PathToExe" "$8\${FileMainEXE}" 0
 
-  StrCpy $0 "Software\Privacore\${BrandFullNameInternal} ${AppVersion}$3\extensions"
+  StrCpy $0 "Software\Mozilla\${BrandFullNameInternal} ${AppVersion}$3\extensions"
   ${WriteRegStr2} $TmpVal "$0" "Components" "$8\components" 0
   ${WriteRegStr2} $TmpVal "$0" "Plugins" "$8\plugins" 0
 
-  StrCpy $0 "Software\Privacore\${BrandFullNameInternal} ${AppVersion}$3"
+  StrCpy $0 "Software\Mozilla\${BrandFullNameInternal} ${AppVersion}$3"
   ${WriteRegStr2} $TmpVal "$0" "GeckoVer" "${GREVersion}" 0
   ${If} "$3" == ""
     DeleteRegValue SHCTX "$0" "ESR"
@@ -548,7 +549,7 @@ ${EndIf}
     ${WriteRegDWORD2} $TmpVal "$0" "ESR" 1 0
   ${EndIf}
 
-  StrCpy $0 "Software\Privacore\${BrandFullNameInternal}$3"
+  StrCpy $0 "Software\Mozilla\${BrandFullNameInternal}$3"
   ${WriteRegStr2} $TmpVal "$0" "" "${GREVersion}" 0
   ${WriteRegStr2} $TmpVal "$0" "CurrentVersion" "${AppVersion}$3 (${ARCH} ${AB_CD})" 0
 !macroend
@@ -600,7 +601,7 @@ ${EndIf}
     ${WriteRegStr2} $1 "$0" "DisplayVersion" "${AppVersion}" 0
     ${WriteRegStr2} $1 "$0" "HelpLink" "${HelpLink}" 0
     ${WriteRegStr2} $1 "$0" "InstallLocation" "$8" 0
-    ${WriteRegStr2} $1 "$0" "Publisher" "Privacore" 0
+    ${WriteRegStr2} $1 "$0" "Publisher" "Mozilla" 0
     ${WriteRegStr2} $1 "$0" "UninstallString" "$\"$8\uninstall\helper.exe$\"" 0
     DeleteRegValue SHCTX "$0" "URLInfoAbout"
 ; Don't add URLUpdateInfo which is the release notes url except for the release
@@ -634,7 +635,7 @@ ${EndIf}
 ; HKCU Software\Classes keys when associating handlers. The fix uses the merged
 ; view in HKCR to check for existance of an existing association. This macro
 ; cleans affected installations by removing the HKLM and HKCU value if it is set
-; to PrivafoxHTML when there is a value for PersistentHandler or by removing the
+; to FirefoxHTML when there is a value for PersistentHandler or by removing the
 ; HKCU value when the HKLM value has a value other than an empty string.
 !macro FixBadFileAssociation FILE_TYPE
   ; Only delete the default value in case the key has values for OpenWithList,
@@ -643,16 +644,16 @@ ${EndIf}
   ReadRegStr $1 HKLM "Software\Classes\${FILE_TYPE}" ""
   ReadRegStr $2 HKCR "${FILE_TYPE}\PersistentHandler" ""
   ${If} "$2" != ""
-    ; Since there is a persistent handler remove PrivafoxHTML as the default
-    ; value from both HKCU and HKLM if it set to PrivafoxHTML.
-    ${If} "$0" == "PrivafoxHTML"
+    ; Since there is a persistent handler remove FirefoxHTML as the default
+    ; value from both HKCU and HKLM if it set to FirefoxHTML.
+    ${If} "$0" == "FirefoxHTML"
       DeleteRegValue HKCU "Software\Classes\${FILE_TYPE}" ""
     ${EndIf}
-    ${If} "$1" == "PrivafoxHTML"
+    ${If} "$1" == "FirefoxHTML"
       DeleteRegValue HKLM "Software\Classes\${FILE_TYPE}" ""
     ${EndIf}
-  ${ElseIf} "$0" == "PrivafoxHTML"
-    ; Since KHCU is set to PrivafoxHTML remove PrivafoxHTML as the default value
+  ${ElseIf} "$0" == "FirefoxHTML"
+    ; Since KHCU is set to FirefoxHTML remove FirefoxHTML as the default value
     ; from HKCU if HKLM is set to a value other than an empty string.
     ${If} "$1" != ""
       DeleteRegValue HKCU "Software\Classes\${FILE_TYPE}" ""
@@ -708,17 +709,17 @@ ${EndIf}
   ; Only set the file and protocol handlers if the existing one under HKCR is
   ; for this install location.
 
-  ${IsHandlerForInstallDir} "PrivafoxHTML" $R9
+  ${IsHandlerForInstallDir} "FirefoxHTML" $R9
   ${If} "$R9" == "true"
-    ; An empty string is used for the 5th param because PrivafoxHTML is not a
+    ; An empty string is used for the 5th param because FirefoxHTML is not a
     ; protocol handler.
-    ${AddDisabledDDEHandlerValues} "PrivafoxHTML" "$2" "$8,1" \
+    ${AddDisabledDDEHandlerValues} "FirefoxHTML" "$2" "$8,1" \
                                    "${AppRegName} HTML Document" ""
   ${EndIf}
 
-  ${IsHandlerForInstallDir} "PrivafoxURL" $R9
+  ${IsHandlerForInstallDir} "FirefoxURL" $R9
   ${If} "$R9" == "true"
-    ${AddDisabledDDEHandlerValues} "PrivafoxURL" "$2" "$8,1" \
+    ${AddDisabledDDEHandlerValues} "FirefoxURL" "$2" "$8,1" \
                                    "${AppRegName} URL" "true"
   ${EndIf}
 
@@ -747,7 +748,7 @@ ${EndIf}
 ; For the cert to work, it must also be signed by a trusted cert for the user.
 !macro AddMaintCertKeys
   Push $R0
-  ; Allow main Privacore cert information for updates
+  ; Allow main Mozilla cert information for updates
   ; This call will push the needed key on the stack
   ServicesHelper::PathToUniqueRegistryPath "$INSTDIR"
   Pop $R0
@@ -768,14 +769,17 @@ ${EndIf}
     ; Setting the Attempted value will ensure that a new Maintenance Service
     ; install will never be attempted again after this from updates.  The value
     ; is used only to see if updates should attempt new service installs.
-    WriteRegDWORD HKLM "Software\Privacore\MaintenanceService" "Attempted" 1
+    WriteRegDWORD HKLM "Software\Mozilla\MaintenanceService" "Attempted" 1
 
     ; These values associate the allowed certificates for the current
     ; installation.
-	;Note : Fix registry
-    ;WriteRegStr HKLM "$R0\0" "name" "${CERTIFICATE_NAME}"
-    ;WriteRegStr HKLM "$R0\0" "issuer" "${CERTIFICATE_ISSUER}"
-	;End Note : Fix registry
+    WriteRegStr HKLM "$R0\0" "name" "${CERTIFICATE_NAME}"
+    WriteRegStr HKLM "$R0\0" "issuer" "${CERTIFICATE_ISSUER}"
+    ; These values associate the allowed certificates for the previous
+    ;  installation, so that we can update from it cleanly using the
+    ;  old updater.exe (which will still have this signature).
+    WriteRegStr HKLM "$R0\1" "name" "${CERTIFICATE_NAME_PREVIOUS}"
+    WriteRegStr HKLM "$R0\1" "issuer" "${CERTIFICATE_ISSUER_PREVIOUS}"
     ${If} ${RunningX64}
       SetRegView lastused
     ${EndIf}
@@ -791,16 +795,16 @@ ${EndIf}
 !macro RemoveDeprecatedKeys
   StrCpy $0 "SOFTWARE\Classes"
   ; Remove support for launching gopher urls from the shell during install or
-  ; update if the DefaultIcon is from Privafox.exe.
+  ; update if the DefaultIcon is from firefox.exe.
   ${RegCleanAppHandler} "gopher"
 
   ; Remove support for launching chrome urls from the shell during install or
-  ; update if the DefaultIcon is from Privafox.exe (Bug 301073).
+  ; update if the DefaultIcon is from firefox.exe (Bug 301073).
   ${RegCleanAppHandler} "chrome"
 
   ; Remove protocol handler registry keys added by the MS shim
-  DeleteRegKey HKLM "Software\Classes\Privafox.URL"
-  DeleteRegKey HKCU "Software\Classes\Privafox.URL"
+  DeleteRegKey HKLM "Software\Classes\Firefox.URL"
+  DeleteRegKey HKCU "Software\Classes\Firefox.URL"
 
   ; Delete gopher from Capabilities\URLAssociations if it is present.
   ${StrFilter} "${FileMainEXE}" "+" "" "" $R9
@@ -811,10 +815,10 @@ ${EndIf}
     DeleteRegValue HKLM "$0\Capabilities\URLAssociations" "gopher"
   ${EndUnless}
 
-  ; Delete gopher from the user's UrlAssociations if it points to PrivafoxURL.
+  ; Delete gopher from the user's UrlAssociations if it points to FirefoxURL.
   StrCpy $0 "Software\Microsoft\Windows\Shell\Associations\UrlAssociations\gopher"
   ReadRegStr $2 HKCU "$0\UserChoice" "Progid"
-  ${If} "$2" == "PrivafoxURL"
+  ${If} "$2" == "FirefoxURL"
     DeleteRegKey HKCU "$0"
   ${EndIf}
 !macroend
@@ -824,14 +828,14 @@ ${EndIf}
 ; fresh install and on uninstall.
 !macro ResetWin8PromptKeys KEY PREFIX
   ${If} ${AtLeastWin8}
-    DeleteRegValue ${KEY} "${PREFIX}Software\Microsoft\Windows\CurrentVersion\ApplicationAssociationToasts" "PrivafoxHTML_.htm"
-    DeleteRegValue ${KEY} "${PREFIX}Software\Microsoft\Windows\CurrentVersion\ApplicationAssociationToasts" "PrivafoxHTML_.html"
-    DeleteRegValue ${KEY} "${PREFIX}Software\Microsoft\Windows\CurrentVersion\ApplicationAssociationToasts" "PrivafoxHTML_.xht"
-    DeleteRegValue ${KEY} "${PREFIX}Software\Microsoft\Windows\CurrentVersion\ApplicationAssociationToasts" "PrivafoxHTML_.xhtml"
-    DeleteRegValue ${KEY} "${PREFIX}Software\Microsoft\Windows\CurrentVersion\ApplicationAssociationToasts" "PrivafoxHTML_.shtml"
-    DeleteRegValue ${KEY} "${PREFIX}Software\Microsoft\Windows\CurrentVersion\ApplicationAssociationToasts" "PrivafoxURL_ftp"
-    DeleteRegValue ${KEY} "${PREFIX}Software\Microsoft\Windows\CurrentVersion\ApplicationAssociationToasts" "PrivafoxURL_http"
-    DeleteRegValue ${KEY} "${PREFIX}Software\Microsoft\Windows\CurrentVersion\ApplicationAssociationToasts" "PrivafoxURL_https"
+    DeleteRegValue ${KEY} "${PREFIX}Software\Microsoft\Windows\CurrentVersion\ApplicationAssociationToasts" "FirefoxHTML_.htm"
+    DeleteRegValue ${KEY} "${PREFIX}Software\Microsoft\Windows\CurrentVersion\ApplicationAssociationToasts" "FirefoxHTML_.html"
+    DeleteRegValue ${KEY} "${PREFIX}Software\Microsoft\Windows\CurrentVersion\ApplicationAssociationToasts" "FirefoxHTML_.xht"
+    DeleteRegValue ${KEY} "${PREFIX}Software\Microsoft\Windows\CurrentVersion\ApplicationAssociationToasts" "FirefoxHTML_.xhtml"
+    DeleteRegValue ${KEY} "${PREFIX}Software\Microsoft\Windows\CurrentVersion\ApplicationAssociationToasts" "FirefoxHTML_.shtml"
+    DeleteRegValue ${KEY} "${PREFIX}Software\Microsoft\Windows\CurrentVersion\ApplicationAssociationToasts" "FirefoxURL_ftp"
+    DeleteRegValue ${KEY} "${PREFIX}Software\Microsoft\Windows\CurrentVersion\ApplicationAssociationToasts" "FirefoxURL_http"
+    DeleteRegValue ${KEY} "${PREFIX}Software\Microsoft\Windows\CurrentVersion\ApplicationAssociationToasts" "FirefoxURL_https"
   ${EndIf}
 !macroend
 !define ResetWin8PromptKeys "!insertmacro ResetWin8PromptKeys"
@@ -915,7 +919,7 @@ ${EndIf}
     ${Unless} ${Errors}
       ; remove the app user model id root registration. We don't need this
       ; here anymore, we just use it for tray registrationdown in widget,
-      ; which we read out of the privacore keys.
+      ; which we read out of the mozilla keys.
       ${If} "${APP_USER_MODEL_ID}" != ""
         ; The removal of this key intermittently fails, so do the best we can in cleanup
         DeleteRegValue HKU "$1\${APP_USER_MODEL_ID}\.exe\shell\open\command" "DelegateExecute"
@@ -946,10 +950,10 @@ ${EndIf}
       DeleteRegKey HKU "$1\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\SystemAppData\DefaultBrowser_NOPUBLISHERID\SplashScreen\DefaultBrowser_NOPUBLISHERID!${APP_USER_MODEL_ID}"
     ${Else}
       ; misc. Metro keys
-      DeleteRegKey HKU "$1\Software\Privacore\Privafox\Metro"
-      DeleteRegValue HKU "$1\Software\Privacore\Privafox" "CEHDump"
-      DeleteRegValue HKU "$1\Software\Privacore\Privafox" "MetroD3DAvailable"
-      DeleteRegValue HKU "$1\Software\Privacore\Privafox" "MetroLastAHE"
+      DeleteRegKey HKU "$1\Software\Mozilla\Firefox\Metro"
+      DeleteRegValue HKU "$1\Software\Mozilla\Firefox" "CEHDump"
+      DeleteRegValue HKU "$1\Software\Mozilla\Firefox" "MetroD3DAvailable"
+      DeleteRegValue HKU "$1\Software\Mozilla\Firefox" "MetroLastAHE"
       ${ResetWin8PromptKeys} "HKU" "$1\"
     ${EndIf}
     IntOp $0 $0 + 1
@@ -985,16 +989,16 @@ ${EndIf}
 ; Removes various directories and files for reasons noted below.
 !macro RemoveDeprecatedFiles
   ; Some users are ending up with unpacked chrome instead of omni.ja. This
-  ; causes Privafox to break badly after upgrading from Privafox 31, see bug
+  ; causes Firefox to break badly after upgrading from Firefox 31, see bug
   ; 1063052. Removing the chrome.manifest from the install directory causes
-  ; Privafox to use the updated omni.ja so it won't crash.
+  ; Firefox to use the updated omni.ja so it won't crash.
   ${If} ${FileExists} "$INSTDIR\chrome.manifest"
     Delete "$INSTDIR\chrome.manifest"
   ${EndIf}
 
   ; Remove talkback if it is present (remove after bug 386760 is fixed)
-  ${If} ${FileExists} "$INSTDIR\extensions\talkback@privacore.com"
-    RmDir /r /REBOOTOK "$INSTDIR\extensions\talkback@privacore.com"
+  ${If} ${FileExists} "$INSTDIR\extensions\talkback@mozilla.org"
+    RmDir /r /REBOOTOK "$INSTDIR\extensions\talkback@mozilla.org"
   ${EndIf}
 
   ; Remove the Java Console extension (bug 1165156)
@@ -1128,7 +1132,7 @@ ${EndIf}
       ${If} ${AtLeastWin7}
         ; No need to check the default on Win8 and later
         ${If} ${AtMostWin2008R2}
-          ; Check if the Privafox is the http handler for this user
+          ; Check if the Firefox is the http handler for this user
           SetShellVarContext current ; Set SHCTX to the current user
           ${IsHandlerForInstallDir} "http" $R9
           ${If} $TmpVal == "HKLM"

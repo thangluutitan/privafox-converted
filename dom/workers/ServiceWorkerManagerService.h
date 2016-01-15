@@ -13,11 +13,11 @@
 
 namespace mozilla {
 
-class OriginAttributes;
+class PrincipalOriginAttributes;
 
 namespace ipc {
 class PrincipalInfo;
-}
+} // namespace ipc
 
 namespace dom {
 
@@ -42,7 +42,7 @@ public:
                              ServiceWorkerRegistrationData& aData);
 
   void PropagateSoftUpdate(uint64_t aParentID,
-                           const OriginAttributes& aOriginAttributes,
+                           const PrincipalOriginAttributes& aOriginAttributes,
                            const nsAString& aScope);
 
   void PropagateUnregister(uint64_t aParentID,
@@ -60,8 +60,8 @@ private:
   nsTHashtable<nsPtrHashKey<ServiceWorkerManagerParent>> mAgents;
 };
 
-} // workers namespace
-} // dom namespace
-} // mozilla namespace
+} // namespace workers
+} // namespace dom
+} // namespace mozilla
 
 #endif // mozilla_dom_ServiceWorkerManagerService_h

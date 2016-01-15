@@ -320,7 +320,7 @@ void
 nsDisplayXULTextBox::Paint(nsDisplayListBuilder* aBuilder,
                            nsRenderingContext* aCtx)
 {
-  gfxContextAutoDisableSubpixelAntialiasing disable(aCtx->ThebesContext(),
+  DrawTargetAutoDisableSubpixelAntialiasing disable(aCtx->GetDrawTarget(),
                                                     mDisableSubpixelAA);
 
   // Paint the text shadow before doing any foreground stuff
@@ -455,8 +455,10 @@ nsTextBoxFrame::DrawText(nsRenderingContext& aRenderingContext,
     } while (0 != decorMask &&
              (f = nsLayoutUtils::GetParentOrPlaceholderFor(f)));
 
-    nsRefPtr<nsFontMetrics> fontMet;
+    RefPtr<nsFontMetrics> fontMet;
     nsLayoutUtils::GetFontMetricsForFrame(this, getter_AddRefs(fontMet));
+    fontMet->SetVertical(wm.IsVertical());
+    fontMet->SetTextOrientation(StyleVisibility()->mTextOrientation);
 
     nscoord offset;
     nscoord size;
@@ -474,10 +476,10 @@ nsTextBoxFrame::DrawText(nsRenderingContext& aRenderingContext,
         presContext->RoundAppUnitsToNearestDevPixels(aTextRect.y + ascent);
     }
 
-    nsRefPtr<gfxContext> ctx = aRenderingContext.ThebesContext();
-    gfxPoint pt(presContext->AppUnitsToGfxUnits(aTextRect.x),
-                presContext->AppUnitsToGfxUnits(aTextRect.y));
-    gfxFloat width = presContext->AppUnitsToGfxUnits(aTextRect.width);
+    RefPtr<gfxContext> ctx = aRenderingContext.ThebesContext();
+    Point pt(presContext->AppUnitsToGfxUnits(aTextRect.x),
+             presContext->AppUnitsToGfxUnits(aTextRect.y));
+    Float width = presContext->AppUnitsToGfxUnits(aTextRect.width);
     gfxFloat ascentPixel = presContext->AppUnitsToGfxUnits(ascent);
     Float xInFrame = Float(PresContext()->AppUnitsToGfxUnits(mTextDrawRect.x));
     gfxRect dirtyRect(presContext->AppUnitsToGfxUnits(aDirtyRect));
@@ -490,25 +492,25 @@ nsTextBoxFrame::DrawText(nsRenderingContext& aRenderingContext,
     // (We don't apply this rule to the access-key underline because we only
     // find out where that is as a side effect of drawing the text, in the
     // general case -- see below.)
-    if (decorations & (NS_FONT_DECORATION_OVERLINE |
-                       NS_FONT_DECORATION_UNDERLINE)) {
+    if (decorations & (NS_STYLE_TEXT_DECORATION_LINE_OVERLINE |
+                       NS_STYLE_TEXT_DECORATION_LINE_UNDERLINE)) {
       fontMet->GetUnderline(offset, size);
       gfxFloat offsetPixel = presContext->AppUnitsToGfxUnits(offset);
-      gfxFloat sizePixel = presContext->AppUnitsToGfxUnits(size);
-      if ((decorations & NS_FONT_DECORATION_UNDERLINE) &&
+      Float sizePixel = presContext->AppUnitsToGfxUnits(size);
+      if ((decorations & NS_STYLE_TEXT_DECORATION_LINE_UNDERLINE) &&
           underStyle != NS_STYLE_TEXT_DECORATION_STYLE_NONE) {
         nsCSSRendering::PaintDecorationLine(this, *drawTarget,
                                             ToRect(dirtyRect), underColor,
-                          pt, xInFrame, gfxSize(width, sizePixel),
+                          pt, xInFrame, Size(width, sizePixel),
                           ascentPixel, offsetPixel,
                           NS_STYLE_TEXT_DECORATION_LINE_UNDERLINE, underStyle,
                           vertical);
       }
-      if ((decorations & NS_FONT_DECORATION_OVERLINE) &&
+      if ((decorations & NS_STYLE_TEXT_DECORATION_LINE_OVERLINE) &&
           overStyle != NS_STYLE_TEXT_DECORATION_STYLE_NONE) {
         nsCSSRendering::PaintDecorationLine(this, *drawTarget,
                                             ToRect(dirtyRect), overColor,
-                          pt, xInFrame, gfxSize(width, sizePixel),
+                          pt, xInFrame, Size(width, sizePixel),
                           ascentPixel, ascentPixel,
                           NS_STYLE_TEXT_DECORATION_LINE_OVERLINE, overStyle,
                           vertical);
@@ -522,7 +524,7 @@ nsTextBoxFrame::DrawText(nsRenderingContext& aRenderingContext,
 
     nscolor c = aOverrideColor ? *aOverrideColor : StyleColor()->mColor;
     ColorPattern color(ToDeviceColor(c));
-    aRenderingContext.ThebesContext()->SetColor(c);
+    aRenderingContext.ThebesContext()->SetColor(Color::FromABGR(c));
 
     nsresult rv = NS_ERROR_FAILURE;
 
@@ -584,14 +586,14 @@ nsTextBoxFrame::DrawText(nsRenderingContext& aRenderingContext,
 
     // Strikeout is drawn on top of the text, per
     // http://www.w3.org/TR/CSS21/zindex.html point 7.2.1.4.1.1.
-    if ((decorations & NS_FONT_DECORATION_LINE_THROUGH) &&
+    if ((decorations & NS_STYLE_TEXT_DECORATION_LINE_LINE_THROUGH) &&
         strikeStyle != NS_STYLE_TEXT_DECORATION_STYLE_NONE) {
       fontMet->GetStrikeout(offset, size);
       gfxFloat offsetPixel = presContext->AppUnitsToGfxUnits(offset);
       gfxFloat sizePixel = presContext->AppUnitsToGfxUnits(size);
       nsCSSRendering::PaintDecorationLine(this, *drawTarget, ToRect(dirtyRect),
                                           strikeColor,
-                        pt, xInFrame, gfxSize(width, sizePixel), ascentPixel,
+                        pt, xInFrame, Size(width, sizePixel), ascentPixel,
                         offsetPixel, NS_STYLE_TEXT_DECORATION_LINE_LINE_THROUGH,
                         strikeStyle, vertical);
     }
@@ -618,8 +620,7 @@ nsTextBoxFrame::CalculateUnderline(nsRenderingContext& aRenderingContext,
 }
 
 nscoord
-nsTextBoxFrame::CalculateTitleForWidth(nsPresContext*      aPresContext,
-                                       nsRenderingContext& aRenderingContext,
+nsTextBoxFrame::CalculateTitleForWidth(nsRenderingContext& aRenderingContext,
                                        nscoord              aWidth)
 {
     if (mTitle.IsEmpty()) {
@@ -627,7 +628,7 @@ nsTextBoxFrame::CalculateTitleForWidth(nsPresContext*      aPresContext,
         return 0;
     }
 
-    nsRefPtr<nsFontMetrics> fm;
+    RefPtr<nsFontMetrics> fm;
     nsLayoutUtils::GetFontMetricsForFrame(this, getter_AddRefs(fm));
 
     // see if the text will completely fit in the width given
@@ -957,7 +958,7 @@ nsTextBoxFrame::DoLayout(nsBoxLayoutState& aBoxLayoutState)
     nsRect scrollBounds(nsPoint(0, 0), GetSize());
     nsRect textRect = mTextDrawRect;
     
-    nsRefPtr<nsFontMetrics> fontMet;
+    RefPtr<nsFontMetrics> fontMet;
     nsLayoutUtils::GetFontMetricsForFrame(this, getter_AddRefs(fontMet));
     nsBoundingMetrics metrics = 
       fontMet->GetInkBoundsForVisualOverflow(mCroppedTitle.get(),
@@ -965,7 +966,7 @@ nsTextBoxFrame::DoLayout(nsBoxLayoutState& aBoxLayoutState)
                                              aBoxLayoutState.GetRenderingContext());
 
     WritingMode wm = GetWritingMode();
-    LogicalRect tr(wm, textRect, GetSize().width);
+    LogicalRect tr(wm, textRect, GetSize());
 
     tr.IStart(wm) -= metrics.leftBearing;
     tr.ISize(wm) = metrics.width;
@@ -973,7 +974,7 @@ nsTextBoxFrame::DoLayout(nsBoxLayoutState& aBoxLayoutState)
     tr.BStart(wm) += fontMet->MaxAscent() - metrics.ascent;
     tr.BSize(wm) = metrics.ascent + metrics.descent;
 
-    textRect = tr.GetPhysicalRect(wm, GetSize().width);
+    textRect = tr.GetPhysicalRect(wm, GetSize());
 
     // Our scrollable overflow is our bounds; our visual overflow may
     // extend beyond that.
@@ -1014,12 +1015,11 @@ nsTextBoxFrame::MarkIntrinsicISizesDirty()
 }
 
 void
-nsTextBoxFrame::GetTextSize(nsPresContext* aPresContext,
-                            nsRenderingContext& aRenderingContext,
+nsTextBoxFrame::GetTextSize(nsRenderingContext& aRenderingContext,
                             const nsString& aString,
                             nsSize& aSize, nscoord& aAscent)
 {
-    nsRefPtr<nsFontMetrics> fontMet;
+    RefPtr<nsFontMetrics> fontMet;
     nsLayoutUtils::GetFontMetricsForFrame(this, getter_AddRefs(fontMet));
     aSize.height = fontMet->MaxHeight();
     aSize.width =
@@ -1031,14 +1031,11 @@ nsTextBoxFrame::GetTextSize(nsPresContext* aPresContext,
 void
 nsTextBoxFrame::CalcTextSize(nsBoxLayoutState& aBoxLayoutState)
 {
-    if (mNeedsRecalc)
-    {
+    if (mNeedsRecalc) {
         nsSize size;
-        nsPresContext* presContext = aBoxLayoutState.PresContext();
         nsRenderingContext* rendContext = aBoxLayoutState.GetRenderingContext();
         if (rendContext) {
-            GetTextSize(presContext, *rendContext,
-                        mTitle, size, mAscent);
+            GetTextSize(*rendContext, mTitle, size, mAscent);
             if (GetWritingMode().IsVertical()) {
                 Swap(size.width, size.height);
             }
@@ -1059,13 +1056,11 @@ nsTextBoxFrame::CalcDrawRect(nsRenderingContext &aRenderingContext)
     textRect.Deflate(wm, LogicalMargin(wm, borderPadding));
 
     // determine (cropped) title and underline position
-    nsPresContext* presContext = PresContext();
     // determine (cropped) title which fits in aRect, and its width
     // (where "width" is the text measure along its baseline, i.e. actually
     // a physical height in vertical writing modes)
     nscoord titleWidth =
-        CalculateTitleForWidth(presContext, aRenderingContext,
-                               textRect.ISize(wm));
+        CalculateTitleForWidth(aRenderingContext, textRect.ISize(wm));
 
 #ifdef ACCESSIBILITY
     // Make sure to update the accessible tree in case when cropped title is
@@ -1096,7 +1091,7 @@ nsTextBoxFrame::CalcDrawRect(nsRenderingContext &aRenderingContext)
       textRect.IStart(wm) += (outerISize - textRect.ISize(wm));
     }
 
-    mTextDrawRect = textRect.GetPhysicalRect(wm, GetSize().width);
+    mTextDrawRect = textRect.GetPhysicalRect(wm, GetSize());
 }
 
 /**

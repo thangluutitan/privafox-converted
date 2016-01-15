@@ -21,12 +21,16 @@
 #include "mozilla/ipc/MessageChannel.h" // for MessageChannel, etc
 #include "mozilla/ipc/Transport.h"      // for Transport
 #include "mozilla/gfx/Point.h"          // for IntSize
+#include "mozilla/layers/AsyncCanvasRenderer.h"
+#include "mozilla/media/MediaSystemResourceManager.h" // for MediaSystemResourceManager
+#include "mozilla/media/MediaSystemResourceManagerChild.h" // for MediaSystemResourceManagerChild
 #include "mozilla/layers/CompositableClient.h"  // for CompositableChild, etc
 #include "mozilla/layers/CompositorParent.h" // for CompositorParent
 #include "mozilla/layers/ISurfaceAllocator.h"  // for ISurfaceAllocator
 #include "mozilla/layers/ImageClient.h"  // for ImageClient
 #include "mozilla/layers/LayersMessages.h"  // for CompositableOperation
 #include "mozilla/layers/PCompositableChild.h"  // for PCompositableChild
+#include "mozilla/layers/PImageContainerChild.h"
 #include "mozilla/layers/TextureClient.h"  // for TextureClient
 #include "mozilla/mozalloc.h"           // for operator new, etc
 #include "nsAutoPtr.h"                  // for nsRefPtr
@@ -41,7 +45,7 @@
 namespace mozilla {
 namespace ipc {
 class Shmem;
-}
+} // namespace ipc
 
 namespace layers {
 
@@ -49,6 +53,7 @@ using base::Thread;
 using base::ProcessId;
 using namespace mozilla::ipc;
 using namespace mozilla::gfx;
+using namespace mozilla::media;
 
 typedef std::vector<CompositableOperation> OpVector;
 
@@ -104,18 +109,31 @@ struct AutoEndTransaction {
 };
 
 void
-ImageBridgeChild::UseTexture(CompositableClient* aCompositable,
-                             TextureClient* aTexture)
+ImageBridgeChild::UseTextures(CompositableClient* aCompositable,
+                              const nsTArray<TimedTextureClient>& aTextures)
 {
   MOZ_ASSERT(aCompositable);
-  MOZ_ASSERT(aTexture);
   MOZ_ASSERT(aCompositable->GetIPDLActor());
-  MOZ_ASSERT(aTexture->GetIPDLActor());
+  MOZ_ASSERT(aCompositable->IsConnected());
 
-  FenceHandle fence = aTexture->GetAcquireFenceHandle();
+  nsAutoTArray<TimedTexture,4> textures;
+
+  for (auto& t : aTextures) {
+    MOZ_ASSERT(t.mTextureClient);
+    MOZ_ASSERT(t.mTextureClient->GetIPDLActor());
+
+    if (!t.mTextureClient->IsSharedWithCompositor()) {
+      return;
+    }
+
+    FenceHandle fence = t.mTextureClient->GetAcquireFenceHandle();
+    textures.AppendElement(TimedTexture(nullptr, t.mTextureClient->GetIPDLActor(),
+                                        fence.IsValid() ? MaybeFence(fence) : MaybeFence(null_t()),
+                                        t.mTimeStamp, t.mPictureRect,
+                                        t.mFrameID, t.mProducerID));
+  }
   mTxn->AddNoSwapEdit(OpUseTexture(nullptr, aCompositable->GetIPDLActor(),
-                                   nullptr, aTexture->GetIPDLActor(),
-                                   fence.IsValid() ? MaybeFence(fence) : MaybeFence(null_t())));
+                                   textures));
 }
 
 void
@@ -126,7 +144,7 @@ ImageBridgeChild::UseComponentAlphaTextures(CompositableClient* aCompositable,
   MOZ_ASSERT(aCompositable);
   MOZ_ASSERT(aTextureOnWhite);
   MOZ_ASSERT(aTextureOnBlack);
-  MOZ_ASSERT(aCompositable->GetIPDLActor());
+  MOZ_ASSERT(aCompositable->IsConnected());
   MOZ_ASSERT(aTextureOnWhite->GetIPDLActor());
   MOZ_ASSERT(aTextureOnBlack->GetIPDLActor());
   MOZ_ASSERT(aTextureOnBlack->GetSize() == aTextureOnWhite->GetSize());
@@ -138,21 +156,15 @@ ImageBridgeChild::UseComponentAlphaTextures(CompositableClient* aCompositable,
 #ifdef MOZ_WIDGET_GONK
 void
 ImageBridgeChild::UseOverlaySource(CompositableClient* aCompositable,
-                                   const OverlaySource& aOverlay)
+                                   const OverlaySource& aOverlay,
+                                   const nsIntRect& aPictureRect)
 {
   MOZ_ASSERT(aCompositable);
-  mTxn->AddEdit(OpUseOverlaySource(nullptr, aCompositable->GetIPDLActor(), aOverlay));
+  MOZ_ASSERT(aCompositable->IsConnected());
+  mTxn->AddEdit(OpUseOverlaySource(nullptr, aCompositable->GetIPDLActor(),
+      aOverlay, aPictureRect));
 }
 #endif
-
-void
-ImageBridgeChild::UpdatePictureRect(CompositableClient* aCompositable,
-                                    const gfx::IntRect& aRect)
-{
-  MOZ_ASSERT(aCompositable);
-  MOZ_ASSERT(aCompositable->GetIPDLActor());
-  mTxn->AddNoSwapEdit(OpUpdatePictureRect(nullptr, aCompositable->GetIPDLActor(), aRect));
-}
 
 // Singleton
 static StaticRefPtr<ImageBridgeChild> sImageBridgeChildSingleton;
@@ -171,6 +183,9 @@ static void ImageBridgeShutdownStep1(ReentrantMonitor *aBarrier, bool *aDone)
 
   MOZ_ASSERT(InImageBridgeChildThread(),
              "Should be in ImageBridgeChild thread.");
+
+  MediaSystemResourceManager::Shutdown();
+
   if (sImageBridgeChildSingleton) {
     // Force all managed protocols to shut themselves down cleanly
     InfallibleTArray<PCompositableChild*> compositables;
@@ -181,13 +196,17 @@ static void ImageBridgeShutdownStep1(ReentrantMonitor *aBarrier, bool *aDone)
     InfallibleTArray<PTextureChild*> textures;
     sImageBridgeChildSingleton->ManagedPTextureChild(textures);
     for (int i = textures.Length() - 1; i >= 0; --i) {
-      TextureClient::AsTextureClient(textures[i])->ForceRemove();
+      RefPtr<TextureClient> client = TextureClient::AsTextureClient(textures[i]);
+      if (client) {
+        client->Destroy();
+      }
     }
     sImageBridgeChildSingleton->SendWillStop();
     sImageBridgeChildSingleton->MarkShutDown();
     // From now on, no message can be sent through the image bridge from the
     // client side except the final Stop message.
   }
+
   *aDone = true;
   aBarrier->NotifyAll();
 }
@@ -210,12 +229,27 @@ static void ImageBridgeShutdownStep2(ReentrantMonitor *aBarrier, bool *aDone)
 static void CreateImageClientSync(RefPtr<ImageClient>* result,
                                   ReentrantMonitor* barrier,
                                   CompositableType aType,
+                                  ImageContainer* aImageContainer,
                                   bool *aDone)
 {
   ReentrantMonitorAutoEnter autoMon(*barrier);
-  *result = sImageBridgeChildSingleton->CreateImageClientNow(aType);
+  *result = sImageBridgeChildSingleton->CreateImageClientNow(
+      aType, aImageContainer);
   *aDone = true;
   barrier->NotifyAll();
+}
+
+// dispatched function
+static void CreateCanvasClientSync(ReentrantMonitor* aBarrier,
+                                   CanvasClient::CanvasClientType aType,
+                                   TextureFlags aFlags,
+                                   RefPtr<CanvasClient>* const outResult,
+                                   bool* aDone)
+{
+  ReentrantMonitorAutoEnter autoMon(*aBarrier);
+  *outResult = sImageBridgeChildSingleton->CreateCanvasClientNow(aType, aFlags);
+  *aDone = true;
+  aBarrier->NotifyAll();
 }
 
 static void ConnectImageBridge(ImageBridgeChild * child, ImageBridgeParent * parent)
@@ -239,6 +273,9 @@ ImageBridgeChild::~ImageBridgeChild()
 {
   MOZ_ASSERT(NS_IsMainThread());
 
+  XRE_GetIOMessageLoop()->PostTask(FROM_HERE,
+                                   new DeleteTask<Transport>(GetTransport()));
+
   delete mTxn;
 }
 
@@ -250,19 +287,27 @@ ImageBridgeChild::MarkShutDown()
 }
 
 void
-ImageBridgeChild::Connect(CompositableClient* aCompositable)
+ImageBridgeChild::Connect(CompositableClient* aCompositable,
+                          ImageContainer* aImageContainer)
 {
   MOZ_ASSERT(aCompositable);
   MOZ_ASSERT(!mShuttingDown);
   uint64_t id = 0;
+
+  PImageContainerChild* imageContainerChild = nullptr;
+  if (aImageContainer)
+    imageContainerChild = aImageContainer->GetPImageContainerChild();
+
   PCompositableChild* child =
-    SendPCompositableConstructor(aCompositable->GetTextureInfo(), &id);
+    SendPCompositableConstructor(aCompositable->GetTextureInfo(),
+                                 imageContainerChild, &id);
   MOZ_ASSERT(child);
   aCompositable->InitIPDLActor(child, id);
 }
 
 PCompositableChild*
-ImageBridgeChild::AllocPCompositableChild(const TextureInfo& aInfo, uint64_t* aID)
+ImageBridgeChild::AllocPCompositableChild(const TextureInfo& aInfo,
+                                          PImageContainerChild* aChild, uint64_t* aID)
 {
   MOZ_ASSERT(!mShuttingDown);
   return CompositableClient::CreateIPDLActor();
@@ -319,14 +364,53 @@ ConnectImageBridgeInChildProcess(Transport* aTransport,
 #endif
 }
 
-static void ReleaseImageClientNow(ImageClient* aClient)
+static void ReleaseImageClientNow(ImageClient* aClient,
+                                  PImageContainerChild* aChild)
+{
+  MOZ_ASSERT(InImageBridgeChildThread());
+  if (aClient) {
+    aClient->Release();
+  }
+  if (aChild && ImageBridgeChild::IsCreated()) {
+    aChild->SendAsyncDelete();
+  }
+}
+
+// static
+void ImageBridgeChild::DispatchReleaseImageClient(ImageClient* aClient,
+                                                  PImageContainerChild* aChild)
+{
+  if (!aClient && !aChild) {
+    return;
+  }
+
+  if (!IsCreated()) {
+    if (aClient) {
+      // CompositableClient::Release should normally happen in the ImageBridgeChild
+      // thread because it usually generate some IPDL messages.
+      // However, if we take this branch it means that the ImageBridgeChild
+      // has already shut down, along with the CompositableChild, which means no
+      // message will be sent and it is safe to run this code from any thread.
+      MOZ_ASSERT(aClient->GetIPDLActor() == nullptr);
+      aClient->Release();
+    }
+    delete aChild;
+    return;
+  }
+
+  sImageBridgeChildSingleton->GetMessageLoop()->PostTask(
+    FROM_HERE,
+    NewRunnableFunction(&ReleaseImageClientNow, aClient, aChild));
+}
+
+static void ReleaseCanvasClientNow(CanvasClient* aClient)
 {
   MOZ_ASSERT(InImageBridgeChildThread());
   aClient->Release();
 }
 
 // static
-void ImageBridgeChild::DispatchReleaseImageClient(ImageClient* aClient)
+void ImageBridgeChild::DispatchReleaseCanvasClient(CanvasClient* aClient)
 {
   if (!aClient) {
     return;
@@ -345,7 +429,7 @@ void ImageBridgeChild::DispatchReleaseImageClient(ImageClient* aClient)
 
   sImageBridgeChildSingleton->GetMessageLoop()->PostTask(
     FROM_HERE,
-    NewRunnableFunction(&ReleaseImageClientNow, aClient));
+    NewRunnableFunction(&ReleaseCanvasClientNow, aClient));
 }
 
 static void ReleaseTextureClientNow(TextureClient* aClient)
@@ -377,20 +461,29 @@ void ImageBridgeChild::DispatchReleaseTextureClient(TextureClient* aClient)
     NewRunnableFunction(&ReleaseTextureClientNow, aClient));
 }
 
-static void UpdateImageClientNow(ImageClient* aClient, ImageContainer* aContainer)
+static void UpdateImageClientNow(ImageClient* aClient, RefPtr<ImageContainer>&& aContainer)
 {
+  if (!ImageBridgeChild::IsCreated()) {
+    NS_WARNING("Something is holding on to graphics resources after the shutdown"
+               "of the graphics subsystem!");
+    return;
+  }
   MOZ_ASSERT(aClient);
   MOZ_ASSERT(aContainer);
   sImageBridgeChildSingleton->BeginTransaction();
   aClient->UpdateImage(aContainer, Layer::CONTENT_OPAQUE);
-  aClient->OnTransaction();
   sImageBridgeChildSingleton->EndTransaction();
 }
 
-//static
+// static
 void ImageBridgeChild::DispatchImageClientUpdate(ImageClient* aClient,
                                                  ImageContainer* aContainer)
 {
+  if (!ImageBridgeChild::IsCreated()) {
+    NS_WARNING("Something is holding on to graphics resources after the shutdown"
+               "of the graphics subsystem!");
+    return;
+  }
   if (!aClient || !aContainer || !IsCreated()) {
     return;
   }
@@ -401,26 +494,85 @@ void ImageBridgeChild::DispatchImageClientUpdate(ImageClient* aClient,
   }
   sImageBridgeChildSingleton->GetMessageLoop()->PostTask(
     FROM_HERE,
-    NewRunnableFunction<
-      void (*)(ImageClient*, ImageContainer*),
-      ImageClient*,
-      nsRefPtr<ImageContainer> >(&UpdateImageClientNow, aClient, aContainer));
+    NewRunnableFunction(&UpdateImageClientNow, aClient, RefPtr<ImageContainer>(aContainer)));
 }
 
-static void FlushAllImagesSync(ImageClient* aClient, ImageContainer* aContainer, bool aExceptFront, AsyncTransactionTracker* aStatus)
+static void UpdateAsyncCanvasRendererSync(AsyncCanvasRenderer* aWrapper,
+                                          ReentrantMonitor* aBarrier,
+                                          bool* const outDone)
 {
-  MOZ_ASSERT(aClient);
-  sImageBridgeChildSingleton->BeginTransaction();
-  if (aContainer && !aExceptFront) {
-    aContainer->ClearCurrentImage();
+  ImageBridgeChild::UpdateAsyncCanvasRendererNow(aWrapper);
+
+  ReentrantMonitorAutoEnter autoMon(*aBarrier);
+  *outDone = true;
+  aBarrier->NotifyAll();
+}
+
+// static
+void ImageBridgeChild::UpdateAsyncCanvasRenderer(AsyncCanvasRenderer* aWrapper)
+{
+  aWrapper->GetCanvasClient()->UpdateAsync(aWrapper);
+
+  if (InImageBridgeChildThread()) {
+    UpdateAsyncCanvasRendererNow(aWrapper);
+    return;
   }
-  aClient->FlushAllImages(aExceptFront, aStatus);
-  aClient->OnTransaction();
+
+  ReentrantMonitor barrier("UpdateAsyncCanvasRenderer Lock");
+  ReentrantMonitorAutoEnter autoMon(barrier);
+  bool done = false;
+
+  sImageBridgeChildSingleton->GetMessageLoop()->PostTask(
+    FROM_HERE,
+    NewRunnableFunction(&UpdateAsyncCanvasRendererSync, aWrapper, &barrier, &done));
+
+  // should stop the thread until the CanvasClient has been created on
+  // the other thread
+  while (!done) {
+    barrier.Wait();
+  }
+}
+
+// static
+void ImageBridgeChild::UpdateAsyncCanvasRendererNow(AsyncCanvasRenderer* aWrapper)
+{
+  MOZ_ASSERT(aWrapper);
+  sImageBridgeChildSingleton->BeginTransaction();
+  aWrapper->GetCanvasClient()->Updated();
   sImageBridgeChildSingleton->EndTransaction();
 }
 
-//static
-void ImageBridgeChild::FlushAllImages(ImageClient* aClient, ImageContainer* aContainer, bool aExceptFront)
+static void FlushAllImagesSync(ImageClient* aClient, ImageContainer* aContainer,
+                               RefPtr<AsyncTransactionWaiter>&& aWaiter)
+{
+  if (!ImageBridgeChild::IsCreated()) {
+    // How sad. If we get into this branch it means that the ImageBridge
+    // got destroyed between the time we ImageBridgeChild::FlushAllImage
+    // was called on some thread, and the time this function was proxied
+    // to the ImageBridge thread. ImageBridge gets destroyed way to late
+    // in the shutdown of gecko for this to be happening for a good reason.
+    NS_WARNING("Something is holding on to graphics resources after the shutdown"
+               "of the graphics subsystem!");
+    aWaiter->DecrementWaitCount();
+    return;
+  }
+  MOZ_ASSERT(aClient);
+  sImageBridgeChildSingleton->BeginTransaction();
+  if (aContainer) {
+    aContainer->ClearImagesFromImageBridge();
+  }
+  aClient->FlushAllImages(aWaiter);
+  sImageBridgeChildSingleton->EndTransaction();
+  // This decrement is balanced by the increment in FlushAllImages.
+  // If any AsyncTransactionTrackers were created by FlushAllImages and attached
+  // to aWaiter, aWaiter will not complete until those trackers all complete.
+  // Otherwise, aWaiter will be ready to complete now.
+  aWaiter->DecrementWaitCount();
+}
+
+// static
+void ImageBridgeChild::FlushAllImages(ImageClient* aClient,
+                                      ImageContainer* aContainer)
 {
   if (!IsCreated()) {
     return;
@@ -430,16 +582,18 @@ void ImageBridgeChild::FlushAllImages(ImageClient* aClient, ImageContainer* aCon
   MOZ_ASSERT(!InImageBridgeChildThread());
   if (InImageBridgeChildThread()) {
     NS_ERROR("ImageBridgeChild::FlushAllImages() is called on ImageBridge thread.");
-     return;
-   }
+    return;
+  }
 
-  RefPtr<AsyncTransactionTracker> status = aClient->PrepareFlushAllImages();
+  RefPtr<AsyncTransactionWaiter> waiter = new AsyncTransactionWaiter();
+  // This increment is balanced by the decrement in FlushAllImagesSync
+  waiter->IncrementWaitCount();
 
   sImageBridgeChildSingleton->GetMessageLoop()->PostTask(
     FROM_HERE,
-    NewRunnableFunction(&FlushAllImagesSync, aClient, aContainer, aExceptFront, status));
+    NewRunnableFunction(&FlushAllImagesSync, aClient, aContainer, waiter));
 
-  status->WaitComplete();
+  waiter->WaitComplete();
 }
 
 void
@@ -450,13 +604,13 @@ ImageBridgeChild::BeginTransaction()
   mTxn->Begin();
 }
 
-class MOZ_STACK_CLASS AutoRemoveTextures
+class MOZ_STACK_CLASS AutoRemoveTexturesFromImageBridge
 {
 public:
-  explicit AutoRemoveTextures(ImageBridgeChild* aImageBridge)
+  explicit AutoRemoveTexturesFromImageBridge(ImageBridgeChild* aImageBridge)
     : mImageBridge(aImageBridge) {}
 
-  ~AutoRemoveTextures()
+  ~AutoRemoveTexturesFromImageBridge()
   {
     mImageBridge->RemoveTexturesIfNecessary();
   }
@@ -471,7 +625,7 @@ ImageBridgeChild::EndTransaction()
   MOZ_ASSERT(!mTxn->Finished(), "forgot BeginTransaction?");
 
   AutoEndTransaction _(mTxn);
-  AutoRemoveTextures autoRemoveTextures(this);
+  AutoRemoveTexturesFromImageBridge autoRemoveTextures(this);
 
   if (mTxn->IsEmpty()) {
     return;
@@ -503,25 +657,7 @@ ImageBridgeChild::EndTransaction()
     }
   }
   for (nsTArray<EditReply>::size_type i = 0; i < replies.Length(); ++i) {
-    const EditReply& reply = replies[i];
-    switch (reply.type()) {
-    case EditReply::TReturnReleaseFence: {
-      const ReturnReleaseFence& rep = reply.get_ReturnReleaseFence();
-      FenceHandle fence = rep.fence();
-      PTextureChild* child = rep.textureChild();
-
-      if (!fence.IsValid() || !child) {
-        break;
-      }
-      RefPtr<TextureClient> texture = TextureClient::AsTextureClient(child);
-      if (texture) {
-        texture->SetReleaseFenceHandle(fence);
-      }
-      break;
-    }
-    default:
-      NS_RUNTIMEABORT("not reached");
-    }
+    NS_RUNTIMEABORT("not reached");
   }
   SendPendingAsyncMessges();
 }
@@ -633,7 +769,7 @@ bool InImageBridgeChildThread()
 
 MessageLoop * ImageBridgeChild::GetMessageLoop() const
 {
-  return sImageBridgeChildThread->message_loop();
+  return sImageBridgeChildThread ? sImageBridgeChildThread->message_loop() : nullptr;
 }
 
 void ImageBridgeChild::ConnectAsync(ImageBridgeParent* aParent)
@@ -651,18 +787,20 @@ ImageBridgeChild::IdentifyCompositorTextureHost(const TextureFactoryIdentifier& 
 }
 
 already_AddRefed<ImageClient>
-ImageBridgeChild::CreateImageClient(CompositableType aType)
+ImageBridgeChild::CreateImageClient(CompositableType aType,
+                                    ImageContainer* aImageContainer)
 {
   if (InImageBridgeChildThread()) {
-    return CreateImageClientNow(aType);
+    return CreateImageClientNow(aType, aImageContainer);
   }
   ReentrantMonitor barrier("CreateImageClient Lock");
   ReentrantMonitorAutoEnter autoMon(barrier);
   bool done = false;
 
   RefPtr<ImageClient> result = nullptr;
-  GetMessageLoop()->PostTask(FROM_HERE, NewRunnableFunction(&CreateImageClientSync,
-                                                            &result, &barrier, aType, &done));
+  GetMessageLoop()->PostTask(FROM_HERE,
+      NewRunnableFunction(&CreateImageClientSync, &result, &barrier, aType,
+                          aImageContainer, &done));
   // should stop the thread until the ImageClient has been created on
   // the other thread
   while (!done) {
@@ -672,12 +810,52 @@ ImageBridgeChild::CreateImageClient(CompositableType aType)
 }
 
 already_AddRefed<ImageClient>
-ImageBridgeChild::CreateImageClientNow(CompositableType aType)
+ImageBridgeChild::CreateImageClientNow(CompositableType aType,
+                                       ImageContainer* aImageContainer)
 {
   MOZ_ASSERT(!sImageBridgeChildSingleton->mShuttingDown);
+  if (aImageContainer) {
+    SendPImageContainerConstructor(aImageContainer->GetPImageContainerChild());
+  }
   RefPtr<ImageClient> client
     = ImageClient::CreateImageClient(aType, this, TextureFlags::NO_FLAGS);
   MOZ_ASSERT(client, "failed to create ImageClient");
+  if (client) {
+    client->Connect(aImageContainer);
+  }
+  return client.forget();
+}
+
+already_AddRefed<CanvasClient>
+ImageBridgeChild::CreateCanvasClient(CanvasClient::CanvasClientType aType,
+                                     TextureFlags aFlag)
+{
+  if (InImageBridgeChildThread()) {
+    return CreateCanvasClientNow(aType, aFlag);
+  }
+  ReentrantMonitor barrier("CreateCanvasClient Lock");
+  ReentrantMonitorAutoEnter autoMon(barrier);
+  bool done = false;
+
+  RefPtr<CanvasClient> result = nullptr;
+  GetMessageLoop()->PostTask(FROM_HERE,
+                             NewRunnableFunction(&CreateCanvasClientSync,
+                                 &barrier, aType, aFlag, &result, &done));
+  // should stop the thread until the CanvasClient has been created on the
+  // other thread
+  while (!done) {
+    barrier.Wait();
+  }
+  return result.forget();
+}
+
+already_AddRefed<CanvasClient>
+ImageBridgeChild::CreateCanvasClientNow(CanvasClient::CanvasClientType aType,
+                                        TextureFlags aFlag)
+{
+  RefPtr<CanvasClient> client
+    = CanvasClient::CreateCanvasClient(aType, this, aFlag);
+  MOZ_ASSERT(client, "failed to create CanvasClient");
   if (client) {
     client->Connect();
   }
@@ -809,6 +987,7 @@ ImageBridgeChild::DeallocShmem(ipc::Shmem& aShmem)
 
 PTextureChild*
 ImageBridgeChild::AllocPTextureChild(const SurfaceDescriptor&,
+                                     const LayersBackend&,
                                      const TextureFlags&)
 {
   MOZ_ASSERT(!mShuttingDown);
@@ -819,6 +998,36 @@ bool
 ImageBridgeChild::DeallocPTextureChild(PTextureChild* actor)
 {
   return TextureClient::DestroyIPDLActor(actor);
+}
+
+PMediaSystemResourceManagerChild*
+ImageBridgeChild::AllocPMediaSystemResourceManagerChild()
+{
+  MOZ_ASSERT(!mShuttingDown);
+  return new mozilla::media::MediaSystemResourceManagerChild();
+}
+
+bool
+ImageBridgeChild::DeallocPMediaSystemResourceManagerChild(PMediaSystemResourceManagerChild* aActor)
+{
+  MOZ_ASSERT(aActor);
+  delete static_cast<mozilla::media::MediaSystemResourceManagerChild*>(aActor);
+  return true;
+}
+
+PImageContainerChild*
+ImageBridgeChild::AllocPImageContainerChild()
+{
+  // we always use the "power-user" ctor
+  NS_RUNTIMEABORT("not reached");
+  return nullptr;
+}
+
+bool
+ImageBridgeChild::DeallocPImageContainerChild(PImageContainerChild* actor)
+{
+  delete actor;
+  return true;
 }
 
 bool
@@ -863,12 +1072,22 @@ ImageBridgeChild::RecvParentAsyncMessages(InfallibleTArray<AsyncParentMessageDat
   return true;
 }
 
+bool
+ImageBridgeChild::RecvDidComposite(InfallibleTArray<ImageCompositeNotification>&& aNotifications)
+{
+  for (auto& n : aNotifications) {
+    ImageContainer::NotifyComposite(n);
+  }
+  return true;
+}
+
 PTextureChild*
 ImageBridgeChild::CreateTexture(const SurfaceDescriptor& aSharedData,
+                                LayersBackend aLayersBackend,
                                 TextureFlags aFlags)
 {
   MOZ_ASSERT(!mShuttingDown);
-  return SendPTextureConstructor(aSharedData, aFlags);
+  return SendPTextureConstructor(aSharedData, aLayersBackend, aFlags);
 }
 
 void
@@ -876,6 +1095,12 @@ ImageBridgeChild::RemoveTextureFromCompositable(CompositableClient* aCompositabl
                                                 TextureClient* aTexture)
 {
   MOZ_ASSERT(!mShuttingDown);
+  MOZ_ASSERT(aTexture);
+  MOZ_ASSERT(aTexture->IsSharedWithCompositor());
+  MOZ_ASSERT(aCompositable->IsConnected());
+  if (!aTexture || !aTexture->IsSharedWithCompositor() || !aCompositable->IsConnected()) {
+    return;
+  }
   if (aTexture->GetFlags() & TextureFlags::DEALLOCATE_CLIENT) {
     mTxn->AddEdit(OpRemoveTexture(nullptr, aCompositable->GetIPDLActor(),
                                   nullptr, aTexture->GetIPDLActor()));
@@ -892,6 +1117,13 @@ ImageBridgeChild::RemoveTextureFromCompositableAsync(AsyncTransactionTracker* aA
                                                      CompositableClient* aCompositable,
                                                      TextureClient* aTexture)
 {
+  MOZ_ASSERT(!mShuttingDown);
+  MOZ_ASSERT(aTexture);
+  MOZ_ASSERT(aTexture->IsSharedWithCompositor());
+  MOZ_ASSERT(aCompositable->IsConnected());
+  if (!aTexture || !aTexture->IsSharedWithCompositor() || !aCompositable->IsConnected()) {
+    return;
+  }
   mTxn->AddNoSwapEdit(OpRemoveTextureAsync(CompositableClient::GetTrackersHolderId(aCompositable->GetIPDLActor()),
                                            aAsyncTransactionTracker->GetId(),
                                            nullptr, aCompositable->GetIPDLActor(),
@@ -899,38 +1131,6 @@ ImageBridgeChild::RemoveTextureFromCompositableAsync(AsyncTransactionTracker* aA
   // Hold AsyncTransactionTracker until receving reply
   CompositableClient::HoldUntilComplete(aCompositable->GetIPDLActor(),
                                         aAsyncTransactionTracker);
-}
-
-static void RemoveTextureSync(TextureClient* aTexture, ReentrantMonitor* aBarrier, bool* aDone)
-{
-  aTexture->ForceRemove();
-
-  ReentrantMonitorAutoEnter autoMon(*aBarrier);
-  *aDone = true;
-  aBarrier->NotifyAll();
-}
-
-void ImageBridgeChild::RemoveTexture(TextureClient* aTexture)
-{
-  if (InImageBridgeChildThread()) {
-    MOZ_ASSERT(!mShuttingDown);
-    aTexture->ForceRemove();
-    return;
-  }
-
-  ReentrantMonitor barrier("RemoveTexture Lock");
-  ReentrantMonitorAutoEnter autoMon(barrier);
-  bool done = false;
-
-  sImageBridgeChildSingleton->GetMessageLoop()->PostTask(
-    FROM_HERE,
-    NewRunnableFunction(&RemoveTextureSync, aTexture, &barrier, &done));
-
-  // should stop the thread until the ImageClient has been created on
-  // the other thread
-  while (!done) {
-    barrier.Wait();
-  }
 }
 
 bool ImageBridgeChild::IsSameProcess() const
@@ -942,5 +1142,5 @@ void ImageBridgeChild::SendPendingAsyncMessges()
 {
 }
 
-} // layers
-} // mozilla
+} // namespace layers
+} // namespace mozilla

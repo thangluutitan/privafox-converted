@@ -11,22 +11,64 @@ namespace mozilla {
 namespace dom {
 
 /* static */ void
-ChromeUtils::OriginAttributesToCookieJar(GlobalObject& aGlobal,
-                                         const OriginAttributesDictionary& aAttrs,
-                                         nsCString& aCookieJar)
+ThreadSafeChromeUtils::NondeterministicGetWeakMapKeys(GlobalObject& aGlobal,
+                                                      JS::Handle<JS::Value> aMap,
+                                                      JS::MutableHandle<JS::Value> aRetval,
+                                                      ErrorResult& aRv)
 {
-  OriginAttributes attrs(aAttrs);
-  attrs.CookieJar(aCookieJar);
+  if (!aMap.isObject()) {
+    aRetval.setUndefined();
+  } else {
+    JSContext* cx = aGlobal.Context();
+    JS::Rooted<JSObject*> objRet(cx);
+    JS::Rooted<JSObject*> mapObj(cx, &aMap.toObject());
+    if (!JS_NondeterministicGetWeakMapKeys(cx, mapObj, &objRet)) {
+      aRv.Throw(NS_ERROR_OUT_OF_MEMORY);
+    } else {
+      aRetval.set(objRet ? JS::ObjectValue(*objRet) : JS::UndefinedValue());
+    }
+  }
 }
 
 /* static */ void
+ThreadSafeChromeUtils::NondeterministicGetWeakSetKeys(GlobalObject& aGlobal,
+                                                      JS::Handle<JS::Value> aSet,
+                                                      JS::MutableHandle<JS::Value> aRetval,
+                                                      ErrorResult& aRv)
+{
+  if (!aSet.isObject()) {
+    aRetval.setUndefined();
+  } else {
+    JSContext* cx = aGlobal.Context();
+    JS::Rooted<JSObject*> objRet(cx);
+    JS::Rooted<JSObject*> setObj(cx, &aSet.toObject());
+    if (!JS_NondeterministicGetWeakSetKeys(cx, setObj, &objRet)) {
+      aRv.Throw(NS_ERROR_OUT_OF_MEMORY);
+    } else {
+      aRetval.set(objRet ? JS::ObjectValue(*objRet) : JS::UndefinedValue());
+    }
+  }
+}
+
+  /* static */ void
 ChromeUtils::OriginAttributesToSuffix(dom::GlobalObject& aGlobal,
                                       const dom::OriginAttributesDictionary& aAttrs,
                                       nsCString& aSuffix)
 
 {
-  OriginAttributes attrs(aAttrs);
+  GenericOriginAttributes attrs(aAttrs);
   attrs.CreateSuffix(aSuffix);
 }
+
+/* static */ bool
+ChromeUtils::OriginAttributesMatchPattern(dom::GlobalObject& aGlobal,
+                                          const dom::OriginAttributesDictionary& aAttrs,
+                                          const dom::OriginAttributesPatternDictionary& aPattern)
+{
+  GenericOriginAttributes attrs(aAttrs);
+  OriginAttributesPattern pattern(aPattern);
+  return pattern.Matches(attrs);
+}
+
 } // namespace dom
 } // namespace mozilla

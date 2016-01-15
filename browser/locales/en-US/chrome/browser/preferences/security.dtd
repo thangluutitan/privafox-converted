@@ -20,17 +20,14 @@
 <!ENTITY  blockWebForgeries.label     "Block reported web forgeries">
 <!ENTITY  blockWebForgeries.accesskey "B">
 
-<!ENTITY doNotTrackInfo.label3      "The original Firefox web browser offers options to block certain sites based on blacklists maintained by Google. By using this feature, you would be sending your IP-address to Google, which we are against. We strongly suggest that you use a dedicated anti-malware/internet protection suite from a company who has such products as their core business.">
-<!ENTITY doNotTrackInfo.label4      "See our list of recommended products here.">
-
 <!ENTITY  addonExceptions.label         "Exceptions…">
 <!ENTITY  addonExceptions.accesskey     "E">
 
 
-<!ENTITY  passwords.label               "Passwords">
+<!ENTITY  logins.label                  "Logins">
 
-<!ENTITY  rememberPasswords.label       "Remember passwords for sites">
-<!ENTITY  rememberPasswords.accesskey   "R">
+<!ENTITY  rememberLogins.label          "Remember logins for sites">
+<!ENTITY  rememberLogins.accesskey      "R">
 <!ENTITY  passwordExceptions.label      "Exceptions…">
 <!ENTITY  passwordExceptions.accesskey  "x">
 
@@ -39,8 +36,8 @@
 <!ENTITY  changeMasterPassword.label     "Change Master Password…">
 <!ENTITY  changeMasterPassword.accesskey "M">
 
-<!ENTITY  savedPasswords.label            "Saved Passwords…">
-<!ENTITY  savedPasswords.accesskey        "P">
+<!ENTITY  savedLogins.label              "Saved Logins…">
+<!ENTITY  savedLogins.accesskey          "L">
 
 <!-- Privafox : CUS-T1 : Additional Security- Protect bookmark with master password-->
 <!ENTITY  additionalSecurity.label            "Additional security">

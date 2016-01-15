@@ -13,8 +13,6 @@
 #include "mozilla/gfx/Rect.h"           // for RoundedIn
 #include "mozilla/gfx/ScaleFactor.h"    // for ScaleFactor
 #include "mozilla/gfx/Logging.h"        // for Log
-#include "gfxColor.h"
-#include "gfxPrefs.h"                   // for LayoutUseContainersForRootFrames
 #include "nsString.h"
 
 namespace IPC {
@@ -64,12 +62,13 @@ public:
     , mPresShellId(-1)
     , mViewport(0, 0, 0, 0)
     , mExtraResolution()
-    , mBackgroundColor(0, 0, 0, 0)
+    , mBackgroundColor()
     , mLineScrollAmount(0, 0)
     , mPageScrollAmount(0, 0)
     , mAllowVerticalScrollWithWheel(false)
     , mIsLayersIdRoot(false)
     , mUsesContainerScrolling(false)
+    , mIsScrollInfoLayer(false)
   {
   }
 
@@ -106,7 +105,8 @@ public:
            mClipRect == aOther.mClipRect &&
            mMaskLayerIndex == aOther.mMaskLayerIndex &&
            mIsLayersIdRoot == aOther.mIsLayersIdRoot &&
-		   mUsesContainerScrolling == aOther.mUsesContainerScrolling;
+           mUsesContainerScrolling == aOther.mUsesContainerScrolling &&
+           mIsScrollInfoLayer == aOther.mIsScrollInfoLayer;
   }
   bool operator!=(const FrameMetrics& aOther) const
   {
@@ -451,12 +451,12 @@ public:
     return mExtraResolution;
   }
 
-  const gfxRGBA& GetBackgroundColor() const
+  const gfx::Color& GetBackgroundColor() const
   {
     return mBackgroundColor;
   }
 
-  void SetBackgroundColor(const gfxRGBA& aBackgroundColor)
+  void SetBackgroundColor(const gfx::Color& aBackgroundColor)
   {
     mBackgroundColor = aBackgroundColor;
   }
@@ -540,12 +540,18 @@ public:
     return mIsLayersIdRoot;
   }
 
-  void SetUsesContainerScrolling(bool aValue) {
-    MOZ_ASSERT_IF(aValue, gfxPrefs::LayoutUseContainersForRootFrames());
-    mUsesContainerScrolling = aValue;
-  }
+  // Implemented out of line because the implementation needs gfxPrefs.h
+  // and we don't want to include that from FrameMetrics.h.
+  void SetUsesContainerScrolling(bool aValue);
   bool UsesContainerScrolling() const {
     return mUsesContainerScrolling;
+  }
+
+  void SetIsScrollInfoLayer(bool aIsScrollInfoLayer) {
+    mIsScrollInfoLayer = aIsScrollInfoLayer;
+  }
+  bool IsScrollInfoLayer() const {
+    return mIsScrollInfoLayer;
   }
 
 private:
@@ -703,7 +709,7 @@ private:
   ScreenToLayerScale2D mExtraResolution;
 
   // The background color to use when overscrolling.
-  gfxRGBA mBackgroundColor;
+  gfx::Color mBackgroundColor;
 
   // A description of the content element corresponding to this frame.
   // This is empty unless this is a scrollable layer and the
@@ -734,6 +740,9 @@ private:
   // True if scrolling using containers, false otherwise. This can be removed
   // when containerful scrolling is eliminated.
   bool mUsesContainerScrolling;
+
+  // Whether or not this frame has a "scroll info layer" to capture events.
+  bool mIsScrollInfoLayer;
 
   // WARNING!!!!
   //
@@ -881,7 +890,7 @@ struct ZoomConstraints {
 
 typedef Maybe<ZoomConstraints> MaybeZoomConstraints;
 
-}
-}
+} // namespace layers
+} // namespace mozilla
 
 #endif /* GFX_FRAMEMETRICS_H */

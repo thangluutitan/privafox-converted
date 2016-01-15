@@ -167,8 +167,8 @@ struct nsPrevNextBidiLevels
 namespace mozilla {
 namespace dom {
 class Selection;
-}
-}
+} // namespace dom
+} // namespace mozilla
 class nsIScrollableFrame;
 
 /**
@@ -597,7 +597,8 @@ public:
   nsFrameSelection();
 
   void StartBatchChanges();
-  void EndBatchChanges();
+  void EndBatchChanges(int16_t aReason = nsISelectionListener::NO_REASON);
+
   /*unsafe*/
   nsresult DeleteFromDocument();
 
@@ -621,9 +622,7 @@ private:
                          uint32_t aContentOffset,
                          nsSelectionAmount aAmount,
                          CaretAssociateHint aHint);
-  void BidiLevelFromClick(nsIContent *aNewFocus,
-                          uint32_t aContentOffset,
-                          CaretAssociateHint aHint);
+  void BidiLevelFromClick(nsIContent *aNewFocus, uint32_t aContentOffset);
   nsPrevNextBidiLevels GetPrevNextBidiLevels(nsIContent *aNode,
                                              uint32_t aContentOffset,
                                              CaretAssociateHint aHint,
@@ -681,7 +680,7 @@ private:
   // so remember to use nsCOMPtr when needed.
   nsresult     NotifySelectionListeners(SelectionType aType);     // add parameters to say collapsed etc?
 
-  nsRefPtr<mozilla::dom::Selection> mDomSelections[nsISelectionController::NUM_SELECTIONTYPES];
+  RefPtr<mozilla::dom::Selection> mDomSelections[nsISelectionController::NUM_SELECTIONTYPES];
 
   // Table selection support.
   nsITableCellLayout* GetCellLayout(nsIContent *aCellContent) const;
@@ -719,7 +718,7 @@ private:
   int32_t  mSelectedCellIndex;
 
   // maintain selection
-  nsRefPtr<nsRange> mMaintainRange;
+  RefPtr<nsRange> mMaintainRange;
   nsSelectionAmount mMaintainedAmount;
 
   //batching
@@ -752,6 +751,8 @@ private:
   bool mDesiredPosSet;
 
   int8_t mCaretMovementStyle;
+
+  static bool sSelectionEventsEnabled;
 };
 
 #endif /* nsFrameSelection_h___ */

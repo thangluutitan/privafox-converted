@@ -48,7 +48,7 @@ function pushPrefEnv(aPrefs) {
  *
  * @return A deferred promise.
  */
-let manager;
+var manager;
 function ensureMobileMessage() {
   let deferred = Promise.defer();
 
@@ -91,7 +91,7 @@ function ensureMobileMessage() {
  *
  * @return A deferred promise.
  */
-let mobileConnection;
+var mobileConnection;
 function ensureMobileConnection(aServiceId) {
   return new Promise(function(resolve, reject) {
     let permissions = [{
@@ -236,7 +236,7 @@ function sendMmsWithFailure(aMmsParameters, aSendParameters) {
 /**
  * Retrieve message by message id.
  *
- * Fulfill params: MozSmsMessage
+ * Fulfill params: SmsMessage
  * Reject params:
  *   event -- a DOMEvent
  *
@@ -422,7 +422,7 @@ function deleteAllMessages() {
   return getAllMessages().then(deleteMessages);
 }
 
-let pendingEmulatorCmdCount = 0;
+var pendingEmulatorCmdCount = 0;
 
 /**
  * Send emulator command with safe guard.
@@ -481,7 +481,7 @@ function sendTextSmsToEmulator(aFrom, aText) {
 /**
  * Send simple text SMS to emulator and wait for a received event.
  *
- * Fulfill params: MozSmsMessage
+ * Fulfill params: SmsMessage
  * Reject params: (none)
  *
  * @param aFrom

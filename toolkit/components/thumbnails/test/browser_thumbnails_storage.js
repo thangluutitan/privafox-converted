@@ -17,7 +17,7 @@ XPCOMUtils.defineLazyGetter(this, "Sanitizer", function () {
  * Newly captured thumbnails should be saved as files and they should as well
  * be removed when the user sanitizes their history.
  */
-function runTests() {
+function* runTests() {
   yield Task.spawn(function*() {
     dontExpireThumbnailURLs([URL, URL_COPY]);
 
@@ -61,7 +61,7 @@ function runTests() {
   });
 }
 
-let promiseClearFile = Task.async(function*(aFile, aURL) {
+var promiseClearFile = Task.async(function*(aFile, aURL) {
   if (!aFile.exists()) {
     return;
   }

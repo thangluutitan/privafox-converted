@@ -1,6 +1,6 @@
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 /**
  * SidebarUI controls showing and hiding the browser sidebar.
@@ -19,7 +19,7 @@
  *                 it changes the sidebar's visibility.
  *  - group        this attribute must be set to "sidebar".
  */
-let SidebarUI = {
+var SidebarUI = {
   browser: null,
 
   _box: null,
@@ -140,7 +140,9 @@ let SidebarUI = {
     // Run the original function for backwards compatibility.
     fireSidebarFocusedEvent();
   },
-  
+/*
+* Privafox : showMP for Bookmark
+*/
   refreshBookmark(requestObs , isAdditionalSercurity) {
       let isHasProtectBookmark = false;
       if(requestObs){
@@ -205,9 +207,7 @@ let SidebarUI = {
         reject(new Error("Invalid sidebar broadcaster specified"));
         return;
       }
-      //let isHasProtectBookmark = PlacesCommandHook.bookmarkIsProtectMasterPassword();
-     // document.getElementById("sidebar-box-master-password").hidden=!isHasProtectBookmark;
-      
+
       let broadcasters = document.getElementsByAttribute("group", "sidebar");
       for (let broadcaster of broadcasters) {
         // skip elements that observe sidebar broadcasters and random
@@ -243,7 +243,7 @@ let SidebarUI = {
       // does that is that we want to delay sidebar load a bit when a browser
       // window opens. See delayedStartup() and SidebarUI.startDelayedLoad().
       this._box.setAttribute("src", url);
-      
+
       if (this.browser.contentDocument.location.href != url) {
         let onLoad = event => {
           this.browser.removeEventListener("load", onLoad, true);
@@ -262,8 +262,7 @@ let SidebarUI = {
         this.browser.addEventListener("load", onLoad, true);
       } else {
         // Older code handled this case, so we do it too.
-          this._fireFocusedEvent();
-
+        this._fireFocusedEvent();
         resolve();
       }
 

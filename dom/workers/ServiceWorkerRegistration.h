@@ -12,6 +12,9 @@
 #include "mozilla/dom/ServiceWorkerCommon.h"
 #include "mozilla/dom/workers/bindings/WorkerFeature.h"
 
+// Support for Notification API extension.
+#include "mozilla/dom/NotificationBinding.h"
+
 class nsPIDOMWindow;
 
 namespace mozilla {
@@ -19,15 +22,19 @@ namespace dom {
 
 class Promise;
 class PushManager;
+class WorkerPushManager;
 class WorkerListener;
 
 namespace workers {
 class ServiceWorker;
 class WorkerPrivate;
-}
+} // namespace workers
 
 bool
 ServiceWorkerRegistrationVisible(JSContext* aCx, JSObject* aObj);
+
+bool
+ServiceWorkerNotificationAPIVisible(JSContext* aCx, JSObject* aObj);
 
 // This class exists solely so that we can satisfy some WebIDL Func= attribute
 // constraints. Func= converts the function name to a header file to include, in
@@ -57,6 +64,9 @@ public:
 
   virtual void
   InvalidateWorkers(WhichServiceWorker aWhichOnes) = 0;
+
+  virtual void
+  RegistrationRemoved() = 0;
 
   virtual void
   GetScope(nsAString& aScope) const = 0;
@@ -99,17 +109,24 @@ public:
   NS_DECL_CYCLE_COLLECTION_CLASS_INHERITED(ServiceWorkerRegistrationMainThread,
                                            ServiceWorkerRegistrationBase)
 
-  ServiceWorkerRegistrationMainThread(nsPIDOMWindow* aWindow,
-                                      const nsAString& aScope);
-
-  void
-  Update();
+  already_AddRefed<Promise>
+  Update(ErrorResult& aRv);
 
   already_AddRefed<Promise>
   Unregister(ErrorResult& aRv);
 
   JSObject*
   WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
+
+  // Partial interface from Notification API.
+  already_AddRefed<Promise>
+  ShowNotification(JSContext* aCx,
+                   const nsAString& aTitle,
+                   const NotificationOptions& aOptions,
+                   ErrorResult& aRv);
+
+  already_AddRefed<Promise>
+  GetNotifications(const GetNotificationOptions& aOptions, ErrorResult& aRv);
 
   already_AddRefed<workers::ServiceWorker>
   GetInstalling() override;
@@ -138,12 +155,18 @@ public:
   InvalidateWorkers(WhichServiceWorker aWhichOnes) override;
 
   void
+  RegistrationRemoved() override;
+
+  void
   GetScope(nsAString& aScope) const override
   {
     aScope = mScope;
   }
 
 private:
+  friend nsPIDOMWindow;
+  ServiceWorkerRegistrationMainThread(nsPIDOMWindow* aWindow,
+                                      const nsAString& aScope);
   ~ServiceWorkerRegistrationMainThread();
 
   already_AddRefed<workers::ServiceWorker>
@@ -161,12 +184,12 @@ private:
   // instead of acquiring a new worker instance from the ServiceWorkerManager
   // for every access. A null value is considered a cache miss.
   // These three may change to a new worker at any time.
-  nsRefPtr<workers::ServiceWorker> mInstallingWorker;
-  nsRefPtr<workers::ServiceWorker> mWaitingWorker;
-  nsRefPtr<workers::ServiceWorker> mActiveWorker;
+  RefPtr<workers::ServiceWorker> mInstallingWorker;
+  RefPtr<workers::ServiceWorker> mWaitingWorker;
+  RefPtr<workers::ServiceWorker> mActiveWorker;
 
 #ifndef MOZ_SIMPLEPUSH
-  nsRefPtr<PushManager> mPushManager;
+  RefPtr<PushManager> mPushManager;
 #endif
 };
 
@@ -181,14 +204,24 @@ public:
   ServiceWorkerRegistrationWorkerThread(workers::WorkerPrivate* aWorkerPrivate,
                                         const nsAString& aScope);
 
-  void
-  Update();
+  already_AddRefed<Promise>
+  Update(ErrorResult& aRv);
 
   already_AddRefed<Promise>
   Unregister(ErrorResult& aRv);
 
   JSObject*
   WrapObject(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) override;
+
+  // Partial interface from Notification API.
+  already_AddRefed<Promise>
+  ShowNotification(JSContext* aCx,
+                   const nsAString& aTitle,
+                   const NotificationOptions& aOptions,
+                   ErrorResult& aRv);
+
+  already_AddRefed<Promise>
+  GetNotifications(const GetNotificationOptions& aOptions, ErrorResult& aRv);
 
   already_AddRefed<workers::ServiceWorker>
   GetInstalling() override;
@@ -208,6 +241,9 @@ public:
   bool
   Notify(JSContext* aCx, workers::Status aStatus) override;
 
+  already_AddRefed<WorkerPushManager>
+  GetPushManager(ErrorResult& aRv);
+
 private:
   enum Reason
   {
@@ -224,7 +260,11 @@ private:
   ReleaseListener(Reason aReason);
 
   workers::WorkerPrivate* mWorkerPrivate;
-  nsRefPtr<WorkerListener> mListener;
+  RefPtr<WorkerListener> mListener;
+
+#ifndef MOZ_SIMPLEPUSH
+  RefPtr<WorkerPushManager> mPushManager;
+#endif
 };
 
 } // namespace dom

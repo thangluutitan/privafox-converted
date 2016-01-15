@@ -11,12 +11,14 @@
 #include "nsINavBookmarksService.h"
 #include "nsIInterfaceRequestorUtils.h"
 #include "nsIFile.h"
+#include "nsIWritablePropertyBag2.h"
 
 #include "nsNavHistory.h"
 #include "nsPlacesTables.h"
 #include "nsPlacesIndexes.h"
 #include "nsPlacesTriggers.h"
 #include "nsPlacesMacros.h"
+#include "nsVariant.h"
 #include "SQLFunctions.h"
 #include "Helpers.h"
 
@@ -290,7 +292,7 @@ CreateRoot(nsCOMPtr<mozIStorageConnection>& aDBConn,
 }
 
 
-} // Anonymous namespace
+} // namespace
 
 /**
  * An AsyncShutdown blocker in charge of shutting down places
@@ -314,8 +316,8 @@ public:
    * `true` if we have not started shutdown, i.e.  if
    * `BlockShutdown()` hasn't been called yet, false otherwise.
    */
-  bool IsStarted() const {
-    return mIsStarted;
+  static bool IsStarted() {
+    return sIsStarted;
   }
 
 private:
@@ -325,7 +327,7 @@ private:
   // The owning database.
   // The cycle is broken in method Complete(), once the connection
   // has been closed by mozStorage.
-  nsRefPtr<Database> mDatabase;
+  RefPtr<Database> mDatabase;
 
   // The current state, used both internally and for
   // forensics/debugging purposes.
@@ -353,21 +355,22 @@ private:
     NOTIFIED_OBSERVERS_PLACES_CONNECTION_CLOSED,
   };
   State mState;
-  bool mIsStarted;
 
   // As tests may resurrect a dead `Database`, we use a counter to
   // give the instances of `DatabaseShutdown` unique names.
   uint16_t mCounter;
   static uint16_t sCounter;
 
+  static Atomic<bool> sIsStarted;
+
   ~DatabaseShutdown() {}
 };
 uint16_t DatabaseShutdown::sCounter = 0;
+Atomic<bool> DatabaseShutdown::sIsStarted(false);
 
 DatabaseShutdown::DatabaseShutdown(Database* aDatabase)
   : mDatabase(aDatabase)
   , mState(NOT_STARTED)
-  , mIsStarted(false)
   , mCounter(sCounter++)
 {
   MOZ_ASSERT(NS_IsMainThread());
@@ -418,9 +421,7 @@ NS_IMETHODIMP DatabaseShutdown::GetState(nsIPropertyBag** aState)
   if (NS_WARN_IF(NS_FAILED(rv))) return rv;
 
   // Put `mState` in field `progress`
-  nsCOMPtr<nsIWritableVariant> progress =
-    do_CreateInstance(NS_VARIANT_CONTRACTID, &rv);
-  if (NS_WARN_IF(NS_FAILED(rv))) return rv;
+  RefPtr<nsVariant> progress = new nsVariant();
 
   rv = progress->SetAsUint8(mState);
   if (NS_WARN_IF(NS_FAILED(rv))) return rv;
@@ -438,9 +439,7 @@ NS_IMETHODIMP DatabaseShutdown::GetState(nsIPropertyBag** aState)
     return NS_OK;
   }
 
-  nsCOMPtr<nsIWritableVariant> barrier =
-    do_CreateInstance(NS_VARIANT_CONTRACTID, &rv);
-  if (NS_WARN_IF(NS_FAILED(rv))) return rv;
+  RefPtr<nsVariant> barrier = new nsVariant();
 
   rv = barrier->SetAsInterface(NS_GET_IID(nsIPropertyBag), barrierState);
   if (NS_WARN_IF(NS_FAILED(rv))) return rv;
@@ -464,7 +463,7 @@ DatabaseShutdown::BlockShutdown(nsIAsyncShutdownClient* aParentClient)
 {
   mParentClient = aParentClient;
   mState = RECEIVED_BLOCK_SHUTDOWN;
-  mIsStarted = true;
+  sIsStarted = true;
 
   if (NS_WARN_IF(!mBarrier)) {
     return NS_ERROR_NOT_AVAILABLE;
@@ -581,7 +580,7 @@ Database::Database()
   , mClosed(false)
   , mConnectionShutdown(new DatabaseShutdown(this))
 {
-  MOZ_ASSERT(XRE_GetProcessType() != GeckoProcessType_Content,
+  MOZ_ASSERT(!XRE_IsContentProcess(),
              "Cannot instantiate Places in the content process");
   // Attempting to create two instances of the service?
   MOZ_ASSERT(!gDatabase);
@@ -661,6 +660,15 @@ Database::GetConnectionShutdown()
   return mConnectionShutdown->GetClient();
 }
 
+// static
+already_AddRefed<Database>
+Database::GetDatabase()
+{
+  if (DatabaseShutdown::IsStarted())
+    return nullptr;
+  return GetSingleton();
+}
+
 nsresult
 Database::Init()
 {
@@ -686,7 +694,7 @@ Database::Init()
   // If the database connection still cannot be opened, it may just be locked
   // by third parties.  Send out a notification and interrupt initialization.
   if (NS_FAILED(rv)) {
-    nsRefPtr<PlacesEvent> lockedEvent = new PlacesEvent(TOPIC_DATABASE_LOCKED);
+    RefPtr<PlacesEvent> lockedEvent = new PlacesEvent(TOPIC_DATABASE_LOCKED);
     (void)NS_DispatchToMainThread(lockedEvent);
     return rv;
   }
@@ -723,7 +731,7 @@ Database::Init()
   // Notify we have finished database initialization.
   // Enqueue the notification, so if we init another service that requires
   // nsNavHistoryService we don't recursive try to get it.
-  nsRefPtr<PlacesEvent> completeEvent =
+  RefPtr<PlacesEvent> completeEvent =
     new PlacesEvent(TOPIC_PLACES_INIT_COMPLETE);
   rv = NS_DispatchToMainThread(completeEvent);
   NS_ENSURE_SUCCESS(rv, rv);
@@ -949,22 +957,10 @@ Database::InitSchema(bool* aDatabaseMigrated)
         NS_ENSURE_SUCCESS(rv, rv);
       }
 
-      if (currentSchemaVersion < 14) {
-        rv = MigrateV14Up();
-        NS_ENSURE_SUCCESS(rv, rv);
-      }
-
       if (currentSchemaVersion < 15) {
         rv = MigrateV15Up();
         NS_ENSURE_SUCCESS(rv, rv);
       }
-
-      if (currentSchemaVersion < 16) {
-        rv = MigrateV16Up();
-        NS_ENSURE_SUCCESS(rv, rv);
-      }
-
-      // Firefox 11 uses schema version 16.
 
       if (currentSchemaVersion < 17) {
         rv = MigrateV17Up();
@@ -1044,12 +1040,12 @@ Database::InitSchema(bool* aDatabaseMigrated)
 
       // Firefox 39 uses schema version 28.
 
-      if (currentSchemaVersion < 29) {
-        rv = MigrateV29Up();
+      if (currentSchemaVersion < 30) {
+        rv = MigrateV30Up();
         NS_ENSURE_SUCCESS(rv, rv);
       }
 
-      // Firefox 41 uses schema version 29.
+      // Firefox 41 uses schema version 30.
 
       // Schema Upgrades must add migration code here.
 
@@ -1122,8 +1118,6 @@ Database::InitSchema(bool* aDatabaseMigrated)
 
     // moz_favicons.
     rv = mMainConn->ExecuteSimpleSQL(CREATE_MOZ_FAVICONS);
-    NS_ENSURE_SUCCESS(rv, rv);
-    rv = mMainConn->ExecuteSimpleSQL(CREATE_IDX_MOZ_FAVICONS_GUID);
     NS_ENSURE_SUCCESS(rv, rv);
 
     // moz_anno_attributes.
@@ -1373,41 +1367,6 @@ Database::MigrateV13Up()
 }
 
 nsresult
-Database::MigrateV14Up()
-{
-  MOZ_ASSERT(NS_IsMainThread());
-
-  // For existing profiles, we may not have a moz_favicons.guid column.
-  // Add it here. We want it to be unique, but ALTER TABLE doesn't allow
-  // a uniqueness constraint, so the index must be created separately.
-  nsCOMPtr<mozIStorageStatement> hasGuidStatement;
-  nsresult rv = mMainConn->CreateStatement(NS_LITERAL_CSTRING(
-      "SELECT guid FROM moz_favicons"),
-    getter_AddRefs(hasGuidStatement));
-
-  if (NS_FAILED(rv)) {
-    rv = mMainConn->ExecuteSimpleSQL(NS_LITERAL_CSTRING(
-      "ALTER TABLE moz_favicons "
-      "ADD COLUMN guid TEXT"
-    ));
-    NS_ENSURE_SUCCESS(rv, rv);
-
-    rv = mMainConn->ExecuteSimpleSQL(CREATE_IDX_MOZ_FAVICONS_GUID);
-    NS_ENSURE_SUCCESS(rv, rv);
-  }
-
-  // Generate GUID for any favicon missing it.
-  rv = mMainConn->ExecuteSimpleSQL(NS_LITERAL_CSTRING(
-    "UPDATE moz_favicons "
-    "SET guid = GENERATE_GUID() "
-    "WHERE guid ISNULL "
-  ));
-  NS_ENSURE_SUCCESS(rv, rv);
-
-  return NS_OK;
-}
-
-nsresult
 Database::MigrateV15Up()
 {
   MOZ_ASSERT(NS_IsMainThread());
@@ -1427,23 +1386,6 @@ Database::MigrateV15Up()
       "FROM moz_bookmarks "
       "WHERE keyword_id = moz_keywords.id "
     ")"
-  ));
-  NS_ENSURE_SUCCESS(rv, rv);
-
-  return NS_OK;
-}
-
-nsresult
-Database::MigrateV16Up()
-{
-  MOZ_ASSERT(NS_IsMainThread());
-
-  // Due to Bug 715268 downgraded and then upgraded profiles may lack favicons
-  // guids, so fillup any missing ones.
-  nsresult rv = mMainConn->ExecuteSimpleSQL(NS_LITERAL_CSTRING(
-    "UPDATE moz_favicons "
-    "SET guid = GENERATE_GUID() "
-    "WHERE guid ISNULL "
   ));
   NS_ENSURE_SUCCESS(rv, rv);
 
@@ -1907,10 +1849,12 @@ Database::MigrateV28Up() {
 }
 
 nsresult
-Database::MigrateV29Up() {
+Database::MigrateV30Up() {
   MOZ_ASSERT(NS_IsMainThread());
 
-  nsresult rv = mMainConn->ExecuteSimpleSQL(CREATE_IDX_MOZ_FAVICONS_GUID);
+  nsresult rv = mMainConn->ExecuteSimpleSQL(NS_LITERAL_CSTRING(
+    "DROP INDEX IF EXISTS moz_favicons_guid_uniqueindex"
+  ));
   NS_ENSURE_SUCCESS(rv, rv);
 
   return NS_OK;
@@ -1959,16 +1903,6 @@ Database::Shutdown()
     rv = stmt->ExecuteStep(&haveNullGuids);
     MOZ_ASSERT(NS_SUCCEEDED(rv));
     MOZ_ASSERT(!haveNullGuids && "Found a bookmark without a GUID!");
-
-    rv = mMainConn->CreateStatement(NS_LITERAL_CSTRING(
-      "SELECT 1 "
-      "FROM moz_favicons "
-      "WHERE guid IS NULL "
-    ), getter_AddRefs(stmt));
-    MOZ_ASSERT(NS_SUCCEEDED(rv));
-    rv = stmt->ExecuteStep(&haveNullGuids);
-    MOZ_ASSERT(NS_SUCCEEDED(rv));
-    MOZ_ASSERT(!haveNullGuids && "Found a favicon without a GUID!");
   }
 
   { // Sanity check for unrounded dateAdded and lastModified values (bug
@@ -1991,7 +1925,7 @@ Database::Shutdown()
   mMainThreadStatements.FinalizeStatements();
   mMainThreadAsyncStatements.FinalizeStatements();
 
-  nsRefPtr< FinalizeStatementCacheProxy<mozIStorageStatement> > event =
+  RefPtr< FinalizeStatementCacheProxy<mozIStorageStatement> > event =
     new FinalizeStatementCacheProxy<mozIStorageStatement>(
           mAsyncThreadStatements,
           NS_ISUPPORTS_CAST(nsIObserver*, this)

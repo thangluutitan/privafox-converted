@@ -77,7 +77,6 @@ class nsCookie : public nsICookie2
                              bool              aIsSecure,
                              bool              aIsHttpOnly);
 
-
     size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const;
 
     // fast (inline, non-xpcom) getters
@@ -103,6 +102,7 @@ class nsCookie : public nsICookie2
     // Create(). Use with caution!
     inline void SetCreationTime(int64_t aTime)    { mCreationTime = aTime; }
 	inline void SetIsSavedPassword(bool aIsSavedPassword)    { mIsSavedPassword = aIsSavedPassword; }
+    bool IsStale() const;
 
   protected:
     virtual ~nsCookie() {}

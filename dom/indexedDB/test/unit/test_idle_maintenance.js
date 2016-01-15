@@ -10,9 +10,9 @@ function testSteps()
   let uri = Cc["@mozilla.org/network/io-service;1"].
             getService(Ci.nsIIOService).
             newURI("https://www.example.com", null, null);
-  let principal = Cc["@mozilla.org/scriptsecuritymanager;1"].
-                  getService(Ci.nsIScriptSecurityManager).
-                  getNoAppCodebasePrincipal(uri);
+  let ssm = Cc["@mozilla.org/scriptsecuritymanager;1"]
+              .getService(Ci.nsIScriptSecurityManager);
+  let principal = ssm.createCodebasePrincipal(uri, {});
 
   info("Setting permissions");
 
@@ -32,8 +32,8 @@ function testSteps()
 
   info("Creating databases");
 
-  let quotaManager =
-    Cc["@mozilla.org/dom/quota/manager;1"].getService(Ci.nsIQuotaManager);
+  let quotaManagerService = Cc["@mozilla.org/dom/quota-manager-service;1"].
+                            getService(Ci.nsIQuotaManagerService);
 
   let dbCount = 0;
 
@@ -92,16 +92,16 @@ function testSteps()
 
   let usageBeforeMaintenance;
 
-  quotaManager.getUsageForURI(uri, (url, usage) => {
-    ok(usage > 0, "Usage is non-zero");
-    usageBeforeMaintenance = usage;
+  quotaManagerService.getUsageForPrincipal(principal, (request) => {
+    ok(request.usage > 0, "Usage is non-zero");
+    usageBeforeMaintenance = request.usage;
     continueToNextStep();
   });
   yield undefined;
 
   info("Sending fake 'idle-daily' notification to QuotaManager");
 
-  let observer = quotaManager.QueryInterface(Ci.nsIObserver);
+  let observer = quotaManagerService.QueryInterface(Ci.nsIObserver);
   observer.observe(null, "idle-daily", "");
 
   info("Waiting for maintenance to start");
@@ -118,9 +118,9 @@ function testSteps()
 
   let usageAfterMaintenance;
 
-  quotaManager.getUsageForURI(uri, (url, usage) => {
-    ok(usage > 0, "Usage is non-zero");
-    usageAfterMaintenance = usage;
+  quotaManagerService.getUsageForPrincipal(principal, (request) => {
+    ok(request.usage > 0, "Usage is non-zero");
+    usageAfterMaintenance = request.usage;
     continueToNextStep();
   });
   yield undefined;

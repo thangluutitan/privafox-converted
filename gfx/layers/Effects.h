@@ -119,7 +119,7 @@ struct EffectVRDistortion : public Effect
   virtual const char* Name() { return "EffectVRDistortion"; }
   virtual void PrintInfo(std::stringstream& aStream, const char* aPrefix);
 
-  nsRefPtr<gfx::VRHMDInfo> mHMD;
+  RefPtr<gfx::VRHMDInfo> mHMD;
   RefPtr<CompositingRenderTarget> mRenderTarget;
   TextureSource* mTexture;
 
@@ -197,6 +197,15 @@ struct EffectYCbCr : public TexturedEffect
   virtual const char* Name() { return "EffectYCbCr"; }
 };
 
+struct EffectNV12 : public TexturedEffect
+{
+  EffectNV12(TextureSource *aSource, gfx::Filter aFilter)
+    : TexturedEffect(EffectTypes::NV12, aSource, false, aFilter)
+  {}
+
+  virtual const char* Name() { return "EffectNV12"; }
+};
+
 struct EffectComponentAlpha : public TexturedEffect
 {
   EffectComponentAlpha(TextureSource *aOnBlack,
@@ -258,12 +267,15 @@ CreateTexturedEffect(gfx::SurfaceFormat aFormat,
   case gfx::SurfaceFormat::B8G8R8A8:
   case gfx::SurfaceFormat::B8G8R8X8:
   case gfx::SurfaceFormat::R8G8B8X8:
-  case gfx::SurfaceFormat::R5G6B5:
+  case gfx::SurfaceFormat::R5G6B5_UINT16:
   case gfx::SurfaceFormat::R8G8B8A8:
     result = new EffectRGB(aSource, isAlphaPremultiplied, aFilter);
     break;
   case gfx::SurfaceFormat::YUV:
     result = new EffectYCbCr(aSource, aFilter);
+    break;
+  case gfx::SurfaceFormat::NV12:
+    result = new EffectNV12(aSource, aFilter);
     break;
   default:
     NS_WARNING("unhandled program type");

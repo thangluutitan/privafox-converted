@@ -39,6 +39,9 @@ const kPrefCustomizationDebug        = "browser.uiCustomization.debug";
 const kPrefDrawInTitlebar            = "browser.tabs.drawInTitlebar";
 const kPrefWebIDEInNavbar            = "devtools.webide.widget.inNavbarByDefault";
 
+const kExpectedWindowURL = "chrome://browser/content/browser.xul";
+
+
 /**
  * The keys are the handlers that are fired when the event type (the value)
  * is fired on the subview. A widget that provides a subview has the option
@@ -53,43 +56,52 @@ const kSubviewEvents = [
  * The current version. We can use this to auto-add new default widgets as necessary.
  * (would be const but isn't because of testing purposes)
  */
-let kVersion = 4;
+var kVersion = 5;
+
+/**
+ * Buttons removed from built-ins by version they were removed. kVersion must be
+ * bumped any time a new id is added to this. Use the button id as key, and
+ * version the button is removed in as the value.  e.g. "pocket-button": 5
+ */
+var ObsoleteBuiltinButtons = {
+  "loop-button": 5
+};
 
 /**
  * gPalette is a map of every widget that CustomizableUI.jsm knows about, keyed
  * on their IDs.
  */
-let gPalette = new Map();
+var gPalette = new Map();
 
 /**
  * gAreas maps area IDs to Sets of properties about those areas. An area is a
  * place where a widget can be put.
  */
-let gAreas = new Map();
+var gAreas = new Map();
 
 /**
  * gPlacements maps area IDs to Arrays of widget IDs, indicating that the widgets
  * are placed within that area (either directly in the area node, or in the
  * customizationTarget of the node).
  */
-let gPlacements = new Map();
+var gPlacements = new Map();
 
 /**
  * gFuturePlacements represent placements that will happen for areas that have
  * not yet loaded (due to lazy-loading). This can occur when add-ons register
  * widgets.
  */
-let gFuturePlacements = new Map();
+var gFuturePlacements = new Map();
 
 //XXXunf Temporary. Need a nice way to abstract functions to build widgets
 //       of these types.
-let gSupportedWidgetTypes = new Set(["button", "view", "custom"]);
+var gSupportedWidgetTypes = new Set(["button", "view", "custom"]);
 
 /**
  * gPanelsForWindow is a list of known panels in a window which we may need to close
  * should command events fire which target them.
  */
-let gPanelsForWindow = new WeakMap();
+var gPanelsForWindow = new WeakMap();
 
 /**
  * gSeenWidgets remembers which widgets the user has seen for the first time
@@ -97,7 +109,7 @@ let gPanelsForWindow = new WeakMap();
  * before, it can be put in its default location. Otherwise, it remains in the
  * palette.
  */
-let gSeenWidgets = new Set();
+var gSeenWidgets = new Set();
 
 /**
  * gDirtyAreaCache is a set of area IDs for areas where items have been added,
@@ -105,48 +117,48 @@ let gSeenWidgets = new Set();
  * optimize building of toolbars in the default case where no toolbars should
  * be "dirty".
  */
-let gDirtyAreaCache = new Set();
+var gDirtyAreaCache = new Set();
 
 /**
  * gPendingBuildAreas is a map from area IDs to map from build nodes to their
  * existing children at the time of node registration, that are waiting
  * for the area to be registered
  */
-let gPendingBuildAreas = new Map();
+var gPendingBuildAreas = new Map();
 
-let gSavedState = null;
-let gRestoring = false;
-let gDirty = false;
-let gInBatchStack = 0;
-let gResetting = false;
-let gUndoResetting = false;
+var gSavedState = null;
+var gRestoring = false;
+var gDirty = false;
+var gInBatchStack = 0;
+var gResetting = false;
+var gUndoResetting = false;
 
 /**
  * gBuildAreas maps area IDs to actual area nodes within browser windows.
  */
-let gBuildAreas = new Map();
+var gBuildAreas = new Map();
 
 /**
  * gBuildWindows is a map of windows that have registered build areas, mapped
  * to a Set of known toolboxes in that window.
  */
-let gBuildWindows = new Map();
+var gBuildWindows = new Map();
 
-let gNewElementCount = 0;
-let gGroupWrapperCache = new Map();
-let gSingleWrapperCache = new WeakMap();
-let gListeners = new Set();
+var gNewElementCount = 0;
+var gGroupWrapperCache = new Map();
+var gSingleWrapperCache = new WeakMap();
+var gListeners = new Set();
 
-let gUIStateBeforeReset = {
+var gUIStateBeforeReset = {
   uiCustomizationState: null,
   drawInTitlebar: null,
   gUIStateBeforeReset: null,
 };
 
-let gModuleName = "[CustomizableUI]";
+var gModuleName = "[CustomizableUI]";
 #include logging.js
-
-let CustomizableUIInternal = {
+//Privafox : remove sync-buuton
+var CustomizableUIInternal = {
   initialize: function() {
     LOG("Initializing");
 
@@ -154,6 +166,7 @@ let CustomizableUIInternal = {
     this._defineBuiltInWidgets();
     this.loadSavedState();
     this._introduceNewBuiltinWidgets();
+    this._markObsoleteBuiltinButtonsSeen();
 
     let panelPlacements = [
       "edit-controls",
@@ -162,12 +175,11 @@ let CustomizableUIInternal = {
       "privatebrowsing-button",
       "save-page-button",
       "print-button",
-      "history-panelmenu",
       "fullscreen-button",
       "find-button",
       "preferences-button",
       "add-ons-button",
-#ifdef PRIVAFOX_DEV
+#ifndef MOZ_DEV_EDITION
       "developer-button",
 #endif
     ];
@@ -199,13 +211,12 @@ let CustomizableUIInternal = {
     let navbarPlacements = [
       "urlbar-container",
       "search-container",
-#ifdef PRIVAFOX_DEV
+#ifdef MOZ_DEV_EDITION
       "developer-button",
 #endif
       "bookmarks-menu-button",
       "downloads-button",
       "home-button",
-      "loop-button",
     ];
 
     // Insert the Pocket button after the bookmarks button if it's present.
@@ -216,10 +227,10 @@ let CustomizableUIInternal = {
         break;
       }
     }
-
-    //if (Services.prefs.getBoolPref(kPrefWebIDEInNavbar)) {
-    //  navbarPlacements.push("webide-button");
-    //}
+//Privafox -remove
+//    if (Services.prefs.getBoolPref(kPrefWebIDEInNavbar)) {
+//      navbarPlacements.push("webide-button");
+ //   }
 
     this.registerArea(CustomizableUI.AREA_NAVBAR, {
       legacy: true,
@@ -349,6 +360,26 @@ let CustomizableUIInternal = {
 
     if (currentVersion < 4) {
       CustomizableUI.removeWidgetFromArea("loop-button-throttled");
+    }
+  },
+
+  /**
+   * _markObsoleteBuiltinButtonsSeen
+   * when upgrading, ensure obsoleted buttons are in seen state.
+   */
+  _markObsoleteBuiltinButtonsSeen: function() {
+    if (!gSavedState)
+      return;
+    let currentVersion = gSavedState.currentVersion;
+    if (currentVersion >= kVersion)
+      return;
+    // we're upgrading, update state if necessary
+    for (let id in ObsoleteBuiltinButtons) {
+      let version = ObsoleteBuiltinButtons[id]
+      if (version == kVersion) {
+        gSeenWidgets.add(id);
+        gDirty = true;
+      }
     }
   },
 
@@ -589,7 +620,7 @@ let CustomizableUIInternal = {
           legacyState = legacyState.split(",").filter(s => s);
         }
 
-        // Manually restore the state here, so the legacy state can be converted. 
+        // Manually restore the state here, so the legacy state can be converted.
         this.restoreStateForArea(area, legacyState);
         placements = gPlacements.get(area);
       }
@@ -1269,6 +1300,9 @@ let CustomizableUIInternal = {
   },
 
   buildWidget: function(aDocument, aWidget) {
+    if (aDocument.documentURI != kExpectedWindowURL) {
+      throw new Error("buildWidget was called for a non-browser window!");
+    }
     if (typeof aWidget == "string") {
       aWidget = gPalette.get(aWidget);
     }
@@ -1620,7 +1654,7 @@ let CustomizableUIInternal = {
     // We can't use event.target because we might have passed a panelview
     // anonymous content boundary as well, and so target points to the
     // panelmultiview in that case. Unfortunately, this means we get
-    // anonymous child nodes instead of the real ones, so looking for the 
+    // anonymous child nodes instead of the real ones, so looking for the
     // 'stoooop, don't close me' attributes is more involved.
     let target = aEvent.originalTarget;
     let closemenu = "auto";
@@ -1863,7 +1897,7 @@ let CustomizableUIInternal = {
   // Note that this does not populate gPlacements, which is done lazily so that
   // the legacy state can be migrated, which is only available once a browser
   // window is openned.
-  // The panel area is an exception here, since it has no legacy state and is 
+  // The panel area is an exception here, since it has no legacy state and is
   // built lazily - and therefore wouldn't otherwise result in restoring its
   // state immediately when a browser window opens, which is important for
   // other consumers of this API.
@@ -2255,7 +2289,7 @@ let CustomizableUIInternal = {
     }
 
     delete widget.implementation.currentArea;
-    widget.implementation.__defineGetter__("currentArea", function() widget.currentArea);
+    widget.implementation.__defineGetter__("currentArea", () => widget.currentArea);
 
     const kReqStringProps = ["id"];
     for (let prop of kReqStringProps) {
@@ -2737,79 +2771,79 @@ this.CustomizableUI = {
   /**
    * Constant reference to the ID of the menu panel.
    */
-  get AREA_PANEL() "PanelUI-contents",
+  AREA_PANEL: "PanelUI-contents",
   /**
    * Constant reference to the ID of the navigation toolbar.
    */
-  get AREA_NAVBAR() "nav-bar",
+  AREA_NAVBAR: "nav-bar",
   /**
    * Constant reference to the ID of the menubar's toolbar.
    */
-  get AREA_MENUBAR() "toolbar-menubar",
+  AREA_MENUBAR: "toolbar-menubar",
   /**
    * Constant reference to the ID of the tabstrip toolbar.
    */
-  get AREA_TABSTRIP() "TabsToolbar",
+  AREA_TABSTRIP: "TabsToolbar",
   /**
    * Constant reference to the ID of the bookmarks toolbar.
    */
-  get AREA_BOOKMARKS() "PersonalToolbar",
+  AREA_BOOKMARKS: "PersonalToolbar",
   /**
    * Constant reference to the ID of the addon-bar toolbar shim.
    * Do not use, this will be removed as soon as reasonably possible.
    * @deprecated
    */
-  get AREA_ADDONBAR() "addon-bar",
+  AREA_ADDONBAR: "addon-bar",
   /**
    * Constant indicating the area is a menu panel.
    */
-  get TYPE_MENU_PANEL() "menu-panel",
+  TYPE_MENU_PANEL: "menu-panel",
   /**
    * Constant indicating the area is a toolbar.
    */
-  get TYPE_TOOLBAR() "toolbar",
+  TYPE_TOOLBAR: "toolbar",
 
   /**
    * Constant indicating a XUL-type provider.
    */
-  get PROVIDER_XUL() "xul",
+  PROVIDER_XUL: "xul",
   /**
    * Constant indicating an API-type provider.
    */
-  get PROVIDER_API() "api",
+  PROVIDER_API: "api",
   /**
    * Constant indicating dynamic (special) widgets: spring, spacer, and separator.
    */
-  get PROVIDER_SPECIAL() "special",
+  PROVIDER_SPECIAL: "special",
 
   /**
    * Constant indicating the widget is built-in
    */
-  get SOURCE_BUILTIN() "builtin",
+  SOURCE_BUILTIN: "builtin",
   /**
    * Constant indicating the widget is externally provided
    * (e.g. by add-ons or other items not part of the builtin widget set).
    */
-  get SOURCE_EXTERNAL() "external",
+  SOURCE_EXTERNAL: "external",
 
   /**
    * The class used to distinguish items that span the entire menu panel.
    */
-  get WIDE_PANEL_CLASS() "panel-wide-item",
+  WIDE_PANEL_CLASS: "panel-wide-item",
   /**
    * The (constant) number of columns in the menu panel.
    */
-  get PANEL_COLUMN_COUNT() 3,
+  PANEL_COLUMN_COUNT: 3,
 
   /**
    * Constant indicating the reason the event was fired was a window closing
    */
-  get REASON_WINDOW_CLOSED() "window-closed",
+  REASON_WINDOW_CLOSED: "window-closed",
   /**
    * Constant indicating the reason the event was fired was an area being
    * unregistered separately from window closing mechanics.
    */
-  get REASON_AREA_UNREGISTERED() "area-unregistered",
+  REASON_AREA_UNREGISTERED: "area-unregistered",
 
 
   /**
@@ -3677,10 +3711,10 @@ function WidgetGroupWrapper(aWidget) {
                       "showInPrivateBrowsing", "viewId"];
   for (let prop of kBareProps) {
     let propertyName = prop;
-    this.__defineGetter__(propertyName, function() aWidget[propertyName]);
+    this.__defineGetter__(propertyName, () => aWidget[propertyName]);
   }
 
-  this.__defineGetter__("provider", function() CustomizableUI.PROVIDER_API);
+  this.__defineGetter__("provider", () => CustomizableUI.PROVIDER_API);
 
   this.__defineSetter__("disabled", function(aValue) {
     aValue = !!aValue;
@@ -3757,10 +3791,10 @@ function WidgetSingleWrapper(aWidget, aNode) {
     // Look at the node for these, instead of the widget data, to ensure the
     // wrapper always reflects this live instance.
     this.__defineGetter__(propertyName,
-                          function() aNode.getAttribute(propertyName));
+                          () => aNode.getAttribute(propertyName));
   }
 
-  this.__defineGetter__("disabled", function() aNode.disabled);
+  this.__defineGetter__("disabled", () => aNode.disabled);
   this.__defineSetter__("disabled", function(aValue) {
     aNode.disabled = !!aValue;
   });
@@ -3843,7 +3877,7 @@ function XULWidgetGroupWrapper(aWidgetId) {
 }
 
 /**
- * A XULWidgetSingleWrapper is a wrapper around a single instance of a XUL 
+ * A XULWidgetSingleWrapper is a wrapper around a single instance of a XUL
  * widget in a particular window.
  */
 function XULWidgetSingleWrapper(aWidgetId, aNode, aDocument) {
@@ -4086,7 +4120,7 @@ OverflowableToolbar.prototype = {
 
     let child = this._target.lastChild;
 
-    while (child && this._target.scrollLeftMax > 0) {
+    while (child && this._target.scrollLeftMin != this._target.scrollLeftMax) {
       let prevChild = child.previousSibling;
 
       if (child.getAttribute("overflows") != "false") {
@@ -4166,7 +4200,7 @@ OverflowableToolbar.prototype = {
     if (!this._enabled)
       return;
 
-    if (this._target.scrollLeftMax > 0) {
+    if (this._target.scrollLeftMin != this._target.scrollLeftMax) {
       this.onOverflow();
     } else {
       this._moveItemsBackToTheirOrigin();

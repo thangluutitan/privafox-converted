@@ -21,13 +21,8 @@ class AudioBufferSourceNode final : public AudioNode,
 public:
   explicit AudioBufferSourceNode(AudioContext* aContext);
 
-  virtual void DestroyMediaStream() override
-  {
-    if (mStream) {
-      mStream->RemoveMainThreadListener(this);
-    }
-    AudioNode::DestroyMediaStream();
-  }
+  virtual void DestroyMediaStream() override;
+
   virtual uint16_t NumberOfInputs() const final override
   {
     return 0;
@@ -134,23 +129,21 @@ private:
   void SendLoopParametersToStream();
   void SendBufferParameterToStream(JSContext* aCx);
   void SendOffsetAndDurationParametersToStream(AudioNodeStream* aStream);
-  static void SendPlaybackRateToStream(AudioNode* aNode);
-  static void SendDetuneToStream(AudioNode* aNode);
 
 private:
   double mLoopStart;
   double mLoopEnd;
   double mOffset;
   double mDuration;
-  nsRefPtr<AudioBuffer> mBuffer;
-  nsRefPtr<AudioParam> mPlaybackRate;
-  nsRefPtr<AudioParam> mDetune;
+  RefPtr<AudioBuffer> mBuffer;
+  RefPtr<AudioParam> mPlaybackRate;
+  RefPtr<AudioParam> mDetune;
   bool mLoop;
   bool mStartCalled;
 };
 
-}
-}
+} // namespace dom
+} // namespace mozilla
 
 #endif
 

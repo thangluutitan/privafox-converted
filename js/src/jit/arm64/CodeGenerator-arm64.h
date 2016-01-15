@@ -26,8 +26,6 @@ class CodeGeneratorARM64 : public CodeGeneratorShared
     CodeGeneratorARM64(MIRGenerator* gen, LIRGraph* graph, MacroAssembler* masm);
 
   protected:
-    // Label for the common return path.
-    NonAssertingLabel returnLabel_;
     NonAssertingLabel deoptLabel_;
 
     // FIXME: VIXL Operand does not match the platform-agnostic Operand,
@@ -73,8 +71,6 @@ class CodeGeneratorARM64 : public CodeGeneratorShared
     }
 
   protected:
-    bool generatePrologue();
-    bool generateEpilogue();
     bool generateOutOfLineCode();
 
     void emitRoundDouble(FloatRegister src, Register dest, Label* fail);
@@ -146,8 +142,8 @@ class CodeGeneratorARM64 : public CodeGeneratorShared
     virtual void visitCompareFAndBranch(LCompareFAndBranch* comp);
     virtual void visitCompareB(LCompareB* lir);
     virtual void visitCompareBAndBranch(LCompareBAndBranch* lir);
-    virtual void visitCompareV(LCompareV* lir);
-    virtual void visitCompareVAndBranch(LCompareVAndBranch* lir);
+    virtual void visitCompareBitwise(LCompareBitwise* lir);
+    virtual void visitCompareBitwiseAndBranch(LCompareBitwiseAndBranch* lir);
     virtual void visitBitAndAndBranch(LBitAndAndBranch* baab);
     virtual void visitAsmJSUInt32ToDouble(LAsmJSUInt32ToDouble* lir);
     virtual void visitAsmJSUInt32ToFloat32(LAsmJSUInt32ToFloat32* lir);
@@ -211,6 +207,8 @@ class CodeGeneratorARM64 : public CodeGeneratorShared
     void visitNegF(LNegF* lir);
     void visitLoadTypedArrayElementStatic(LLoadTypedArrayElementStatic* ins);
     void visitStoreTypedArrayElementStatic(LStoreTypedArrayElementStatic* ins);
+    void visitCompareExchangeTypedArrayElement(LCompareExchangeTypedArrayElement* lir);
+    void visitAtomicExchangeTypedArrayElement(LAtomicExchangeTypedArrayElement* lir);
     void visitAsmJSCall(LAsmJSCall* ins);
     void visitAsmJSLoadHeap(LAsmJSLoadHeap* ins);
     void visitAsmJSStoreHeap(LAsmJSStoreHeap* ins);
@@ -224,7 +222,7 @@ class CodeGeneratorARM64 : public CodeGeneratorShared
 
     void generateInvalidateEpilogue();
 
-    void visitRandom(LRandom* ins);
+    void setReturnDoubleRegs(LiveRegisterSet* regs);
 
   protected:
     void postAsmJSCall(LAsmJSCall* lir) {
@@ -242,7 +240,6 @@ class CodeGeneratorARM64 : public CodeGeneratorShared
     void visitFloat32x4(LFloat32x4* ins) { MOZ_CRASH("NYI"); }
     void visitSimdExtractElementI(LSimdExtractElementI* ins) { MOZ_CRASH("NYI"); }
     void visitSimdExtractElementF(LSimdExtractElementF* ins) { MOZ_CRASH("NYI"); }
-    void visitSimdSignMaskX4(LSimdSignMaskX4* ins) { MOZ_CRASH("NYI"); }
     void visitSimdBinaryCompIx4(LSimdBinaryCompIx4* lir) { MOZ_CRASH("NYI"); }
     void visitSimdBinaryCompFx4(LSimdBinaryCompFx4* lir) { MOZ_CRASH("NYI"); }
     void visitSimdBinaryArithIx4(LSimdBinaryArithIx4* lir) { MOZ_CRASH("NYI"); }

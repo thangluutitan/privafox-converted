@@ -249,10 +249,10 @@ Section "-InstallStartCleanup"
   ${EndIf}
 
   ; setup the application model id registration value
-  ${InitHashAppModelId} "$INSTDIR" "Software\Privacore\${AppName}\TaskBarIDs"
+  ${InitHashAppModelId} "$INSTDIR" "Software\Mozilla\${AppName}\TaskBarIDs"
 
   ; Remove the updates directory for Vista and above
-  ${CleanUpdateDirectories} "Privacore\Privafox" "Privacore\updates"
+  ${CleanUpdateDirectories} "Mozilla\Firefox" "Mozilla\updates"
 
   ${RemoveDeprecatedFiles}
   ${RemovePrecompleteEntries} "false"
@@ -333,25 +333,25 @@ Section "-Application" APP_IDX
 
   ${LogHeader} "Adding Registry Entries"
   SetShellVarContext current  ; Set SHCTX to HKCU
-  ${RegCleanMain} "Software\Privacore"
+  ${RegCleanMain} "Software\Mozilla"
   ${RegCleanUninstall}
   ${UpdateProtocolHandlers}
 
   ClearErrors
-  WriteRegStr HKLM "Software\Privacore" "${BrandShortName}InstallerTest" "Write Test"
+  WriteRegStr HKLM "Software\Mozilla" "${BrandShortName}InstallerTest" "Write Test"
   ${If} ${Errors}
     StrCpy $TmpVal "HKCU" ; used primarily for logging
   ${Else}
     SetShellVarContext all  ; Set SHCTX to HKLM
-    DeleteRegValue HKLM "Software\Privacore" "${BrandShortName}InstallerTest"
+    DeleteRegValue HKLM "Software\Mozilla" "${BrandShortName}InstallerTest"
     StrCpy $TmpVal "HKLM" ; used primarily for logging
-    ${RegCleanMain} "Software\Privacore"
+    ${RegCleanMain} "Software\Mozilla"
     ${RegCleanUninstall}
     ${UpdateProtocolHandlers}
 
-    ReadRegStr $0 HKLM "Software\privacore.com\Privacore" "CurrentVersion"
+    ReadRegStr $0 HKLM "Software\mozilla.org\Mozilla" "CurrentVersion"
     ${If} "$0" != "${GREVersion}"
-      WriteRegStr HKLM "Software\privacore.com\Privacore" "CurrentVersion" "${GREVersion}"
+      WriteRegStr HKLM "Software\mozilla.org\Mozilla" "CurrentVersion" "${GREVersion}"
     ${EndIf}
   ${EndIf}
 
@@ -373,17 +373,17 @@ Section "-Application" APP_IDX
   ; it doesn't cause problems always add them.
   ${SetUninstallKeys}
 
-  ; On install always add the PrivafoxHTML and PrivafoxURL keys.
-  ; An empty string is used for the 5th param because PrivafoxHTML is not a
+  ; On install always add the FirefoxHTML and FirefoxURL keys.
+  ; An empty string is used for the 5th param because FirefoxHTML is not a
   ; protocol handler.
   ${GetLongPath} "$INSTDIR\${FileMainEXE}" $8
   StrCpy $2 "$\"$8$\" -osint -url $\"%1$\""
 
-  ; In Win8, the delegate execute handler picks up the value in PrivafoxURL and
-  ; PrivafoxHTML to launch the desktop browser when it needs to.
-  ${AddDisabledDDEHandlerValues} "PrivafoxHTML" "$2" "$8,1" \
+  ; In Win8, the delegate execute handler picks up the value in FirefoxURL and
+  ; FirefoxHTML to launch the desktop browser when it needs to.
+  ${AddDisabledDDEHandlerValues} "FirefoxHTML" "$2" "$8,1" \
                                  "${AppRegName} Document" ""
-  ${AddDisabledDDEHandlerValues} "PrivafoxURL" "$2" "$8,1" "${AppRegName} URL" \
+  ${AddDisabledDDEHandlerValues} "FirefoxURL" "$2" "$8,1" "${AppRegName} URL" \
                                  "true"
 
   ; For pre win8, the following keys should only be set if we can write to HKLM.
@@ -423,8 +423,8 @@ Section "-Application" APP_IDX
   ${If} ${AtLeastWin8}
     ${RemoveDEHRegistration} ${DELEGATE_EXECUTE_HANDLER_ID} \
                              $AppUserModelID \
-                             "PrivafoxURL" \
-                             "PrivafoxHTML"
+                             "FirefoxURL" \
+                             "FirefoxHTML"
   ${EndIf}
   ${EndIf}
 
@@ -440,12 +440,16 @@ Section "-Application" APP_IDX
     ${If} $R0 == "true"
     ; Only proceed if we have HKLM write access
     ${AndIf} $TmpVal == "HKLM"
-    ; On Windows 2000 we do not install the maintenance service.
-    ${AndIf} ${AtLeastWinXP}
-      ; The user is an admin so we should default to install service yes
-      StrCpy $InstallMaintenanceService "1"
+      ; On Windows < XP SP3 we do not install the maintenance service.
+      ${If} ${IsWinXP}
+      ${AndIf} ${AtMostServicePack} 2
+        StrCpy $InstallMaintenanceService "0"
+      ${Else}
+        ; The user is an admin, so we should default to installing the service.
+        StrCpy $InstallMaintenanceService "1"
+      ${EndIf}
     ${Else}
-      ; The user is not admin so we should default to install service no
+      ; The user is not admin, so we can't install the service.
       StrCpy $InstallMaintenanceService "0"
     ${EndIf}
   ${EndIf}
@@ -909,17 +913,18 @@ FunctionEnd
 !ifdef MOZ_MAINTENANCE_SERVICE
 Function preComponents
   ; If the service already exists, don't show this page
-  ServicesHelper::IsInstalled "PrivacoreMaintenance"
+  ServicesHelper::IsInstalled "MozillaMaintenance"
   Pop $R9
   ${If} $R9 == 1
     ; The service already exists so don't show this page.
     Abort
   ${EndIf}
 
-  ; On Windows 2000 we do not install the maintenance service.
-  ${Unless} ${AtLeastWinXP}
+  ; On Windows < XP SP3 we do not install the maintenance service.
+  ${If} ${IsWinXP}
+  ${AndIf} ${AtMostServicePack} 2
     Abort
-  ${EndUnless}
+  ${EndIf}
 
   ; Don't show the custom components page if the
   ; user is not an admin
@@ -931,13 +936,13 @@ Function preComponents
 
   ; Only show the maintenance service page if we have write access to HKLM
   ClearErrors
-  WriteRegStr HKLM "Software\Privacore" \
+  WriteRegStr HKLM "Software\Mozilla" \
               "${BrandShortName}InstallerTest" "Write Test"
   ${If} ${Errors}
     ClearErrors
     Abort
   ${Else}
-    DeleteRegValue HKLM "Software\Privacore" "${BrandShortName}InstallerTest"
+    DeleteRegValue HKLM "Software\Mozilla" "${BrandShortName}InstallerTest"
   ${EndIf}
 
   StrCpy $PageName "Components"
@@ -1003,17 +1008,17 @@ Function preSummary
 
   ; Check if it is possible to write to HKLM
   ClearErrors
-  WriteRegStr HKLM "Software\Privacore" "${BrandShortName}InstallerTest" "Write Test"
+  WriteRegStr HKLM "Software\Mozilla" "${BrandShortName}InstallerTest" "Write Test"
   ${Unless} ${Errors}
-    DeleteRegValue HKLM "Software\Privacore" "${BrandShortName}InstallerTest"
-    ; Check if Privafox is the http handler for this user.
+    DeleteRegValue HKLM "Software\Mozilla" "${BrandShortName}InstallerTest"
+    ; Check if Firefox is the http handler for this user.
     SetShellVarContext current ; Set SHCTX to the current user
     ${IsHandlerForInstallDir} "http" $R9
     ${If} $TmpVal == "HKLM"
       SetShellVarContext all ; Set SHCTX to all users
     ${EndIf}
-    ; If Privafox isn't the http handler for this user show the option to set
-    ; Privafox as the default browser.
+    ; If Firefox isn't the http handler for this user show the option to set
+    ; Firefox as the default browser.
     ${If} "$R9" != "true"
     ${AndIf} ${AtMostWin2008R2}
       WriteINIStr "$PLUGINSDIR\summary.ini" "Settings" NumFields "4"

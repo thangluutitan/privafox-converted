@@ -30,37 +30,6 @@ import mozpack.path as mozpath
 here = os.path.abspath(os.path.dirname(__file__))
 
 
-ADB_NOT_FOUND = '''
-The mochitest command requires the adb binary to be on your path.
-
-If you have a B2G build, this can be found in
-'{}/out/host/<platform>/bin'.
-'''.lstrip()
-
-GAIA_PROFILE_NOT_FOUND = '''
-The mochitest command requires a non-debug gaia profile. Either
-pass in --profile, or set the GAIA_PROFILE environment variable.
-
-If you do not have a non-debug gaia profile, you can build one:
-    $ git clone https://github.com/mozilla-b2g/gaia
-    $ cd gaia
-    $ make
-
-The profile should be generated in a directory called 'profile'.
-'''.lstrip()
-
-GAIA_PROFILE_IS_DEBUG = '''
-The mochitest command requires a non-debug gaia profile. The
-specified profile, {}, is a debug profile.
-
-If you do not have a non-debug gaia profile, you can build one:
-    $ git clone https://github.com/mozilla-b2g/gaia
-    $ cd gaia
-    $ make
-
-The profile should be generated in a directory called 'profile'.
-'''.lstrip()
-
 ENG_BUILD_REQUIRED = '''
 The mochitest command requires an engineering build. It may be the case that
 VARIANT=user or PRODUCTION=1 were set. Try re-building with VARIANT=eng:
@@ -106,7 +75,7 @@ ALL_FLAVORS = {
     'mochitest': {
         'suite': 'plain',
         'aliases': ('plain', 'mochitest'),
-        'enabled_apps': ('firefox', 'b2g', 'android', 'mulet', 'b2g_desktop'),
+        'enabled_apps': ('firefox', 'b2g', 'android', 'mulet'),
     },
     'chrome': {
         'suite': 'chrome',
@@ -166,7 +135,7 @@ ALL_FLAVORS = {
     },
 }
 
-SUPPORTED_APPS = ['firefox', 'b2g', 'android', 'mulet', 'b2g_desktop']
+SUPPORTED_APPS = ['firefox', 'b2g', 'android', 'mulet']
 SUPPORTED_FLAVORS = list(chain.from_iterable([f['aliases'] for f in ALL_FLAVORS.values()]))
 CANONICAL_FLAVORS = sorted([f['aliases'][0] for f in ALL_FLAVORS.values()])
 
@@ -243,17 +212,7 @@ class MochitestRunner(MozbuildObject):
 
     def run_b2g_test(self, context, tests=None, suite='mochitest', **kwargs):
         """Runs a b2g mochitest."""
-        if kwargs.get('desktop'):
-            kwargs['profile'] = kwargs.get('profile') or os.environ.get('GAIA_PROFILE')
-            if not kwargs['profile'] or not os.path.isdir(kwargs['profile']):
-                print(GAIA_PROFILE_NOT_FOUND)
-                sys.exit(1)
-
-            if os.path.isfile(os.path.join(kwargs['profile'], 'extensions',
-                                           'httpd@gaiamobile.org')):
-                print(GAIA_PROFILE_IS_DEBUG.format(kwargs['profile']))
-                sys.exit(1)
-        elif context.target_out:
+        if context.target_out:
             host_webapps_dir = os.path.join(context.target_out, 'data', 'local', 'webapps')
             if not os.path.isdir(os.path.join(
                     host_webapps_dir, 'test-container.gaiamobile.org')):
@@ -279,21 +238,12 @@ class MochitestRunner(MozbuildObject):
         options = Namespace(**kwargs)
 
         from manifestparser import TestManifest
-        manifest = TestManifest()
-        manifest.tests.extend(tests)
-        options.manifestFile = manifest
+        if tests:
+            manifest = TestManifest()
+            manifest.tests.extend(tests)
+            options.manifestFile = manifest
 
-        if options.desktop:
-            return mochitest.run_desktop_mochitests(options)
-
-        try:
-            which.which('adb')
-        except which.WhichError:
-            # TODO Find adb automatically if it isn't on the path
-            print(ADB_NOT_FOUND.format(options.b2gPath))
-            return 1
-
-        return mochitest.run_remote_mochitests(options)
+        return mochitest.run_test_harness(options)
 
     def run_desktop_test(self, context, tests=None, suite=None, **kwargs):
         """Runs a mochitest.
@@ -333,19 +283,19 @@ class MochitestRunner(MozbuildObject):
             if not options.app or options.app == self.get_binary_path():
                 options.app = self.get_webapp_runtime_path()
             options.xrePath = self.get_webapp_runtime_xre_path()
-            # On Mac, pass the path to the runtime, to ensure the test app
-            # uses that specific runtime instead of another one on the system.
-            if sys.platform.startswith('darwin'):
-                options.browserArgs.extend(('-runtime', os.path.join(self.distdir, self.substs['MOZ_MACBUNDLE_NAME'])))
 
         from manifestparser import TestManifest
-        manifest = TestManifest()
-        manifest.tests.extend(tests)
-        options.manifestFile = manifest
+        if tests:
+            manifest = TestManifest()
+            manifest.tests.extend(tests)
+            options.manifestFile = manifest
 
-        # XXX why is this such a special case?
-        if len(tests) == 1 and options.closeWhenDone and suite == 'plain':
-            options.closeWhenDone = False
+            # When developing mochitest-plain tests, it's often useful to be able to
+            # refresh the page to pick up modifications. Therefore leave the browser
+            # open if only running a single mochitest-plain test. This behaviour can
+            # be overridden by passing in --keep-open=false.
+            if len(tests) == 1 and options.keep_open is None and suite == 'plain':
+                options.keep_open = True
 
         # We need this to enable colorization of output.
         self.log_manager.enable_unstructured()
@@ -368,12 +318,34 @@ class MochitestRunner(MozbuildObject):
         options = Namespace(**kwargs)
 
         from manifestparser import TestManifest
-        manifest = TestManifest()
-        manifest.tests.extend(tests)
-        options.manifestFile = manifest
+        if tests:
+            manifest = TestManifest()
+            manifest.tests.extend(tests)
+            options.manifestFile = manifest
 
         return runtestsremote.run_test_harness(options)
 
+    def run_robocop_test(self, context, tests, suite=None, **kwargs):
+        host_ret = verify_host_bin()
+        if host_ret != 0:
+            return host_ret
+
+        import imp
+        path = os.path.join(self.mochitest_dir, 'runrobocop.py')
+        with open(path, 'r') as fh:
+            imp.load_module('runrobocop', fh, path,
+                            ('.py', 'r', imp.PY_SOURCE))
+        import runrobocop
+
+        options = Namespace(**kwargs)
+
+        from manifestparser import TestManifest
+        if tests:
+            manifest = TestManifest()
+            manifest.tests.extend(tests)
+            options.manifestFile = manifest
+
+        return runrobocop.run_test_harness(options)
 
 # parser
 
@@ -396,6 +368,14 @@ def setup_argument_parser():
                             ('.py', 'r', imp.PY_SOURCE))
 
         from mochitest_options import MochitestArgumentParser
+
+    if conditions.is_android(build_obj):
+        # On Android, check for a connected device (and offer to start an
+        # emulator if appropriate) before running tests. This check must
+        # be done in this admittedly awkward place because
+        # MochitestArgumentParser initialization fails if no device is found.
+        from mozrunner.devices.android_device import verify_android_device
+        verify_android_device(build_obj, install=True, xre=True)
 
     return MochitestArgumentParser()
 
@@ -440,7 +420,7 @@ class MachCommands(MachCommandBase):
                      metavar='{{{}}}'.format(', '.join(CANONICAL_FLAVORS)),
                      choices=SUPPORTED_FLAVORS,
                      help='Only run tests of this flavor.')
-    def run_mochitest_general(self, flavor=None, test_objects=None, **kwargs):
+    def run_mochitest_general(self, flavor=None, test_objects=None, resolve_tests=True, **kwargs):
         buildapp = None
         for app in SUPPORTED_APPS:
             if is_buildapp_in(app)(self):
@@ -482,7 +462,9 @@ class MachCommands(MachCommandBase):
                 test_paths = new_paths
 
         mochitest = self._spawn(MochitestRunner)
-        tests = mochitest.resolve_tests(test_paths, test_objects, cwd=self._mach_context.cwd)
+        tests = []
+        if resolve_tests:
+            tests = mochitest.resolve_tests(test_paths, test_objects, cwd=self._mach_context.cwd)
 
         subsuite = kwargs.get('subsuite')
         if subsuite == 'default':
@@ -511,6 +493,14 @@ class MachCommands(MachCommandBase):
 
             suites[key].append(test)
 
+        # This is a hack to introduce an option in mach to not send
+        # filtered tests to the mochitest harness. Mochitest harness will read
+        # the master manifest in that case.
+        if not resolve_tests:
+            for flavor in flavors:
+                key = (flavor, kwargs.get('subsuite'))
+                suites[key] = []
+
         if not suites:
             # Make it very clear why no tests were found
             if not unsupported:
@@ -535,7 +525,7 @@ class MachCommands(MachCommandBase):
                 buildapp, '\n'.join(sorted(msg))))
             return 1
 
-        if buildapp in ('b2g', 'b2g_desktop'):
+        if buildapp in ('b2g',):
             run_mochitest = mochitest.run_b2g_test
         elif buildapp == 'android':
             run_mochitest = mochitest.run_android_test
@@ -586,8 +576,9 @@ class RobocopCommands(MachCommandBase):
                                                 'mochitest', 'robocop.ini')
 
         if not kwargs.get('robocopApk'):
-            kwargs['robocopApk'] = os.path.join(self.topobjdir, 'build', 'mobile',
-                                                'robocop', 'robocop-debug.apk')
+            kwargs['robocopApk'] = os.path.join(self.topobjdir, 'mobile', 'android',
+                                                'tests', 'browser', 'robocop',
+                                                'robocop-debug.apk')
 
         from mozbuild.controller.building import BuildDriver
         self._ensure_state_subdir_exists('.')
@@ -604,9 +595,12 @@ class RobocopCommands(MachCommandBase):
             flavor='instrumentation', subsuite='robocop'))
 
         mochitest = self._spawn(MochitestRunner)
-        return mochitest.run_android_test(self._mach_context, tests, 'robocop', **kwargs)
+        return mochitest.run_robocop_test(self._mach_context, tests, 'robocop', **kwargs)
 
 
+# NOTE python/mach/mach/commands/commandinfo.py references this function
+#      by name. If this function is renamed or removed, that file should
+#      be updated accordingly as well.
 def REMOVED(cls):
     """Command no longer exists! Use |mach mochitest| instead.
 

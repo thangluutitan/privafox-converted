@@ -6,8 +6,10 @@
 #include "LookupCache.h"
 #include "HashStore.h"
 #include "nsISeekableStream.h"
+#include "nsISafeOutputStream.h"
 #include "mozilla/Telemetry.h"
 #include "mozilla/Logging.h"
+#include "nsNetUtil.h"
 #include "prprf.h"
 
 // We act as the main entry point for all the real lookups,
@@ -371,51 +373,6 @@ LookupCache::IsCanonicalizedIP(const nsACString& aHost)
 }
 
 /* static */ nsresult
-LookupCache::GetKey(const nsACString& aSpec,
-                    Completion* aHash,
-                    nsCOMPtr<nsICryptoHash>& aCryptoHash)
-{
-  nsACString::const_iterator begin, end, iter;
-  aSpec.BeginReading(begin);
-  aSpec.EndReading(end);
-
-  iter = begin;
-  if (!FindCharInReadable('/', iter, end)) {
-   return NS_OK;
-  }
-
-  const nsCSubstring& host = Substring(begin, iter);
-
-  if (IsCanonicalizedIP(host)) {
-    nsAutoCString key;
-    key.Assign(host);
-    key.Append('/');
-    return aHash->FromPlaintext(key, aCryptoHash);
-  }
-
-  nsTArray<nsCString> hostComponents;
-  ParseString(PromiseFlatCString(host), '.', hostComponents);
-
-  if (hostComponents.Length() < 2)
-    return NS_ERROR_FAILURE;
-
-  int32_t last = int32_t(hostComponents.Length()) - 1;
-  nsAutoCString lookupHost;
-
-  if (hostComponents.Length() > 2) {
-    lookupHost.Append(hostComponents[last - 2]);
-    lookupHost.Append('.');
-  }
-
-  lookupHost.Append(hostComponents[last - 1]);
-  lookupHost.Append('.');
-  lookupHost.Append(hostComponents[last]);
-  lookupHost.Append('/');
-
-  return aHash->FromPlaintext(lookupHost, aCryptoHash);
-}
-
-/* static */ nsresult
 LookupCache::GetLookupFragments(const nsACString& aSpec,
                                 nsTArray<nsCString>* aFragments)
 
@@ -690,5 +647,5 @@ LookupCache::GetPrefixes(FallibleTArray<uint32_t>& aAddPrefixes)
 }
 
 
-}
-}
+} // namespace safebrowsing
+} // namespace mozilla

@@ -8,7 +8,7 @@
 
 #include "mozilla/UniquePtr.h"
 #include "nsRect.h"
-#include "nsRefPtr.h"
+#include "mozilla/RefPtr.h"
 #include "nsSize.h"
 #include "nsString.h"
 #include "nsTArray.h"
@@ -37,7 +37,7 @@ public:
             const nsAString& aLabel,
             const nsAString& aLanguage,
             bool aEnabled,
-            TrackID aTrackId = TRACK_INVALID)
+            TrackID aTrackId)
     : mId(aId)
     , mKind(aKind)
     , mLabel(aLabel)
@@ -46,27 +46,24 @@ public:
     , mTrackId(aTrackId)
     , mDuration(0)
     , mMediaTime(0)
+    , mIsRenderedExternally(false)
     , mType(aType)
   {
     MOZ_COUNT_CTOR(TrackInfo);
   }
 
   // Only used for backward compatibility. Do not use in new code.
-  void Init(TrackType aType,
-            const nsAString& aId,
+  void Init(const nsAString& aId,
             const nsAString& aKind,
             const nsAString& aLabel,
             const nsAString& aLanguage,
-            bool aEnabled,
-            TrackID aTrackId = TRACK_INVALID)
+            bool aEnabled)
   {
     mId = aId;
     mKind = aKind;
     mLabel = aLabel;
     mLanguage = aLanguage;
     mEnabled = aEnabled;
-    mTrackId = aTrackId;
-    mType = aType;
   }
 
   // Fields common with MediaTrack object.
@@ -78,10 +75,14 @@ public:
 
   TrackID mTrackId;
 
-  nsAutoCString mMimeType;
+  nsCString mMimeType;
   int64_t mDuration;
   int64_t mMediaTime;
   CryptoTrack mCrypto;
+
+  // True if the track is gonna be (decrypted)/decoded and
+  // rendered directly by non-gecko components.
+  bool mIsRenderedExternally;
 
   virtual AudioInfo* GetAsAudioInfo()
   {
@@ -147,6 +148,7 @@ protected:
     mDuration = aOther.mDuration;
     mMediaTime = aOther.mMediaTime;
     mCrypto = aOther.mCrypto;
+    mIsRenderedExternally = aOther.mIsRenderedExternally;
     mType = aOther.mType;
     MOZ_COUNT_CTOR(TrackInfo);
   }
@@ -168,7 +170,7 @@ public:
                 EmptyString(), EmptyString(), true, 2)
     , mDisplay(nsIntSize(aWidth, aHeight))
     , mStereoMode(StereoMode::MONO)
-    , mImage(nsIntSize(aWidth, aHeight))
+    , mImage(nsIntRect(0, 0, aWidth, aHeight))
     , mCodecSpecificConfig(new MediaByteBuffer)
     , mExtraData(new MediaByteBuffer)
   {
@@ -211,10 +213,10 @@ public:
   // Indicates the frame layout for single track stereo videos.
   StereoMode mStereoMode;
 
-  // Size in pixels of decoded video's image.
-  nsIntSize mImage;
-  nsRefPtr<MediaByteBuffer> mCodecSpecificConfig;
-  nsRefPtr<MediaByteBuffer> mExtraData;
+  // Visible area of the decoded video's image.
+  nsIntRect mImage;
+  RefPtr<MediaByteBuffer> mCodecSpecificConfig;
+  RefPtr<MediaByteBuffer> mExtraData;
 };
 
 class AudioInfo : public TrackInfo {
@@ -279,8 +281,8 @@ public:
   // Extended codec profile.
   int8_t mExtendedProfile;
 
-  nsRefPtr<MediaByteBuffer> mCodecSpecificConfig;
-  nsRefPtr<MediaByteBuffer> mExtraData;
+  RefPtr<MediaByteBuffer> mCodecSpecificConfig;
+  RefPtr<MediaByteBuffer> mExtraData;
 
 };
 
@@ -339,9 +341,30 @@ public:
     return mVideo.IsValid();
   }
 
+  void EnableVideo()
+  {
+    if (HasVideo()) {
+      return;
+    }
+    // Set dummy values so that HasVideo() will return true;
+    // See VideoInfo::IsValid()
+    mVideo.mDisplay = nsIntSize(1, 1);
+  }
+
   bool HasAudio() const
   {
     return mAudio.IsValid();
+  }
+
+  void EnableAudio()
+  {
+    if (HasAudio()) {
+      return;
+    }
+    // Set dummy values so that HasAudio() will return true;
+    // See AudioInfo::IsValid()
+    mAudio.mChannels = 2;
+    mAudio.mRate = 44100;
   }
 
   bool IsEncrypted() const
@@ -352,6 +375,17 @@ public:
   bool HasValidMedia() const
   {
     return HasVideo() || HasAudio();
+  }
+
+  void AssertValid() const
+  {
+    NS_ASSERTION(!HasAudio() || mAudio.mTrackId != TRACK_INVALID,
+                 "Audio track ID must be valid");
+    NS_ASSERTION(!HasVideo() || mVideo.mTrackId != TRACK_INVALID,
+                 "Audio track ID must be valid");
+    NS_ASSERTION(!HasAudio() || !HasVideo() ||
+                 mAudio.mTrackId != mVideo.mTrackId,
+                 "Duplicate track IDs");
   }
 
   // TODO: Store VideoInfo and AudioIndo in arrays to support multi-tracks.
@@ -365,6 +399,9 @@ public:
   // end and determining the timestamp of the last frame. This isn't useful as
   // a duration until we know the start time, so we need to track it separately.
   media::NullableTimeUnit mUnadjustedMetadataEndTime;
+
+  // True if the media is seekable (i.e. supports random access).
+  bool mMediaSeekable = true;
 
   EncryptionInfo mCrypto;
 };
@@ -417,7 +454,7 @@ private:
   uint32_t mStreamSourceID;
 
 public:
-  const nsAutoCString& mMimeType;
+  const nsCString& mMimeType;
 };
 
 } // namespace mozilla

@@ -28,6 +28,9 @@
 #include "imgITools.h"
 #include "nsStringStream.h"
 #include "nsNetUtil.h"
+#include "nsIOutputStream.h"
+#include "nsNetCID.h"
+#include "prtime.h"
 #ifdef MOZ_PLACES
 #include "mozIAsyncFavicons.h"
 #endif
@@ -39,12 +42,11 @@
 #include "imgIEncoder.h"
 #include "nsIThread.h"
 #include "MainThreadUtils.h"
-#include "gfxColor.h"
 #include "nsLookAndFeel.h"
 
 #ifdef NS_ENABLE_TSF
 #include <textstor.h>
-#include "nsTextStore.h"
+#include "TSFTextStore.h"
 #endif // #ifdef NS_ENABLE_TSF
 
 PRLogModuleInfo* gWindowsLog = nullptr;
@@ -569,7 +571,7 @@ WinUtils::PeekMessage(LPMSG aMsg, HWND aWnd, UINT aFirstMessage,
                       UINT aLastMessage, UINT aOption)
 {
 #ifdef NS_ENABLE_TSF
-  ITfMessagePump* msgPump = nsTextStore::GetMessagePump();
+  ITfMessagePump* msgPump = TSFTextStore::GetMessagePump();
   if (msgPump) {
     BOOL ret = FALSE;
     HRESULT hr = msgPump->PeekMessageW(aMsg, aWnd, aFirstMessage, aLastMessage,
@@ -587,7 +589,7 @@ WinUtils::GetMessage(LPMSG aMsg, HWND aWnd, UINT aFirstMessage,
                      UINT aLastMessage)
 {
 #ifdef NS_ENABLE_TSF
-  ITfMessagePump* msgPump = nsTextStore::GetMessagePump();
+  ITfMessagePump* msgPump = TSFTextStore::GetMessagePump();
   if (msgPump) {
     BOOL ret = FALSE;
     HRESULT hr = msgPump->GetMessageW(aMsg, aWnd, aFirstMessage, aLastMessage,
@@ -667,7 +669,8 @@ WinUtils::GetRegistryKey(HKEY aRoot,
     ::RegQueryValueExW(key, aValueName, nullptr, &type, (BYTE*) aBuffer,
                        &aBufferLength);
   ::RegCloseKey(key);
-  if (result != ERROR_SUCCESS || type != REG_SZ) {
+  if (result != ERROR_SUCCESS ||
+      (type != REG_SZ && type != REG_EXPAND_SZ)) {
     return false;
   }
   if (aBuffer) {
@@ -938,13 +941,12 @@ WinUtils::GetMouseInputSource()
 
 /* static */
 bool
-WinUtils::GetIsMouseFromTouch(uint32_t aEventType)
+WinUtils::GetIsMouseFromTouch(EventMessage aEventMessage)
 {
   const uint32_t MOZ_T_I_SIGNATURE = TABLET_INK_TOUCH | TABLET_INK_SIGNATURE;
   const uint32_t MOZ_T_I_CHECK_TCH = TABLET_INK_TOUCH | TABLET_INK_CHECK;
-  return ((aEventType == NS_MOUSE_MOVE ||
-           aEventType == NS_MOUSE_BUTTON_DOWN ||
-           aEventType == NS_MOUSE_BUTTON_UP) &&
+  return ((aEventMessage == eMouseMove || aEventMessage == eMouseDown ||
+           aEventMessage == eMouseUp) &&
          (GetMessageExtraInfo() & MOZ_T_I_SIGNATURE) == MOZ_T_I_CHECK_TCH);
 }
 
@@ -1019,7 +1021,8 @@ WINAPI EnumFirstChild(HWND hwnd, LPARAM lParam)
 
 /* static */
 void
-WinUtils::InvalidatePluginAsWorkaround(nsIWidget *aWidget, const nsIntRect &aRect)
+WinUtils::InvalidatePluginAsWorkaround(nsIWidget* aWidget,
+                                       const LayoutDeviceIntRect& aRect)
 {
   aWidget->Invalidate(aRect);
 
@@ -1104,8 +1107,8 @@ nsresult AsyncFaviconDataReady::OnFaviconDataNotAvailable(void)
   rv = NS_NewChannel(getter_AddRefs(channel),
                      mozIconURI,
                      nsContentUtils::GetSystemPrincipal(),
-                     nsILoadInfo::SEC_NORMAL,
-                     nsIContentPolicy::TYPE_IMAGE);
+                     nsILoadInfo::SEC_ALLOW_CROSS_ORIGIN_DATA_IS_NULL,
+                     nsIContentPolicy::TYPE_INTERNAL_IMAGE);
 
   NS_ENSURE_SUCCESS(rv, rv);
 
@@ -1114,8 +1117,7 @@ nsresult AsyncFaviconDataReady::OnFaviconDataNotAvailable(void)
   rv = NS_NewDownloader(getter_AddRefs(listener), downloadObserver, icoFile);
   NS_ENSURE_SUCCESS(rv, rv);
 
-  channel->AsyncOpen(listener, nullptr);
-  return NS_OK;
+  return channel->AsyncOpen2(listener);
 }
 
 NS_IMETHODIMP
@@ -1211,16 +1213,14 @@ AsyncFaviconDataReady::OnComplete(nsIURI *aFaviconURI,
 
   // Allocate a new buffer that we own and can use out of line in
   // another thread.
-  uint8_t *data = SurfaceToPackedBGRA(dataSurface);
+  UniquePtr<uint8_t[]> data = SurfaceToPackedBGRA(dataSurface);
   if (!data) {
     return NS_ERROR_OUT_OF_MEMORY;
   }
   int32_t stride = 4 * size.width;
-  int32_t dataLength = stride * size.height;
 
   // AsyncEncodeAndWriteIcon takes ownership of the heap allocated buffer
-  nsCOMPtr<nsIRunnable> event = new AsyncEncodeAndWriteIcon(path, data,
-                                                            dataLength,
+  nsCOMPtr<nsIRunnable> event = new AsyncEncodeAndWriteIcon(path, Move(data),
                                                             stride,
                                                             size.width,
                                                             size.height,
@@ -1233,16 +1233,14 @@ AsyncFaviconDataReady::OnComplete(nsIURI *aFaviconURI,
 
 // Warning: AsyncEncodeAndWriteIcon assumes ownership of the aData buffer passed in
 AsyncEncodeAndWriteIcon::AsyncEncodeAndWriteIcon(const nsAString &aIconPath,
-                                                 uint8_t *aBuffer,
-                                                 uint32_t aBufferLength,
+                                                 UniquePtr<uint8_t[]> aBuffer,
                                                  uint32_t aStride,
                                                  uint32_t aWidth,
                                                  uint32_t aHeight,
                                                  const bool aURLShortcut) :
   mURLShortcut(aURLShortcut),
   mIconPath(aIconPath),
-  mBuffer(aBuffer),
-  mBufferLength(aBufferLength),
+  mBuffer(Move(aBuffer)),
   mStride(aStride),
   mWidth(aWidth),
   mHeight(aHeight)
@@ -1256,7 +1254,7 @@ NS_IMETHODIMP AsyncEncodeAndWriteIcon::Run()
   // Note that since we're off the main thread we can't use
   // gfxPlatform::GetPlatform()->ScreenReferenceDrawTarget()
   RefPtr<DataSourceSurface> surface =
-    Factory::CreateWrappingDataSourceSurface(mBuffer, mStride,
+    Factory::CreateWrappingDataSourceSurface(mBuffer.get(), mStride,
                                              IntSize(mWidth, mHeight),
                                              SurfaceFormat::B8G8R8A8);
 

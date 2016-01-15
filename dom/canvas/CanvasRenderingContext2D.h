@@ -13,7 +13,6 @@
 #include "nsColor.h"
 #include "mozilla/dom/HTMLCanvasElement.h"
 #include "mozilla/dom/HTMLVideoElement.h"
-#include "CanvasUtils.h"
 #include "gfxTextRun.h"
 #include "mozilla/ErrorResult.h"
 #include "mozilla/dom/CanvasGradient.h"
@@ -21,6 +20,7 @@
 #include "mozilla/dom/CanvasPattern.h"
 #include "mozilla/gfx/Rect.h"
 #include "mozilla/gfx/2D.h"
+#include "mozilla/UniquePtr.h"
 #include "gfx2DGlue.h"
 #include "imgIEncoder.h"
 #include "nsLayoutUtils.h"
@@ -35,10 +35,11 @@ class nsXULElement;
 namespace mozilla {
 namespace gl {
 class SourceSurface;
-}
+} // namespace gl
 
 namespace dom {
-class HTMLImageElementOrHTMLCanvasElementOrHTMLVideoElement;
+class HTMLImageElementOrHTMLCanvasElementOrHTMLVideoElementOrImageBitmap;
+typedef HTMLImageElementOrHTMLCanvasElementOrHTMLVideoElementOrImageBitmap CanvasImageSource;
 class ImageData;
 class StringOrCanvasGradientOrCanvasPattern;
 class OwningStringOrCanvasGradientOrCanvasPattern;
@@ -61,9 +62,6 @@ class CanvasRenderingContext2D final :
   public nsICanvasRenderingContextInternal,
   public nsWrapperCache
 {
-typedef HTMLImageElementOrHTMLCanvasElementOrHTMLVideoElement
-  HTMLImageOrCanvasOrVideoElement;
-
   virtual ~CanvasRenderingContext2D();
 
 public:
@@ -73,6 +71,10 @@ public:
 
   HTMLCanvasElement* GetCanvas() const
   {
+    if (mCanvasElement->IsInNativeAnonymousSubtree()) {
+      return nullptr;
+    }
+
     // corresponds to changes to the old bindings made in bug 745025
     return mCanvasElement->GetOriginalCanvas();
   }
@@ -133,7 +135,7 @@ public:
     CreateRadialGradient(double x0, double y0, double r0, double x1, double y1,
                          double r1, ErrorResult& aError);
   already_AddRefed<CanvasPattern>
-    CreatePattern(const HTMLImageOrCanvasOrVideoElement& element,
+    CreatePattern(const CanvasImageSource& element,
                   const nsAString& repeat, ErrorResult& error);
 
   double ShadowOffsetX()
@@ -209,20 +211,20 @@ public:
   void RemoveHitRegion(const nsAString& id);
   void ClearHitRegions();
 
-  void DrawImage(const HTMLImageOrCanvasOrVideoElement& image,
+  void DrawImage(const CanvasImageSource& image,
                  double dx, double dy, mozilla::ErrorResult& error)
   {
     DrawImage(image, 0.0, 0.0, 0.0, 0.0, dx, dy, 0.0, 0.0, 0, error);
   }
 
-  void DrawImage(const HTMLImageOrCanvasOrVideoElement& image,
+  void DrawImage(const CanvasImageSource& image,
                  double dx, double dy, double dw, double dh,
                  mozilla::ErrorResult& error)
   {
     DrawImage(image, 0.0, 0.0, 0.0, 0.0, dx, dy, dw, dh, 2, error);
   }
 
-  void DrawImage(const HTMLImageOrCanvasOrVideoElement& image,
+  void DrawImage(const CanvasImageSource& image,
                  double sx, double sy, double sw, double sh, double dx,
                  double dy, double dw, double dh, mozilla::ErrorResult& error)
   {
@@ -421,10 +423,9 @@ public:
 
   nsresult Redraw();
 
-#ifdef DEBUG
-    virtual int32_t GetWidth() const override;
-    virtual int32_t GetHeight() const override;
-#endif
+  virtual int32_t GetWidth() const override;
+  virtual int32_t GetHeight() const override;
+
   // nsICanvasRenderingContextInternal
   /**
     * Gets the pres shell from either the canvas element or the doc shell
@@ -458,16 +459,20 @@ public:
   bool GetIsOpaque() override { return mOpaque; }
   NS_IMETHOD Reset() override;
   mozilla::layers::PersistentBufferProvider* GetBufferProvider(mozilla::layers::LayerManager* aManager);
-  already_AddRefed<CanvasLayer> GetCanvasLayer(nsDisplayListBuilder* aBuilder,
-                                               CanvasLayer *aOldLayer,
-                                               LayerManager *aManager) override;
+  already_AddRefed<Layer> GetCanvasLayer(nsDisplayListBuilder* aBuilder,
+                                         Layer *aOldLayer,
+                                         LayerManager *aManager) override;
   virtual bool ShouldForceInactiveLayer(LayerManager *aManager) override;
   void MarkContextClean() override;
+  void MarkContextCleanForFrameCapture() override;
+  bool IsContextCleanForFrameCapture() override;
   NS_IMETHOD SetIsIPC(bool isIPC) override;
   // this rect is in canvas device space
   void Redraw(const mozilla::gfx::Rect &r);
   NS_IMETHOD Redraw(const gfxRect &r) override { Redraw(ToRect(r)); return NS_OK; }
-  NS_IMETHOD SetContextOptions(JSContext* aCx, JS::Handle<JS::Value> aOptions) override;
+  NS_IMETHOD SetContextOptions(JSContext* aCx,
+                               JS::Handle<JS::Value> aOptions,
+                               ErrorResult& aRvForDictionaryInit) override;
 
   /**
    * An abstract base class to be implemented by callers wanting to be notified
@@ -526,7 +531,7 @@ public:
 
   friend class CanvasRenderingContext2DUserData;
 
-  virtual void GetImageBuffer(uint8_t** aImageBuffer, int32_t* aFormat) override;
+  virtual UniquePtr<uint8_t[]> GetImageBuffer(int32_t* aFormat) override;
 
 
   // Given a point, return hit region ID if it exists
@@ -600,6 +605,10 @@ protected:
                    nsTArray<nsStyleFilter>& aFilterChain,
                    ErrorResult& error);
 
+  // Returns whether the font was successfully updated.
+  bool SetFontInternal(const nsAString& font, mozilla::ErrorResult& error);
+
+
   /**
    * Creates the error target, if it doesn't exist
    */
@@ -634,7 +643,7 @@ protected:
    */
   RenderingMode EnsureTarget(RenderingMode aRenderMode = RenderingMode::DefaultBackendMode);
 
-  /*
+  /**
    * Disposes an old target and prepares to lazily create a new target.
    */
   void ClearTarget();
@@ -667,7 +676,7 @@ protected:
   nsLayoutUtils::SurfaceFromElementResult
     CachedSurfaceFromElement(Element* aElement);
 
-  void DrawImage(const HTMLImageOrCanvasOrVideoElement &imgElt,
+  void DrawImage(const CanvasImageSource &imgElt,
                  double sx, double sy, double sw, double sh,
                  double dx, double dy, double dw, double dh,
                  uint8_t optional_argc, mozilla::ErrorResult& error);
@@ -686,6 +695,9 @@ protected:
     return CurrentState().font;
   }
 
+  // This function maintains a list of raw pointers to cycle-collected
+  // objects. We need to ensure that no entries persist beyond unlink,
+  // since the objects are logically destructed at that point.
   static std::vector<CanvasRenderingContext2D*>& DemotableContexts();
   static void DemoteOldestContextIfNecessary();
 
@@ -712,6 +724,9 @@ protected:
   bool mResetLayer;
   // This is needed for drawing in drawAsyncXULElement
   bool mIPC;
+  // True if the current DrawTarget is using skia-gl, used so we can avoid
+  // requesting the DT from mBufferProvider to check.
+  bool mIsSkiaGL;
 
   nsTArray<CanvasRenderingContext2DUserData*> mUserDatas;
 
@@ -721,9 +736,9 @@ protected:
   // This is created lazily so it is necessary to call EnsureTarget before
   // accessing it. In the event of an error it will be equal to
   // sErrorTarget.
-  mozilla::RefPtr<mozilla::gfx::DrawTarget> mTarget;
+  RefPtr<mozilla::gfx::DrawTarget> mTarget;
 
-  mozilla::RefPtr<mozilla::layers::PersistentBufferProvider> mBufferProvider;
+  RefPtr<mozilla::layers::PersistentBufferProvider> mBufferProvider;
 
   uint32_t SkiaGLTex() const;
 
@@ -745,9 +760,16 @@ protected:
     */
   bool mPredictManyRedrawCalls;
 
+  /**
+   * Flag to avoid unnecessary surface copies to FrameCaptureListeners in the
+   * case when the canvas is not currently being drawn into and not rendered
+   * but canvas capturing is still ongoing.
+   */
+  bool mIsCapturedFrameInvalid;
+
   // This is stored after GetThebesSurface has been called once to avoid
   // excessive ThebesSurface initialization overhead.
-  nsRefPtr<gfxASurface> mThebesSurface;
+  RefPtr<gfxASurface> mThebesSurface;
 
   /**
     * We also have a device space pathbuilder. The reason for this is as
@@ -773,9 +795,9 @@ protected:
     *
     * mPath is always in user-space.
     */
-  mozilla::RefPtr<mozilla::gfx::Path> mPath;
-  mozilla::RefPtr<mozilla::gfx::PathBuilder> mDSPathBuilder;
-  mozilla::RefPtr<mozilla::gfx::PathBuilder> mPathBuilder;
+  RefPtr<mozilla::gfx::Path> mPath;
+  RefPtr<mozilla::gfx::PathBuilder> mDSPathBuilder;
+  RefPtr<mozilla::gfx::PathBuilder> mPathBuilder;
   bool mPathTransformWillUpdate;
   mozilla::gfx::Matrix mPathToDS;
 
@@ -792,7 +814,7 @@ protected:
   {
     nsString          mId;
     // fallback element for a11y
-    nsRefPtr<Element> mElement;
+    RefPtr<Element> mElement;
     // Path of the hit region in the 2d context coordinate space (not user space)
     RefPtr<gfx::Path> mPath;
   };
@@ -867,10 +889,10 @@ protected:
 protected:
   gfxFontGroup *GetCurrentFontStyle();
 
-  /*
-    * Implementation of the fillText, strokeText, and measure functions with
-    * the operation abstracted to a flag.
-    */
+  /**
+   * Implementation of the fillText, strokeText, and measure functions with
+   * the operation abstracted to a flag.
+   */
   nsresult DrawOrMeasureText(const nsAString& text,
                              float x,
                              float y,
@@ -969,14 +991,14 @@ protected:
       return std::min(SIGMA_MAX, shadowBlur / 2.0f);
     }
 
-    std::vector<mozilla::RefPtr<mozilla::gfx::Path> > clipsPushed;
+    nsTArray<RefPtr<mozilla::gfx::Path> > clipsPushed;
 
-    nsRefPtr<gfxFontGroup> fontGroup;
+    RefPtr<gfxFontGroup> fontGroup;
     nsCOMPtr<nsIAtom> fontLanguage;
     nsFont fontFont;
 
-    EnumeratedArray<Style, Style::MAX, nsRefPtr<CanvasGradient>> gradientStyles;
-    EnumeratedArray<Style, Style::MAX, nsRefPtr<CanvasPattern>> patternStyles;
+    EnumeratedArray<Style, Style::MAX, RefPtr<CanvasGradient>> gradientStyles;
+    EnumeratedArray<Style, Style::MAX, RefPtr<CanvasPattern>> patternStyles;
     EnumeratedArray<Style, Style::MAX, nscolor> colorStyles;
 
     nsString font;
@@ -991,7 +1013,7 @@ protected:
     mozilla::gfx::Float miterLimit;
     mozilla::gfx::Float globalAlpha;
     mozilla::gfx::Float shadowBlur;
-    FallibleTArray<mozilla::gfx::Float> dash;
+    nsTArray<mozilla::gfx::Float> dash;
     mozilla::gfx::Float dashOffset;
 
     mozilla::gfx::CompositionOp op;
@@ -1001,9 +1023,9 @@ protected:
 
     nsString filterString;
     nsTArray<nsStyleFilter> filterChain;
-    nsRefPtr<nsSVGFilterChainObserver> filterChainObserver;
+    RefPtr<nsSVGFilterChainObserver> filterChainObserver;
     mozilla::gfx::FilterDescription filter;
-    nsTArray<mozilla::RefPtr<mozilla::gfx::SourceSurface>> filterAdditionalImages;
+    nsTArray<RefPtr<mozilla::gfx::SourceSurface>> filterAdditionalImages;
 
     bool imageSmoothingEnabled;
     bool fontExplicitLanguage;
@@ -1052,7 +1074,7 @@ protected:
   friend class CanvasDrawObserver;
 };
 
-}
-}
+} // namespace dom
+} // namespace mozilla
 
 #endif /* CanvasRenderingContext2D_h */

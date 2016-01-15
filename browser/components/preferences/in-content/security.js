@@ -6,7 +6,7 @@ Components.utils.import("resource://gre/modules/PrivateBrowsingUtils.jsm");
 const PREF_PROTECT_MP = "security.additionalSecurity.protectBookmark";
 const PREF_PROTECT_MP_ALREADYLOGIN = PREF_PROTECT_MP + ".isAlreadyLogin";
 var gSecurityPane = {
-    _pane: null,
+  _pane: null,
     _initObsMP: false,
 
   /**
@@ -35,7 +35,6 @@ var gSecurityPane = {
       gSecurityPane.updateProtectBookmarkMP);
     setEventListener("showPasswords", "command",
       gSecurityPane.showPasswords);
-
   },
 
   // ADD-ONS
@@ -122,7 +121,6 @@ var gSecurityPane = {
       return undefined;
     }
   },
-
 
   /**
    * Displays a dialog in which the user can view and modify the list of sites
@@ -220,20 +218,18 @@ var gSecurityPane = {
       var promptService = Cc["@mozilla.org/embedcomp/prompt-service;1"].
                           getService(Ci.nsIPromptService);
       var bundle = document.getElementById("bundlePreferences");
-     let result = promptService.alert(window,
+      promptService.alert(window,
                           bundle.getString("pw_change_failed_title"),
                           bundle.getString("pw_change2empty_in_fips_mode"));
      let checkboxProtectBookmark = document.getElementById("protectedBookmarkMasterPassword");
      var noMP = !this._masterPasswordSet();
      checkboxProtectBookmark.disabled = noMP;
-
-     this._initMasterPasswordUI();
+      this._initMasterPasswordUI();
     }
     else {
       gSubDialog.open("chrome://mozapps/content/preferences/removemp.xul",
                       null, null, this._initMasterPasswordUI.bind(this));
     }
-
   },
 
   /**
@@ -244,7 +240,9 @@ var gSecurityPane = {
     gSubDialog.open("chrome://mozapps/content/preferences/changemp.xul",
                     "resizable=no", null, this._initMasterPasswordUI.bind(this));
   },
-
+  /**
+  * Privafox 
+  */
   updateProtectBookmarkMP: function () {
       var checkboxProtectBookmark = document.getElementById("protectedBookmarkMasterPassword");
       Services.prefs.setBoolPref(PREF_PROTECT_MP, checkboxProtectBookmark.checked);

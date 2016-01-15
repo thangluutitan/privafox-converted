@@ -43,6 +43,9 @@ SPSProfiler::init()
     if (lock_ == nullptr)
         return false;
 
+    if (!strings.init())
+        return false;
+
     return true;
 }
 
@@ -61,8 +64,8 @@ SPSProfiler::setProfilingStack(ProfileEntry* stack, uint32_t* size, uint32_t max
 {
     AutoSPSLock lock(lock_);
     MOZ_ASSERT_IF(size_ && *size_ != 0, !enabled());
-    if (!strings.initialized())
-        strings.init();
+    MOZ_ASSERT(strings.initialized());
+
     stack_ = stack;
     size_  = size;
     max_   = max;
@@ -188,11 +191,13 @@ SPSProfiler::markEvent(const char* event)
 }
 
 bool
-SPSProfiler::enter(JSScript* script, JSFunction* maybeFun)
+SPSProfiler::enter(JSContext* cx, JSScript* script, JSFunction* maybeFun)
 {
     const char* str = profileString(script, maybeFun);
-    if (str == nullptr)
+    if (str == nullptr) {
+        ReportOutOfMemory(cx);
         return false;
+    }
 
 #ifdef DEBUG
     // In debug builds, assert the JS pseudo frames already on the stack
@@ -253,14 +258,15 @@ SPSProfiler::beginPseudoJS(const char* string, void* sp)
     MOZ_ASSERT(installed());
     if (current < max_) {
         stack[current].setLabel(string);
-        stack[current].setCppFrame(sp, 0);
+        stack[current].initCppFrame(sp, 0);
         stack[current].setFlag(ProfileEntry::BEGIN_PSEUDO_JS);
     }
     *size = current + 1;
 }
 
 void
-SPSProfiler::push(const char* string, void* sp, JSScript* script, jsbytecode* pc, bool copy)
+SPSProfiler::push(const char* string, void* sp, JSScript* script, jsbytecode* pc, bool copy,
+                  ProfileEntry::Category category)
 {
     MOZ_ASSERT_IF(sp != nullptr, script == nullptr && pc == nullptr);
     MOZ_ASSERT_IF(sp == nullptr, script != nullptr && pc != nullptr);
@@ -273,16 +279,18 @@ SPSProfiler::push(const char* string, void* sp, JSScript* script, jsbytecode* pc
     MOZ_ASSERT(installed());
     if (current < max_) {
         volatile ProfileEntry& entry = stack[current];
-        entry.setLabel(string);
 
         if (sp != nullptr) {
-            entry.setCppFrame(sp, 0);
+            entry.initCppFrame(sp, 0);
             MOZ_ASSERT(entry.flags() == js::ProfileEntry::IS_CPP_ENTRY);
         }
         else {
-            entry.setJsFrame(script, pc);
+            entry.initJsFrame(script, pc);
             MOZ_ASSERT(entry.flags() == 0);
         }
+
+        entry.setLabel(string);
+        entry.setCategory(category);
 
         // Track if mLabel needs a copy.
         if (copy)
@@ -311,7 +319,7 @@ const char*
 SPSProfiler::allocProfileString(JSScript* script, JSFunction* maybeFun)
 {
     // Note: this profiler string is regexp-matched by
-    // browser/devtools/profiler/cleopatra/js/parserWorker.js.
+    // devtools/client/profiler/cleopatra/js/parserWorker.js.
 
     // Get the function name, if any.
     JSAtom* atom = maybeFun ? maybeFun->displayAtom() : nullptr;
@@ -348,9 +356,9 @@ SPSProfiler::allocProfileString(JSScript* script, JSFunction* maybeFun)
             : JS::CharsToNewUTF8CharsZ(nullptr, atom->twoByteRange(nogc)).c_str());
         if (!atomStr)
             return nullptr;
-        ret = JS_snprintf(cstr, len + 1, "%s (%s:%llu)", atomStr.get(), filename, lineno);
+        ret = JS_snprintf(cstr, len + 1, "%s (%s:%" PRIu64 ")", atomStr.get(), filename, lineno);
     } else {
-        ret = JS_snprintf(cstr, len + 1, "%s:%llu", filename, lineno);
+        ret = JS_snprintf(cstr, len + 1, "%s:%" PRIu64, filename, lineno);
     }
 
     MOZ_ASSERT(ret == len, "Computed length should match actual length!");
@@ -382,6 +390,30 @@ SPSEntryMarker::~SPSEntryMarker()
     profiler->pop();
     profiler->endPseudoJS();
     MOZ_ASSERT(size_before == *profiler->size_);
+}
+
+AutoSPSEntry::AutoSPSEntry(JSRuntime* rt, const char* label, ProfileEntry::Category category
+                           MOZ_GUARD_OBJECT_NOTIFIER_PARAM_IN_IMPL)
+    : profiler_(&rt->spsProfiler)
+{
+    MOZ_GUARD_OBJECT_NOTIFIER_INIT;
+    if (!profiler_->installed()) {
+        profiler_ = nullptr;
+        return;
+    }
+    sizeBefore_ = *profiler_->size_;
+    profiler_->beginPseudoJS(label, this);
+    profiler_->push(label, this, nullptr, nullptr, /* copy = */ false, category);
+}
+
+AutoSPSEntry::~AutoSPSEntry()
+{
+    if (!profiler_)
+        return;
+
+    profiler_->pop();
+    profiler_->endPseudoJS();
+    MOZ_ASSERT(sizeBefore_ == *profiler_->size_);
 }
 
 SPSBaselineOSRMarker::SPSBaselineOSRMarker(JSRuntime* rt, bool hasSPSFrame

@@ -14,6 +14,8 @@
 #include "nsString.h"
 
 #include "nsNetUtil.h"
+#include "nsNetCID.h"
+#include "nsIProtocolHandler.h"
 
 #include "nsIDNSListener.h"
 #include "nsIWebProgressListener.h"
@@ -180,8 +182,7 @@ nsHTMLDNSPrefetch::CancelPrefetch(Link *aElement,
     return NS_ERROR_NOT_AVAILABLE;
 
   nsAutoString hostname;
-  ErrorResult rv;
-  aElement->GetHostname(hostname, rv);
+  aElement->GetHostname(hostname);
   return CancelPrefetch(hostname, flags, aReason);
 }
 

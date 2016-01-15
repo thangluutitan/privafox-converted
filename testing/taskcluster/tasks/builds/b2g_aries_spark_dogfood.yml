@@ -8,13 +8,16 @@ task:
     name: '[TC] B2G Aries Dogfood'
   scopes:
     - 'docker-worker:cache:build-aries-spark-dogfood'
+    - 'docker-worker:cache:build-aries-spark-dogfood-objdir-gecko-{{project}}'
   payload:
     cache:
       build-aries-spark-dogfood: /home/worker/workspace
+      build-aries-spark-dogfood-objdir-gecko-{{project}}: /home/worker/objdir-gecko
     env:
       VARIANT: userdebug
       DOGFOOD: 1
       MOZHARNESS_CONFIG: b2g/taskcluster-spark-dogfood.py
+      B2G_UPDATE_CHANNEL: '{{b2g_update_channel}}'
   extra:
     treeherderEnv:
       - production

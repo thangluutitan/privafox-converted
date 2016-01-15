@@ -12,7 +12,6 @@
 #include "mozilla/Attributes.h"
 #include "AudioContext.h"
 #include "AudioNodeEngine.h"
-#include "nsAutoPtr.h"
 
 namespace mozilla {
 
@@ -53,12 +52,12 @@ public:
 private:
   ~PeriodicWave() {}
 
-  nsRefPtr<AudioContext> mContext;
-  nsRefPtr<ThreadSharedFloatArrayBufferList> mCoefficients;
+  RefPtr<AudioContext> mContext;
+  RefPtr<ThreadSharedFloatArrayBufferList> mCoefficients;
   uint32_t mLength;
 };
 
-}
-}
+} // namespace dom
+} // namespace mozilla
 
 #endif

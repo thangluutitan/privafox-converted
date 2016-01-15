@@ -1,5 +1,5 @@
 ===================
-Privafox for Android
+Firefox for Android
 ===================
 
 .. toctree::
@@ -9,3 +9,4 @@ Privafox for Android
    uitelemetry
    adjust
    gradle
+   defaultdomains

@@ -16,10 +16,11 @@ class nsIPrincipal;
 
 namespace IPC {
 
-template<>
-struct ParamTraits<mozilla::OriginAttributes>
+namespace detail {
+template<class ParamType>
+struct OriginAttributesParamTraits
 {
-  typedef mozilla::OriginAttributes paramType;
+  typedef ParamType paramType;
 
   static void Write(Message* aMsg, const paramType& aParam)
   {
@@ -35,13 +36,32 @@ struct ParamTraits<mozilla::OriginAttributes>
            aResult->PopulateFromSuffix(suffix);
   }
 };
+} // namespace detail
 
-} // IPC namespace
+template<>
+struct ParamTraits<mozilla::PrincipalOriginAttributes>
+  : public detail::OriginAttributesParamTraits<mozilla::PrincipalOriginAttributes> {};
+
+template<>
+struct ParamTraits<mozilla::DocShellOriginAttributes>
+  : public detail::OriginAttributesParamTraits<mozilla::DocShellOriginAttributes> {};
+
+template<>
+struct ParamTraits<mozilla::NeckoOriginAttributes>
+  : public detail::OriginAttributesParamTraits<mozilla::NeckoOriginAttributes> {};
+
+template<>
+struct ParamTraits<mozilla::GenericOriginAttributes>
+  : public detail::OriginAttributesParamTraits<mozilla::GenericOriginAttributes> {};
+
+} // namespace IPC
 
 namespace mozilla {
 namespace net {
-class LoadInfoArgs;
-}
+class OptionalLoadInfoArgs;
+} // namespace net
+
+using namespace mozilla::net;
 
 namespace ipc {
 
@@ -70,16 +90,14 @@ PrincipalToPrincipalInfo(nsIPrincipal* aPrincipal,
  */
 nsresult
 LoadInfoToLoadInfoArgs(nsILoadInfo *aLoadInfo,
-                       mozilla::net::LoadInfoArgs* outLoadInfoArgs);
+                       OptionalLoadInfoArgs* outOptionalLoadInfoArgs);
 
 /**
  * Convert LoadInfoArgs to a LoadInfo.
  */
 nsresult
-LoadInfoArgsToLoadInfo(const mozilla::net::LoadInfoArgs& aLoadInfoArgs,
+LoadInfoArgsToLoadInfo(const OptionalLoadInfoArgs& aOptionalLoadInfoArgs,
                        nsILoadInfo** outLoadInfo);
-
-
 
 } // namespace ipc
 } // namespace mozilla

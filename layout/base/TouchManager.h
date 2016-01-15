@@ -15,6 +15,8 @@
 class PresShell;
 class nsIDocument;
 
+namespace mozilla {
+
 class TouchManager {
 public:
   // Initialize and release static variables
@@ -30,14 +32,15 @@ public:
                       bool& aIsHandlingUserInput,
                       nsCOMPtr<nsIContent>& aCurrentEventContent);
 
-  static bool gPreventMouseEvents;
   static nsRefPtrHashtable<nsUint32HashKey, mozilla::dom::Touch>* gCaptureTouchList;
 
 private:
   void EvictTouches();
 
-  nsRefPtr<PresShell>   mPresShell;
+  RefPtr<PresShell>   mPresShell;
   nsCOMPtr<nsIDocument> mDocument;
 };
+
+} // namespace mozilla
 
 #endif /* !defined(TouchManager_h_) */

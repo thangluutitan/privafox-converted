@@ -189,21 +189,14 @@ function String_repeat(count) {
     return T;
 }
 
-#define STRING_ITERATOR_SLOT_ITERATED_STRING 0
-#define STRING_ITERATOR_SLOT_NEXT_INDEX 1
-
 // ES6 draft specification, section 21.1.3.27, version 2013-09-27.
 function String_iterator() {
     RequireObjectCoercible(this);
     var S = ToString(this);
     var iterator = NewStringIterator();
-    UnsafeSetReservedSlot(iterator, STRING_ITERATOR_SLOT_ITERATED_STRING, S);
-    UnsafeSetReservedSlot(iterator, STRING_ITERATOR_SLOT_NEXT_INDEX, 0);
+    UnsafeSetReservedSlot(iterator, ITERATOR_SLOT_TARGET, S);
+    UnsafeSetReservedSlot(iterator, ITERATOR_SLOT_NEXT_INDEX, 0);
     return iterator;
-}
-
-function StringIteratorIdentity() {
-    return this;
 }
 
 function StringIteratorNext() {
@@ -212,11 +205,11 @@ function StringIteratorNext() {
                             "StringIteratorNext");
     }
 
-    var S = UnsafeGetStringFromReservedSlot(this, STRING_ITERATOR_SLOT_ITERATED_STRING);
+    var S = UnsafeGetStringFromReservedSlot(this, ITERATOR_SLOT_TARGET);
     // We know that JSString::MAX_LENGTH <= INT32_MAX (and assert this in
     // SelfHostring.cpp) so our current index can never be anything other than
     // an Int32Value.
-    var index = UnsafeGetInt32FromReservedSlot(this, STRING_ITERATOR_SLOT_NEXT_INDEX);
+    var index = UnsafeGetInt32FromReservedSlot(this, ITERATOR_SLOT_NEXT_INDEX);
     var size = S.length;
     var result = { value: undefined, done: false };
 
@@ -234,7 +227,7 @@ function StringIteratorNext() {
         }
     }
 
-    UnsafeSetReservedSlot(this, STRING_ITERATOR_SLOT_NEXT_INDEX, index + charCount);
+    UnsafeSetReservedSlot(this, ITERATOR_SLOT_NEXT_INDEX, index + charCount);
     result.value = callFunction(std_String_substring, S, index, index + charCount);
 
     return result;
@@ -299,12 +292,12 @@ function String_static_fromCodePoint(codePoints) {
         // Step 5f.
         // Inlined UTF-16 Encoding
         if (nextCP <= 0xFFFF) {
-            elements.push(nextCP);
+            callFunction(std_Array_push, elements, nextCP);
             continue;
         }
 
-        elements.push((((nextCP - 0x10000) / 0x400) | 0) + 0xD800);
-        elements.push((nextCP - 0x10000) % 0x400 + 0xDC00);
+        callFunction(std_Array_push, elements, (((nextCP - 0x10000) / 0x400) | 0) + 0xD800);
+        callFunction(std_Array_push, elements, (nextCP - 0x10000) % 0x400 + 0xDC00);
     }
 
     // Step 6.

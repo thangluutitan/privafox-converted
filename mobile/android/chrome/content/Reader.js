@@ -7,7 +7,7 @@
 
 /*globals MAX_URI_LENGTH, MAX_TITLE_LENGTH */
 
-let Reader = {
+var Reader = {
   // These values should match those defined in BrowserContract.java.
   STATUS_UNFETCHED: 0,
   STATUS_FETCH_FAILED_TEMPORARY: 1,
@@ -18,6 +18,53 @@ let Reader = {
   get _hasUsedToolbar() {
     delete this._hasUsedToolbar;
     return this._hasUsedToolbar = Services.prefs.getBoolPref("reader.has_used_toolbar");
+  },
+
+  get _buttonHistogram() {
+    delete this._buttonHistogram;
+    return this._buttonHistogram = Services.telemetry.getHistogramById("FENNEC_READER_VIEW_BUTTON");
+  },
+
+  // Values for "FENNEC_READER_VIEW_BUTTON" histogram.
+  _buttonHistogramValues: {
+    HIDDEN: 0,
+    SHOWN: 1,
+    TAP_ENTER: 2,
+    TAP_EXIT: 3,
+    LONG_TAP: 4
+  },
+
+  /**
+   * BackPressListener (listeners / ReaderView Ids).
+   */
+  _backPressListeners: [],
+  _backPressViewIds: [],
+
+  /**
+   * Set a backPressListener for this tabId / ReaderView Id pair.
+   */
+  _addBackPressListener: function(tabId, viewId, listener) {
+    this._backPressListeners[tabId] = listener;
+    this._backPressViewIds[viewId] = tabId;
+  },
+
+  /**
+   * Remove a backPressListener for this ReaderView Id.
+   */
+  _removeBackPressListener: function(viewId) {
+    let tabId = this._backPressViewIds[viewId];
+    if (tabId != undefined) {
+      this._backPressListeners[tabId] = null;
+      delete this._backPressViewIds[viewId];
+    }
+  },
+
+  /**
+   * If the requested tab has a backPress listener, return its results, else false.
+   */
+  onBackPress: function(tabId) {
+    let listener = this._backPressListeners[tabId];
+    return { handled: (listener ? listener() : false) };
   },
 
   observe: function Reader_observe(aMessage, aTopic, aData) {
@@ -59,8 +106,35 @@ let Reader = {
           if (message.target.messageManager) {
             message.target.messageManager.sendAsyncMessage("Reader:ArticleData", { article: article });
           }
+        }, e => {
+          if (e && e.newURL) {
+            message.target.loadURI("about:reader?url=" + encodeURIComponent(e.newURL));
+          }
         });
         break;
+
+      // On DropdownClosed in ReaderView, we cleanup / clear existing BackPressListener.
+      case "Reader:DropdownClosed": {
+        this._removeBackPressListener(message.data);
+        break;
+      }
+
+      // On DropdownOpened in ReaderView, we add BackPressListener to handle a subsequent BACK request.
+      case "Reader:DropdownOpened": {
+        let tabId = BrowserApp.selectedTab.id;
+        this._addBackPressListener(tabId, message.data, () => {
+          // User hit BACK key while ReaderView has the banner font-dropdown opened.
+          // Close it and return prevent-default.
+          if (message.target.messageManager) {
+            message.target.messageManager.sendAsyncMessage("Reader:CloseDropdown");
+            return true;
+          }
+          // We can assume ReaderView banner's font-dropdown doesn't need to be closed.
+          return false;
+        });
+
+        break;
+      }
 
       case "Reader:FaviconRequest": {
         Messaging.sendRequestForResult({
@@ -142,14 +216,17 @@ let Reader = {
         } else {
           browser.loadURI(originalURL);
         }
+        Reader._buttonHistogram.add(Reader._buttonHistogramValues.TAP_EXIT);
       } else {
         browser.messageManager.sendAsyncMessage("Reader:ParseDocument", { url: url });
+        Reader._buttonHistogram.add(Reader._buttonHistogramValues.TAP_ENTER);
       }
     },
 
     readerModeActiveCallback: function(tabID) {
       Reader._addTabToReadingList(tabID).catch(e => Cu.reportError("Error adding tab to reading list: " + e));
-      UITelemetry.addEvent("save.1", "pageaction", null, "reader");
+      UITelemetry.addEvent("save.1", "pageaction", null, "reading_list");
+      Reader._buttonHistogram.add(Reader._buttonHistogramValues.LONG_TAP);
     },
   },
 
@@ -187,6 +264,9 @@ let Reader = {
 
     if (browser.isArticle) {
       showPageAction("drawable://reader", Strings.reader.GetStringFromName("readerView.enter"));
+      this._buttonHistogram.add(this._buttonHistogramValues.SHOWN);
+    } else {
+      this._buttonHistogram.add(this._buttonHistogramValues.HIDDEN);
     }
   },
 
@@ -289,6 +369,10 @@ let Reader = {
     // Article hasn't been found in the cache, we need to
     // download the page and parse the article out of it.
     return yield ReaderMode.downloadAndParseDocument(url).catch(e => {
+      if (e && e.newURL) {
+        // Pass up the error so we can navigate the browser in question to the new URL:
+        throw e;
+      }
       Cu.reportError("Error downloading and parsing document: " + e);
       return null;
     });

@@ -34,9 +34,10 @@ protected:
   ChannelHashtable mRealChannels;
   ParentChannelHashtable mParentChannels;
   uint32_t mId;
+  Mutex mLock;
 };
 
-}
-}
+} // namespace net
+} // namespace mozilla
 
 #endif

@@ -19,6 +19,7 @@
 #include "mozilla/layers/CompositorTypes.h"  // for TextureFlags, etc
 #include "mozilla/layers/FenceUtils.h"  // for FenceHandle
 #include "mozilla/layers/LayersTypes.h"  // for LayerRenderState, etc
+#include "mozilla/layers/LayersSurfaces.h"
 #include "mozilla/mozalloc.h"           // for operator delete
 #include "mozilla/UniquePtr.h"          // for UniquePtr
 #include "nsCOMPtr.h"                   // for already_AddRefed
@@ -33,10 +34,11 @@
 namespace mozilla {
 namespace ipc {
 class Shmem;
-}
+} // namespace ipc
 
 namespace layers {
 
+class BufferDescriptor;
 class Compositor;
 class CompositableParentManager;
 class SurfaceDescriptor;
@@ -325,9 +327,11 @@ public:
   /**
    * Factory method.
    */
-  static already_AddRefed<TextureHost> Create(const SurfaceDescriptor& aDesc,
-                                          ISurfaceAllocator* aDeallocator,
-                                          TextureFlags aFlags);
+  static already_AddRefed<TextureHost> Create(
+    const SurfaceDescriptor& aDesc,
+    ISurfaceAllocator* aDeallocator,
+    LayersBackend aBackend,
+    TextureFlags aFlags);
 
   /**
    * Tell to TextureChild that TextureHost is recycled.
@@ -418,6 +422,11 @@ public:
   virtual gfx::IntSize GetSize() const = 0;
 
   /**
+   * Should be overridden if TextureHost supports crop rect.
+   */
+  virtual void SetCropRect(nsIntRect aCropRect) {}
+
+  /**
    * Debug facility.
    * XXX - cool kids use Moz2D. See bug 882113.
    */
@@ -445,6 +454,7 @@ public:
    */
   static PTextureParent* CreateIPDLActor(CompositableParentManager* aManager,
                                          const SurfaceDescriptor& aSharedData,
+                                         LayersBackend aLayersBackend,
                                          TextureFlags aFlags);
   static bool DestroyIPDLActor(PTextureParent* actor);
 
@@ -559,8 +569,7 @@ protected:
 class BufferTextureHost : public TextureHost
 {
 public:
-  BufferTextureHost(gfx::SurfaceFormat aFormat,
-                    TextureFlags aFlags);
+  BufferTextureHost(const BufferDescriptor& aDescriptor, TextureFlags aFlags);
 
   ~BufferTextureHost();
 
@@ -597,15 +606,13 @@ protected:
   bool Upload(nsIntRegion *aRegion = nullptr);
   bool MaybeUpload(nsIntRegion *aRegion = nullptr);
 
-  void InitSize();
-
   virtual void UpdatedInternal(const nsIntRegion* aRegion = nullptr) override;
 
+  BufferDescriptor mDescriptor;
   RefPtr<Compositor> mCompositor;
   RefPtr<DataTextureSource> mFirstSource;
   nsIntRegion mMaybeUpdatedRegion;
   gfx::IntSize mSize;
-  // format of the data that is shared with the content process.
   gfx::SurfaceFormat mFormat;
   uint32_t mUpdateSerial;
   bool mLocked;
@@ -621,7 +628,7 @@ class ShmemTextureHost : public BufferTextureHost
 {
 public:
   ShmemTextureHost(const mozilla::ipc::Shmem& aShmem,
-                   gfx::SurfaceFormat aFormat,
+                   const BufferDescriptor& aDesc,
                    ISurfaceAllocator* aDeallocator,
                    TextureFlags aFlags);
 
@@ -656,7 +663,7 @@ class MemoryTextureHost : public BufferTextureHost
 {
 public:
   MemoryTextureHost(uint8_t* aBuffer,
-                    gfx::SurfaceFormat aFormat,
+                    const BufferDescriptor& aDesc,
                     TextureFlags aFlags);
 
 protected:
@@ -711,6 +718,7 @@ public:
   explicit CompositingRenderTarget(const gfx::IntPoint& aOrigin)
     : mClearOnBind(false)
     , mOrigin(aOrigin)
+    , mHasComplexProjection(false)
   {}
   virtual ~CompositingRenderTarget() {}
 
@@ -726,14 +734,45 @@ public:
     mClearOnBind = true;
   }
 
-  const gfx::IntPoint& GetOrigin() { return mOrigin; }
+  const gfx::IntPoint& GetOrigin() const { return mOrigin; }
   gfx::IntRect GetRect() { return gfx::IntRect(GetOrigin(), GetSize()); }
 
+  /**
+   * If a Projection matrix is set, then it is used for rendering to
+   * this render target instead of generating one.  If no explicit
+   * projection is set, Compositors are expected to generate an
+   * orthogonal maaping that maps 0..1 to the full size of the render
+   * target.
+   */
+  bool HasComplexProjection() const { return mHasComplexProjection; }
+  void ClearProjection() { mHasComplexProjection = false; }
+  void SetProjection(const gfx::Matrix4x4& aNewMatrix, bool aEnableDepthBuffer,
+                     float aZNear, float aZFar)
+  {
+    mProjectionMatrix = aNewMatrix;
+    mEnableDepthBuffer = aEnableDepthBuffer;
+    mZNear = aZNear;
+    mZFar = aZFar;
+    mHasComplexProjection = true;
+  }
+  void GetProjection(gfx::Matrix4x4& aMatrix, bool& aEnableDepth, float& aZNear, float& aZFar)
+  {
+    MOZ_ASSERT(mHasComplexProjection);
+    aMatrix = mProjectionMatrix;
+    aEnableDepth = mEnableDepthBuffer;
+    aZNear = mZNear;
+    aZFar = mZFar;
+  }
 protected:
   bool mClearOnBind;
 
 private:
   gfx::IntPoint mOrigin;
+
+  gfx::Matrix4x4 mProjectionMatrix;
+  float mZNear, mZFar;
+  bool mHasComplexProjection;
+  bool mEnableDepthBuffer;
 };
 
 /**
@@ -745,7 +784,7 @@ CreateBackendIndependentTextureHost(const SurfaceDescriptor& aDesc,
                                     ISurfaceAllocator* aDeallocator,
                                     TextureFlags aFlags);
 
-}
-}
+} // namespace layers
+} // namespace mozilla
 
 #endif

@@ -53,7 +53,7 @@ ForOfIterator::init(HandleValue iterable, NonIterableBehavior nonIterableBehavio
     InvokeArgs args(cx);
     if (!args.init(0))
         return false;
-    args.setThis(ObjectValue(*iterableObj));
+    args.setThis(iterable);
 
     RootedValue callee(cx);
     RootedId iteratorId(cx, SYMBOL_TO_JSID(cx->wellKnownSymbols().iterator));
@@ -123,7 +123,6 @@ bool
 ForOfIterator::next(MutableHandleValue vp, bool* done)
 {
     MOZ_ASSERT(iterator);
-
     if (index != NOT_ARRAY) {
         ForOfPIC::Chain* stubChain = ForOfPIC::getOrCreate(cx_);
         if (!stubChain)
@@ -143,11 +142,10 @@ ForOfIterator::next(MutableHandleValue vp, bool* done)
         return false;
 
     InvokeArgs args(cx_);
-    if (!args.init(1))
+    if (!args.init(0))
         return false;
     args.setCallee(method);
     args.setThis(ObjectValue(*iterator));
-    args[0].setUndefined();
     if (!Invoke(cx_, args))
         return false;
 
@@ -170,14 +168,9 @@ ForOfIterator::materializeArrayIterator()
 {
     MOZ_ASSERT(index != NOT_ARRAY);
 
-    const char* nameString = "ArrayValuesAt";
-
-    RootedAtom name(cx_, Atomize(cx_, nameString, strlen(nameString)));
-    if (!name)
-        return false;
-
+    HandlePropertyName name = cx_->names().ArrayValuesAt;
     RootedValue val(cx_);
-    if (!cx_->global()->getSelfHostedFunction(cx_, name, name, 1, &val))
+    if (!GlobalObject::getSelfHostedFunction(cx_, cx_->global(), name, name, 1, &val))
         return false;
 
     InvokeArgs args(cx_);

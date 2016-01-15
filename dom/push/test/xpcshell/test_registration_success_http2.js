@@ -13,7 +13,7 @@ var serverPort = -1;
 
 function run_test() {
   var env = Cc["@mozilla.org/process/environment;1"].getService(Ci.nsIEnvironment);
-  serverPort = env.get("MOZHTTP2-PORT");
+  serverPort = env.get("MOZHTTP2_PORT");
   do_check_neq(serverPort, null);
 
   do_get_profile();
@@ -42,19 +42,25 @@ add_task(function* test_pushNotifications() {
     pushEndpoint: serverURL + '/pushEndpointA',
     pushReceiptEndpoint: serverURL + '/pushReceiptEndpointA',
     scope: 'https://example.net/a',
-    originAttributes: ChromeUtils.originAttributesToSuffix({ appId: Ci.nsIScriptSecurityManager.NO_APP_ID, inBrowser: false })
+    originAttributes: ChromeUtils.originAttributesToSuffix(
+      { appId: Ci.nsIScriptSecurityManager.NO_APP_ID, inBrowser: false }),
+    quota: Infinity,
   }, {
     subscriptionUri: serverURL + '/subscriptionB',
     pushEndpoint: serverURL + '/pushEndpointB',
     pushReceiptEndpoint: serverURL + '/pushReceiptEndpointB',
     scope: 'https://example.net/b',
-    originAttributes: ChromeUtils.originAttributesToSuffix({ appId: Ci.nsIScriptSecurityManager.NO_APP_ID, inBrowser: false })
+    originAttributes: ChromeUtils.originAttributesToSuffix(
+      { appId: Ci.nsIScriptSecurityManager.NO_APP_ID, inBrowser: false }),
+    quota: Infinity,
   }, {
     subscriptionUri: serverURL + '/subscriptionC',
     pushEndpoint: serverURL + '/pushEndpointC',
     pushReceiptEndpoint: serverURL + '/pushReceiptEndpointC',
     scope: 'https://example.net/c',
-    originAttributes: ChromeUtils.originAttributesToSuffix({ appId: Ci.nsIScriptSecurityManager.NO_APP_ID, inBrowser: false })
+    originAttributes: ChromeUtils.originAttributesToSuffix(
+      { appId: Ci.nsIScriptSecurityManager.NO_APP_ID, inBrowser: false }),
+    quota: Infinity,
   }];
 
   for (let record of records) {
@@ -66,11 +72,13 @@ add_task(function* test_pushNotifications() {
     db
   });
 
-  let registration = yield PushNotificationService.registration(
-    'https://example.net/a',
-    ChromeUtils.originAttributesToSuffix({ appId: Ci.nsIScriptSecurityManager.NO_APP_ID, inBrowser: false }));
+  let registration = yield PushService.registration({
+    scope: 'https://example.net/a',
+    originAttributes: ChromeUtils.originAttributesToSuffix(
+      { appId: Ci.nsIScriptSecurityManager.NO_APP_ID, inBrowser: false }),
+  });
   equal(
-    registration.pushEndpoint,
+    registration.endpoint,
     serverURL + '/pushEndpointA',
     'Wrong push endpoint for scope'
   );

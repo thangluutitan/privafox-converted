@@ -9,6 +9,8 @@
 #define nsComputedDOMStyle_h__
 
 #include "nsAutoPtr.h"
+#include "mozilla/ArenaRefPtr.h"
+#include "mozilla/ArenaRefPtrInlines.h"
 #include "mozilla/Attributes.h"
 #include "nsCOMPtr.h"
 #include "nscore.h"
@@ -24,8 +26,8 @@
 namespace mozilla {
 namespace dom {
 class Element;
-}
-}
+} // namespace dom
+} // namespace mozilla
 
 struct nsComputedStyleMap;
 class nsIFrame;
@@ -41,12 +43,12 @@ class nsStyleGradient;
 struct nsStyleImage;
 class nsStyleSides;
 struct nsTimingFunction;
-class gfx3DMatrix;
 
 class nsComputedDOMStyle final : public nsDOMCSSDeclaration
+                               , public nsStubMutationObserver
 {
 public:
-  typedef nsCSSProps::KTableValue KTableValue;
+  typedef nsCSSProps::KTableEntry KTableEntry;
 
   NS_DECL_CYCLE_COLLECTING_ISUPPORTS
   NS_DECL_CYCLE_COLLECTION_SKIPPABLE_SCRIPT_HOLDER_CLASS_AMBIGUOUS(nsComputedDOMStyle,
@@ -104,10 +106,13 @@ public:
   virtual nsIDocument* DocToUpdate() override;
   virtual void GetCSSParsingEnvironment(CSSParsingEnvironment& aCSSParseEnv) override;
 
-  static nsROCSSPrimitiveValue* MatrixToCSSValue(gfx3DMatrix& aMatrix);
+  static nsROCSSPrimitiveValue* MatrixToCSSValue(const mozilla::gfx::Matrix4x4& aMatrix);
 
   static void RegisterPrefChangeCallbacks();
   static void UnregisterPrefChangeCallbacks();
+
+  // nsIMutationObserver
+  NS_DECL_NSIMUTATIONOBSERVER_PARENTCHAINCHANGED
 
 private:
   virtual ~nsComputedDOMStyle();
@@ -122,14 +127,19 @@ private:
   // Helper method for DoGetTextAlign[Last].
   mozilla::dom::CSSValue* CreateTextAlignValue(uint8_t aAlign,
                                                bool aAlignTrue,
-                                               const KTableValue aTable[]);
-  // This indicates error by leaving mStyleContextHolder null.
+                                               const KTableEntry aTable[]);
+  // This indicates error by leaving mStyleContext null.
   void UpdateCurrentStyleSources(bool aNeedsLayoutFlush);
   void ClearCurrentStyleSources();
 
+  // Helper functions called by UpdateCurrentStyleSources.
+  void ClearStyleContext();
+  void SetResolvedStyleContext(RefPtr<nsStyleContext>&& aContext);
+  void SetFrameStyleContext(nsStyleContext* aContext);
+
 #define STYLE_STRUCT(name_, checkdata_cb_)                              \
   const nsStyle##name_ * Style##name_() {                               \
-    return mStyleContextHolder->Style##name_();                         \
+    return mStyleContext->Style##name_();                               \
   }
 #include "nsStyleStructList.h"
 #undef STYLE_STRUCT
@@ -166,10 +176,20 @@ private:
 
   mozilla::dom::CSSValue* GetSVGPaintFor(bool aFill);
 
-  mozilla::dom::CSSValue* GetGridLineNames(const nsTArray<nsString>& aLineNames);
+  // Appends all aLineNames (must be non-empty) space-separated to aResult.
+  void AppendGridLineNames(nsString& aResult,
+                           const nsTArray<nsString>& aLineNames);
+  // Appends aLineNames (if non-empty) as a CSSValue* to aValueList.
+  void AppendGridLineNames(nsDOMCSSValueList* aValueList,
+                           const nsTArray<nsString>& aLineNames);
+  // Appends aLineNames1/2 (if non-empty) as a CSSValue* to aValueList.
+  void AppendGridLineNames(nsDOMCSSValueList* aValueList,
+                           const nsTArray<nsString>& aLineNames1,
+                           const nsTArray<nsString>& aLineNames2);
   mozilla::dom::CSSValue* GetGridTrackSize(const nsStyleCoord& aMinSize,
                                            const nsStyleCoord& aMaxSize);
-  mozilla::dom::CSSValue* GetGridTemplateColumnsRows(const nsStyleGridTemplate& aTrackList);
+  mozilla::dom::CSSValue* GetGridTemplateColumnsRows(const nsStyleGridTemplate& aTrackList,
+                                                     const nsTArray<nscoord>* aTrackSizes);
   mozilla::dom::CSSValue* GetGridLine(const nsStyleGridLine& aGridLine);
 
   bool GetLineHeightCoord(nscoord& aCoord);
@@ -180,7 +200,7 @@ private:
 
   mozilla::dom::CSSValue* GetBackgroundList(uint8_t nsStyleBackground::Layer::* aMember,
                                             uint32_t nsStyleBackground::* aCount,
-                                            const KTableValue aTable[]);
+                                            const KTableEntry aTable[]);
 
   void GetCSSGradientString(const nsStyleGradient* aGradient,
                             nsAString& aString);
@@ -256,6 +276,8 @@ private:
   mozilla::dom::CSSValue* DoGetGridColumnEnd();
   mozilla::dom::CSSValue* DoGetGridRowStart();
   mozilla::dom::CSSValue* DoGetGridRowEnd();
+  mozilla::dom::CSSValue* DoGetGridColumnGap();
+  mozilla::dom::CSSValue* DoGetGridRowGap();
 
   /* Background properties */
   mozilla::dom::CSSValue* DoGetBackgroundAttachment();
@@ -363,6 +385,9 @@ private:
   mozilla::dom::CSSValue* DoGetTextDecorationColor();
   mozilla::dom::CSSValue* DoGetTextDecorationLine();
   mozilla::dom::CSSValue* DoGetTextDecorationStyle();
+  mozilla::dom::CSSValue* DoGetTextEmphasisColor();
+  mozilla::dom::CSSValue* DoGetTextEmphasisPosition();
+  mozilla::dom::CSSValue* DoGetTextEmphasisStyle();
   mozilla::dom::CSSValue* DoGetTextIndent();
   mozilla::dom::CSSValue* DoGetTextOrientation();
   mozilla::dom::CSSValue* DoGetTextOverflow();
@@ -459,16 +484,22 @@ private:
   mozilla::dom::CSSValue* DoGetAnimationPlayState();
 
   /* CSS Flexbox properties */
-  mozilla::dom::CSSValue* DoGetAlignContent();
-  mozilla::dom::CSSValue* DoGetAlignItems();
-  mozilla::dom::CSSValue* DoGetAlignSelf();
   mozilla::dom::CSSValue* DoGetFlexBasis();
   mozilla::dom::CSSValue* DoGetFlexDirection();
   mozilla::dom::CSSValue* DoGetFlexGrow();
   mozilla::dom::CSSValue* DoGetFlexShrink();
   mozilla::dom::CSSValue* DoGetFlexWrap();
+
+  /* CSS Flexbox/Grid properties */
   mozilla::dom::CSSValue* DoGetOrder();
+
+  /* CSS Box Alignment properties */
+  mozilla::dom::CSSValue* DoGetAlignContent();
+  mozilla::dom::CSSValue* DoGetAlignItems();
+  mozilla::dom::CSSValue* DoGetAlignSelf();
   mozilla::dom::CSSValue* DoGetJustifyContent();
+  mozilla::dom::CSSValue* DoGetJustifyItems();
+  mozilla::dom::CSSValue* DoGetJustifySelf();
 
   /* SVG properties */
   mozilla::dom::CSSValue* DoGetFill();
@@ -550,7 +581,7 @@ private:
                        const nsStyleCoord& aCoord,
                        bool aClampNegativeCalc,
                        PercentageBaseGetter aPercentageBaseGetter = nullptr,
-                       const KTableValue aTable[] = nullptr,
+                       const KTableEntry aTable[] = nullptr,
                        nscoord aMinAppUnits = nscoord_MIN,
                        nscoord aMaxAppUnits = nscoord_MAX);
 
@@ -596,12 +627,23 @@ private:
   nsWeakPtr mDocumentWeak;
   nsCOMPtr<nsIContent> mContent;
 
-  /*
-   * Strong reference to the style context while we're accessing the data from
-   * it.  This can be either a style context we resolved ourselves or a style
-   * context we got from our frame.
+  /**
+   * Strong reference to the style context we access data from.  This can be
+   * either a style context we resolved ourselves or a style context we got
+   * from our frame.
+   *
+   * If we got the style context from the frame, we clear out mStyleContext
+   * in ClearCurrentStyleSources.  If we resolved one ourselves, then
+   * ClearCurrentStyleSources leaves it in mStyleContext for use the next
+   * time this nsComputedDOMStyle object is queried.  UpdateCurrentStyleSources
+   * in this case will check that the style context is still valid to be used,
+   * by checking whether flush styles results in any restyles having been
+   * processed.
+   *
+   * Since an ArenaRefPtr is used to hold the style context, it will be cleared
+   * if the pres arena from which it was allocated goes away.
    */
-  nsRefPtr<nsStyleContext> mStyleContextHolder;
+  mozilla::ArenaRefPtr<nsStyleContext> mStyleContext;
   nsCOMPtr<nsIAtom> mPseudo;
 
   /*
@@ -627,7 +669,19 @@ private:
    */
   StyleType mStyleType;
 
+  /**
+   * The nsComputedDOMStyle generation at the time we last resolved a style
+   * context and stored it in mStyleContext.
+   */
+  uint64_t mStyleContextGeneration;
+
   bool mExposeVisitedStyle;
+
+  /**
+   * Whether we resolved a style context last time we called
+   * UpdateCurrentStyleSources.  Initially false.
+   */
+  bool mResolvedStyleContext;
 
 #ifdef DEBUG
   bool mFlushedPendingReflows;

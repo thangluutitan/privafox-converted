@@ -59,6 +59,7 @@ public:
   DrawTargetCairo();
   virtual ~DrawTargetCairo();
 
+  virtual bool IsValid() const override;
   virtual DrawTargetType GetType() const override;
   virtual BackendType GetBackendType() const override { return BackendType::CAIRO; }
   virtual already_AddRefed<SourceSurface> Snapshot() override;
@@ -209,6 +210,7 @@ private: // data
   cairo_t* mContext;
   cairo_surface_t* mSurface;
   IntSize mSize;
+  bool mTransformSingular;
 
   uint8_t* mLockedBits;
 
@@ -218,7 +220,7 @@ private: // data
   static cairo_surface_t *mDummySurface;
 };
 
-}
-}
+} // namespace gfx
+} // namespace mozilla
 
 #endif // _MOZILLA_GFX_DRAWTARGET_CAIRO_H_

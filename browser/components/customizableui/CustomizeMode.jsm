@@ -31,18 +31,18 @@ Cu.import("resource://gre/modules/AddonManager.jsm");
 
 XPCOMUtils.defineLazyModuleGetter(this, "DragPositionManager",
                                   "resource:///modules/DragPositionManager.jsm");
-//XPCOMUtils.defineLazyModuleGetter(this, "BrowserUITelemetry",
-//                                  "resource:///modules/BrowserUITelemetry.jsm");
+XPCOMUtils.defineLazyModuleGetter(this, "BrowserUITelemetry",
+                                  "resource:///modules/BrowserUITelemetry.jsm");
 XPCOMUtils.defineLazyModuleGetter(this, "LightweightThemeManager",
                                   "resource://gre/modules/LightweightThemeManager.jsm");
 
 
-let gModuleName = "[CustomizeMode]";
+var gModuleName = "[CustomizeMode]";
 #include logging.js
 
-let gDisableAnimation = null;
+var gDisableAnimation = null;
 
-let gDraggingInToolbars;
+var gDraggingInToolbars;
 
 function CustomizeMode(aWindow) {
   if (gDisableAnimation === null) {
@@ -60,7 +60,6 @@ function CustomizeMode(aWindow) {
   // to the user when in customizing mode.
   this.visiblePalette = this.document.getElementById(kPaletteId);
   this.paletteEmptyNotice = this.document.getElementById("customization-empty");
-  this.paletteSpacer = this.document.getElementById("customization-spacer");
   this.tipPanel = this.document.getElementById("customization-tipPanel");
   if (Services.prefs.getCharPref("general.skins.selectedSkin") != "classic/1.0") {
     let lwthemeButton = this.document.getElementById("customization-lwtheme-button");
@@ -287,7 +286,6 @@ CustomizeMode.prototype = {
         this.visiblePalette.clientTop;
         this.visiblePalette.setAttribute("showing", "true");
       }, 0);
-      this.paletteSpacer.hidden = true;
       this._updateEmptyPaletteNotice();
 
       this.swatchForTheme(document);
@@ -311,10 +309,12 @@ CustomizeMode.prototype = {
         this.exit();
       }
     }.bind(this)).then(null, function(e) {
-      ERROR(e);
+      ERROR("Error entering customize mode", e);
       // We should ensure this has been called, and calling it again doesn't hurt:
       window.PanelUI.endBatchUpdate();
       this._handler.isEnteringCustomizeMode = false;
+      // Exit customize mode to ensure proper clean-up when entering failed.
+      this.exit();
     }.bind(this));
   },
 
@@ -366,7 +366,6 @@ CustomizeMode.prototype = {
     let documentElement = document.documentElement;
 
     // Hide the palette before starting the transition for increased perf.
-    this.paletteSpacer.hidden = false;
     this.visiblePalette.hidden = true;
     this.visiblePalette.removeAttribute("showing");
     this.paletteEmptyNotice.hidden = true;
@@ -485,7 +484,7 @@ CustomizeMode.prototype = {
         this.enter();
       }
     }.bind(this)).then(null, function(e) {
-      ERROR(e);
+      ERROR("Error exiting customize mode", e);
       // We should ensure this has been called, and calling it again doesn't hurt:
       window.PanelUI.endBatchUpdate();
       this._handler.isExitingCustomizeMode = false;
@@ -1118,7 +1117,7 @@ CustomizeMode.prototype = {
     this.resetting = true;
     // Disable the reset button temporarily while resetting:
     let btn = this.document.getElementById("customization-reset-button");
-    //BrowserUITelemetry.countCustomizationEvent("reset");
+    BrowserUITelemetry.countCustomizationEvent("reset");
     btn.disabled = true;
     return Task.spawn(function() {
       this._removePanelCustomizationPlaceholders();
@@ -1366,11 +1365,8 @@ CustomizeMode.prototype = {
                                                            Ci.nsISupportsString).data;
       recommendedThemes = JSON.parse(recommendedThemes);
       let sb = Services.strings.createBundle("chrome://browser/locale/lightweightThemes.properties");
-	  let recommendedThemesCount = 0;
       for (let theme of recommendedThemes) {
         theme.name = sb.GetStringFromName("lightweightThemes." + theme.id + ".name");
-		recommendedThemesCount++;
-		if (theme.name == "A Web Browser Renaissance") continue;
         theme.description = sb.GetStringFromName("lightweightThemes." + theme.id + ".description");
         let tbb = buildToolbarButton(theme);
         tbb.addEventListener("command", function() {
@@ -1754,7 +1750,7 @@ CustomizeMode.prototype = {
         }
 
         CustomizableUI.removeWidgetFromArea(aDraggedItemId);
-        //BrowserUITelemetry.countCustomizationEvent("remove");
+        BrowserUITelemetry.countCustomizationEvent("remove");
         // Special widgets are removed outright, we can return here:
         if (CustomizableUI.isSpecialWidget(aDraggedItemId)) {
           return;
@@ -1796,7 +1792,7 @@ CustomizeMode.prototype = {
         this.wrapToolbarItem(aTargetNode, place);
       }
       this.wrapToolbarItem(draggedItem, place);
-      //BrowserUITelemetry.countCustomizationEvent("move");
+      BrowserUITelemetry.countCustomizationEvent("move");
       return;
     }
 
@@ -1809,7 +1805,7 @@ CustomizeMode.prototype = {
       // as a "move". An "add" is only when we move an item from the palette into
       // an area.
       let custEventType = aOriginArea.id == kPaletteId ? "add" : "move";
-      //BrowserUITelemetry.countCustomizationEvent(custEventType);
+      BrowserUITelemetry.countCustomizationEvent(custEventType);
       this._onDragEnd(aEvent);
       return;
     }
@@ -1851,8 +1847,8 @@ CustomizeMode.prototype = {
 
     // For BrowserUITelemetry, an "add" is only when we move an item from the palette
     // into an area. Otherwise, it's a move.
-    //let custEventType = aOriginArea.id == kPaletteId ? "add" : "move";
-    //BrowserUITelemetry.countCustomizationEvent(custEventType);
+    let custEventType = aOriginArea.id == kPaletteId ? "add" : "move";
+    BrowserUITelemetry.countCustomizationEvent(custEventType);
 
     // If we dropped onto a skipintoolbarset item, manually correct the drop location:
     if (aTargetNode != itemForPlacement) {

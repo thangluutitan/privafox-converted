@@ -31,6 +31,7 @@
 #include "nsICategoryManager.h"
 #include "nsIComponentRegistrar.h"
 #include "nsXPCOM.h"
+#include "nsISimpleEnumerator.h"
 #include "nsISupportsPrimitives.h"
 #include "nsIXPConnect.h"
 #include "xptcall.h"
@@ -98,10 +99,6 @@
 
 #include "nsWrapperCacheInlines.h"
 #include "mozilla/dom/HTMLCollectionBinding.h"
-
-#include "nsIDOMMozSmsMessage.h"
-#include "nsIDOMMozMmsMessage.h"
-#include "nsIDOMMozMobileMessageThread.h"
 
 #ifdef MOZ_B2G_FM
 #include "FMRadio.h"
@@ -240,15 +237,6 @@ static nsDOMClassInfoData sClassInfoData[] = {
                            DOM_DEFAULT_SCRIPTABLE_FLAGS)
 
   NS_DEFINE_CLASSINFO_DATA(CSSSupportsRule, nsDOMGenericSH,
-                           DOM_DEFAULT_SCRIPTABLE_FLAGS)
-
-  NS_DEFINE_CLASSINFO_DATA(MozSmsMessage, nsDOMGenericSH,
-                           DOM_DEFAULT_SCRIPTABLE_FLAGS)
-
-  NS_DEFINE_CLASSINFO_DATA(MozMmsMessage, nsDOMGenericSH,
-                           DOM_DEFAULT_SCRIPTABLE_FLAGS)
-
-  NS_DEFINE_CLASSINFO_DATA(MozMobileMessageThread, nsDOMGenericSH,
                            DOM_DEFAULT_SCRIPTABLE_FLAGS)
 
   NS_DEFINE_CLASSINFO_DATA(CSSFontFaceRule, nsDOMGenericSH,
@@ -650,18 +638,6 @@ nsDOMClassInfo::Init()
     DOM_CLASSINFO_MAP_ENTRY(nsIDOMCSSSupportsRule)
   DOM_CLASSINFO_MAP_END
 
-  DOM_CLASSINFO_MAP_BEGIN(MozSmsMessage, nsIDOMMozSmsMessage)
-     DOM_CLASSINFO_MAP_ENTRY(nsIDOMMozSmsMessage)
-  DOM_CLASSINFO_MAP_END
-
-  DOM_CLASSINFO_MAP_BEGIN(MozMmsMessage, nsIDOMMozMmsMessage)
-     DOM_CLASSINFO_MAP_ENTRY(nsIDOMMozMmsMessage)
-  DOM_CLASSINFO_MAP_END
-
-  DOM_CLASSINFO_MAP_BEGIN(MozMobileMessageThread, nsIDOMMozMobileMessageThread)
-     DOM_CLASSINFO_MAP_ENTRY(nsIDOMMozMobileMessageThread)
-  DOM_CLASSINFO_MAP_END
-
   DOM_CLASSINFO_MAP_BEGIN(CSSFontFaceRule, nsIDOMCSSFontFaceRule)
     DOM_CLASSINFO_MAP_ENTRY(nsIDOMCSSFontFaceRule)
   DOM_CLASSINFO_MAP_END
@@ -902,7 +878,7 @@ nsDOMClassInfo::AddProperty(nsIXPConnectWrappedNative *wrapper, JSContext *cx,
 
 NS_IMETHODIMP
 nsDOMClassInfo::GetProperty(nsIXPConnectWrappedNative *wrapper, JSContext *cx,
-                            JSObject *obj, jsid id, jsval *vp,
+                            JSObject *obj, jsid id, JS::Value *vp,
                             bool *_retval)
 {
   NS_WARNING("nsDOMClassInfo::GetProperty Don't call me!");
@@ -912,7 +888,7 @@ nsDOMClassInfo::GetProperty(nsIXPConnectWrappedNative *wrapper, JSContext *cx,
 
 NS_IMETHODIMP
 nsDOMClassInfo::SetProperty(nsIXPConnectWrappedNative *wrapper, JSContext *cx,
-                            JSObject *obj, jsid id, jsval *vp,
+                            JSObject *obj, jsid id, JS::Value *vp,
                             bool *_retval)
 {
   NS_WARNING("nsDOMClassInfo::SetProperty Don't call me!");
@@ -1339,7 +1315,7 @@ public:
                      bool *_retval);
 
   nsresult HasInstance(nsIXPConnectWrappedNative *wrapper, JSContext *cx,
-                       JS::Handle<JSObject*> obj, const jsval &val, bool *bp,
+                       JS::Handle<JSObject*> obj, const JS::Value &val, bool *bp,
                        bool *_retval);
 
   nsresult ResolveInterfaceConstants(JSContext *cx, JS::Handle<JSObject*> obj);
@@ -1435,7 +1411,6 @@ nsDOMConstructor::Create(const char16_t* aName,
                          IsConstructable(aData);
 
   *aResult = new nsDOMConstructor(aName, constructable, currentInner);
-  NS_ENSURE_TRUE(*aResult, NS_ERROR_OUT_OF_MEMORY);
   NS_ADDREF(*aResult);
   return NS_OK;
 }
@@ -1499,7 +1474,7 @@ nsDOMConstructor::Construct(nsIXPConnectWrappedNative *wrapper, JSContext * cx,
 nsresult
 nsDOMConstructor::HasInstance(nsIXPConnectWrappedNative *wrapper,
                               JSContext * cx, JS::Handle<JSObject*> obj,
-                              const jsval &v, bool *bp, bool *_retval)
+                              const JS::Value &v, bool *bp, bool *_retval)
 
 {
   // No need to look these up in the hash.
@@ -1512,7 +1487,7 @@ nsDOMConstructor::HasInstance(nsIXPConnectWrappedNative *wrapper,
   NS_ASSERTION(dom_obj, "nsDOMConstructor::HasInstance couldn't get object");
 
   // This might not be the right object, if there are wrappers. Unwrap if we can.
-  JSObject *wrapped_obj = js::CheckedUnwrap(dom_obj, /* stopAtOuter = */ false);
+  JSObject *wrapped_obj = js::CheckedUnwrap(dom_obj, /* stopAtWindowProxy = */ false);
   if (wrapped_obj)
       dom_obj = wrapped_obj;
 
@@ -1748,7 +1723,7 @@ ResolvePrototype(nsIXPConnect *aXPConnect, nsGlobalWindow *aWin, JSContext *cx,
                 name_struct->mType == nsGlobalNameStruct::eTypeClassProto),
                "Wrong type or missing ci_data!");
 
-  nsRefPtr<nsDOMConstructor> constructor;
+  RefPtr<nsDOMConstructor> constructor;
   nsresult rv = nsDOMConstructor::Create(name, ci_data, name_struct, aWin,
                                          getter_AddRefs(constructor));
   NS_ENSURE_SUCCESS(rv, rv);
@@ -2041,7 +2016,7 @@ nsWindowSH::GlobalResolve(nsGlobalWindow *aWin, JSContext *cx,
       // way the callee can decide whether to allow access based on the caller
       // or the window being touched.
       JS::Rooted<JSObject*> global(cx,
-        js::CheckedUnwrap(obj, /* stopAtOuter = */ false));
+        js::CheckedUnwrap(obj, /* stopAtWindowProxy = */ false));
       if (!global) {
         return NS_ERROR_DOM_SECURITY_ERR;
       }
@@ -2118,7 +2093,7 @@ nsWindowSH::GlobalResolve(nsGlobalWindow *aWin, JSContext *cx,
   if (name_struct->mType == nsGlobalNameStruct::eTypeInterface) {
     // We're resolving a name of a DOM interface for which there is no
     // direct DOM class, create a constructor object...
-    nsRefPtr<nsDOMConstructor> constructor;
+    RefPtr<nsDOMConstructor> constructor;
     rv = nsDOMConstructor::Create(class_name,
                                   nullptr,
                                   name_struct,
@@ -2227,7 +2202,7 @@ nsWindowSH::GlobalResolve(nsGlobalWindow *aWin, JSContext *cx,
   }
 
   if (name_struct->mType == nsGlobalNameStruct::eTypeExternalConstructor) {
-    nsRefPtr<nsDOMConstructor> constructor;
+    RefPtr<nsDOMConstructor> constructor;
     rv = nsDOMConstructor::Create(class_name, nullptr, name_struct,
                                   static_cast<nsPIDOMWindow*>(aWin),
                                   getter_AddRefs(constructor));
@@ -2300,8 +2275,7 @@ struct InterfaceShimEntry {
 // interface that has interface constants that sites might be getting off
 // of Ci.
 const InterfaceShimEntry kInterfaceShimMap[] =
-{ { "nsIDOMFileReader", "FileReader" },
-  { "nsIXMLHttpRequest", "XMLHttpRequest" },
+{ { "nsIXMLHttpRequest", "XMLHttpRequest" },
   { "nsIDOMDOMException", "DOMException" },
   { "nsIDOMNode", "Node" },
   { "nsIDOMCSSPrimitiveValue", "CSSPrimitiveValue" },

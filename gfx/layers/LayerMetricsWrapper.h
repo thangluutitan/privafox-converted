@@ -299,6 +299,20 @@ public:
     return gfx::Matrix4x4();
   }
 
+  bool TransformIsPerspective() const
+  {
+    MOZ_ASSERT(IsValid());
+
+    // mLayer->GetTransformIsPerspective() tells us whether
+    // mLayer->GetTransform() is a perspective transform. Since
+    // mLayer->GetTransform() is only used at the bottom layer, we only
+    // need to check GetTransformIsPerspective() at the bottom layer too.
+    if (AtBottomLayer()) {
+      return mLayer->GetTransformIsPerspective();
+    }
+    return false;
+  }
+
   EventRegions GetEventRegions() const
   {
     MOZ_ASSERT(IsValid());
@@ -329,15 +343,15 @@ public:
     return nullptr;
   }
 
-  nsIntRegion GetVisibleRegion() const
+  LayerIntRegion GetVisibleRegion() const
   {
     MOZ_ASSERT(IsValid());
 
     if (AtBottomLayer()) {
       return mLayer->GetVisibleRegion();
     }
-    nsIntRegion region = mLayer->GetVisibleRegion();
-    region.Transform(gfx::To3DMatrix(mLayer->GetTransform()));
+    LayerIntRegion region = mLayer->GetVisibleRegion();
+    region.Transform(mLayer->GetTransform());
     return region;
   }
 
@@ -354,6 +368,17 @@ public:
     return sNoClipRect;
   }
 
+  float GetPresShellResolution() const
+  {
+    MOZ_ASSERT(IsValid());
+
+    if (AtTopLayer() && mLayer->AsContainerLayer()) {
+      return mLayer->AsContainerLayer()->GetPresShellResolution();
+    }
+
+    return 1.0f;
+  }
+
   EventRegionsOverride GetEventRegionsOverride() const
   {
     MOZ_ASSERT(IsValid());
@@ -362,6 +387,29 @@ public:
       return mLayer->AsContainerLayer()->GetEventRegionsOverride();
     }
     return EventRegionsOverride::NoOverride;
+  }
+
+  Layer::ScrollDirection GetScrollbarDirection() const
+  {
+    MOZ_ASSERT(IsValid());
+
+    return mLayer->GetScrollbarDirection();
+  }
+
+  FrameMetrics::ViewID GetScrollbarTargetContainerId() const
+  {
+    MOZ_ASSERT(IsValid());
+
+    return mLayer->GetScrollbarTargetContainerId();
+  }
+
+  int32_t GetScrollbarSize() const
+  {
+    if (GetScrollbarDirection() == Layer::VERTICAL) {
+      return mLayer->GetVisibleRegion().GetBounds().height;
+    } else {
+      return mLayer->GetVisibleRegion().GetBounds().width;
+    }
   }
 
   // Expose an opaque pointer to the layer. Mostly used for printf
@@ -429,7 +477,7 @@ private:
   uint32_t mIndex;
 };
 
-}
-}
+} // namespace layers
+} // namespace mozilla
 
 #endif /* GFX_LAYERMETRICSWRAPPER_H */

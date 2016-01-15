@@ -28,13 +28,16 @@
 #include "mozilla/dom/SVGAnimatedLength.h"
 #include "nsMimeTypes.h"
 #include "DOMSVGLength.h"
+#include "nsDocument.h"
 
 // undef the GetCurrentTime macro defined in WinBase.h from the MS Platform SDK
 #undef GetCurrentTime
 
-using namespace mozilla::dom;
-
 namespace mozilla {
+
+using namespace dom;
+using namespace gfx;
+
 namespace image {
 
 NS_IMPL_ISUPPORTS(SVGDocumentWrapper,
@@ -197,9 +200,6 @@ SVGDocumentWrapper::TickRefreshDriver()
 
 /** nsIStreamListener methods **/
 
-/* void onDataAvailable (in nsIRequest request, in nsISupports ctxt,
-                         in nsIInputStream inStr, in unsigned long sourceOffset,
-                         in unsigned long count); */
 NS_IMETHODIMP
 SVGDocumentWrapper::OnDataAvailable(nsIRequest* aRequest, nsISupports* ctxt,
                                     nsIInputStream* inStr,
@@ -212,7 +212,6 @@ SVGDocumentWrapper::OnDataAvailable(nsIRequest* aRequest, nsISupports* ctxt,
 
 /** nsIRequestObserver methods **/
 
-/* void onStartRequest (in nsIRequest request, in nsISupports ctxt); */
 NS_IMETHODIMP
 SVGDocumentWrapper::OnStartRequest(nsIRequest* aRequest, nsISupports* ctxt)
 {
@@ -234,8 +233,6 @@ SVGDocumentWrapper::OnStartRequest(nsIRequest* aRequest, nsISupports* ctxt)
 }
 
 
-/* void onStopRequest (in nsIRequest request, in nsISupports ctxt,
-                       in nsresult status); */
 NS_IMETHODIMP
 SVGDocumentWrapper::OnStopRequest(nsIRequest* aRequest, nsISupports* ctxt,
                                   nsresult status)

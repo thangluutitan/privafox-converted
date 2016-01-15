@@ -99,7 +99,7 @@ DeadObjectProxy::construct(JSContext* cx, HandleObject wrapper, const CallArgs& 
 
 bool
 DeadObjectProxy::nativeCall(JSContext* cx, IsAcceptableThis test, NativeImpl impl,
-                            CallArgs args) const
+                            const CallArgs& args) const
 {
     ReportDead(cx);
     return false;
@@ -114,7 +114,15 @@ DeadObjectProxy::hasInstance(JSContext* cx, HandleObject proxy, MutableHandleVal
 }
 
 bool
-DeadObjectProxy::objectClassIs(HandleObject obj, ESClassValue classValue, JSContext* cx) const
+DeadObjectProxy::getBuiltinClass(JSContext* cx, HandleObject proxy,
+                                 ESClassValue* classValue) const
+{
+    ReportDead(cx);
+    return false;
+}
+
+bool
+DeadObjectProxy::isArray(JSContext* cx, HandleObject obj, JS::IsArrayAnswer* answer) const
 {
     ReportDead(cx);
     return false;
@@ -140,21 +148,11 @@ DeadObjectProxy::regexp_toShared(JSContext* cx, HandleObject proxy, RegExpGuard*
     return false;
 }
 
-bool
-DeadObjectProxy::defaultValue(JSContext* cx, HandleObject obj, JSType hint,
-                              MutableHandleValue vp) const
-{
-    ReportDead(cx);
-    return false;
-}
-
 const char DeadObjectProxy::family = 0;
 const DeadObjectProxy DeadObjectProxy::singleton;
-
 
 bool
 js::IsDeadProxyObject(JSObject* obj)
 {
-    return obj->is<ProxyObject>() &&
-           obj->as<ProxyObject>().handler() == &DeadObjectProxy::singleton;
+    return IsDerivedProxyObject(obj, &DeadObjectProxy::singleton);
 }

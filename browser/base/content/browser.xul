@@ -8,7 +8,7 @@
 
 <?xml-stylesheet href="chrome://browser/content/browser.css" type="text/css"?>
 <?xml-stylesheet href="chrome://browser/content/places/places.css" type="text/css"?>
-<?xml-stylesheet href="chrome://browser/skin/devtools/common.css" type="text/css"?>
+<?xml-stylesheet href="chrome://devtools/skin/common.css" type="text/css"?>
 <?xml-stylesheet href="chrome://browser/skin/controlcenter/panel.css" type="text/css"?>
 <?xml-stylesheet href="chrome://browser/skin/customizableui/panelUIOverlay.css" type="text/css"?>
 <?xml-stylesheet href="chrome://browser/skin/" type="text/css"?>
@@ -58,6 +58,7 @@
         screenX="4" screenY="4"
         fullscreenbutton="true"
         sizemode="normal"
+        retargetdocumentfocus="urlbar"
         persist="screenX screenY width height sizemode">
 
 # All JS files which are not content (only) dependent that browser.xul
@@ -82,6 +83,7 @@
                onpopuphidden="if (event.target == this) TabContextMenu.contextTab = null;">
       <menuitem id="context_reloadTab" label="&reloadTab.label;" accesskey="&reloadTab.accesskey;"
                 oncommand="gBrowser.reloadTab(TabContextMenu.contextTab);"/>
+      <menuitem id="context_toggleMuteTab" oncommand="TabContextMenu.contextTab.toggleMuteAudio();"/>
       <menuseparator/>
       <menuitem id="context_pinTab" label="&pinTab.label;"
                 accesskey="&pinTab.accesskey;"
@@ -89,15 +91,6 @@
       <menuitem id="context_unpinTab" label="&unpinTab.label;" hidden="true"
                 accesskey="&unpinTab.accesskey;"
                 oncommand="gBrowser.unpinTab(TabContextMenu.contextTab);"/>
-      <menu id="context_tabViewMenu" label="&moveToGroup.label;"
-            accesskey="&moveToGroup.accesskey;">
-        <menupopup id="context_tabViewMenuPopup"
-                   onpopupshowing="if (event.target == this) TabView.moveToGroupPopupShowing(event);">
-          <menuseparator id="context_tabViewNamedGroups" hidden="true"/>
-          <menuitem id="context_tabViewNewGroup" label="&moveToNewGroup.label;"
-                    oncommand="TabView.moveTabTo(TabContextMenu.contextTab, null);"/>
-        </menupopup>
-      </menu>
       <menuitem id="context_openTabInWindow" label="&moveToNewWindow.label;"
                 accesskey="&moveToNewWindow.accesskey;"
                 tbattr="tabbrowser-multiple"
@@ -117,7 +110,7 @@
                 accesskey="&bookmarkAllTabs.accesskey;"
                 command="Browser:BookmarkAllTabs"/>
       <menuitem id="context_closeTabsToTheEnd" label="&closeTabsToTheEnd.label;" accesskey="&closeTabsToTheEnd.accesskey;"
-                oncommand="gBrowser.removeTabsToTheEndFrom(TabContextMenu.contextTab);"/>
+                oncommand="gBrowser.removeTabsToTheEndFrom(TabContextMenu.contextTab, {animate: true});"/>
       <menuitem id="context_closeOtherTabs" label="&closeOtherTabs.label;" accesskey="&closeOtherTabs.accesskey;"
                 oncommand="gBrowser.removeAllTabsBut(TabContextMenu.contextTab);"/>
       <menuseparator/>
@@ -146,10 +139,13 @@
 
     <!-- for url bar autocomplete -->
     <panel type="autocomplete-richlistbox" id="PopupAutoCompleteRichResult" noautofocus="true" hidden="true">
-      <!-- <hbox id="urlbar-search-footer" flex="1" align="stretch" pack="end">
-          <button id="urlbar-search-settings" label="&changeSearchSettings.button;"
-                oncommand="BrowserUITelemetry.countSearchSettingsEvent('urlbar'); openPreferences('paneSearch')"/> 
-      </hbox> -->
+#ifdef NIGHTLY_BUILD
+<!-- Privafox :remove
+      <hbox id="urlbar-search-footer" flex="1" align="stretch" pack="end">
+        <button id="urlbar-search-settings" label="&changeSearchSettings.button;"
+                oncommand="BrowserUITelemetry.countSearchSettingsEvent('urlbar'); openPreferences('paneSearch')"/>
+      </hbox>  -->
+#endif
     </panel>
 
     <!-- for select dropdowns. The menupopup is what shows the list of options,
@@ -158,8 +154,9 @@
          popuponly menulist to be its immediate parent. -->
     <menulist popuponly="true" id="ContentSelectDropdown" hidden="true">
       <menupopup rolluponmousewheel="true"
+                 activateontab="true"
 #ifdef XP_WIN
-                 consumeoutsideclicks="false"
+                 consumeoutsideclicks="false" ignorekeys="handled"
 #endif
         />
     </menulist>
@@ -256,14 +253,6 @@
       <box id="UITourHighlight"></box>
     </panel>
 
-    <panel id="abouthome-search-panel" orient="vertical" type="arrow" hidden="true"
-           onclick="this.hidePopup()">
-      <hbox id="abouthome-search-panel-manage"
-            onclick="openPreferences('paneSearch')">
-        <label>&changeSearchSettings.button;</label>
-      </hbox>
-    </panel>
-
     <panel id="social-share-panel"
            class="social-panel"
            type="arrow"
@@ -313,26 +302,6 @@
            type="arrow"
            orient="horizontal"
            hidden="true"/>
-
-    <menupopup id="processHangOptions"
-               onpopupshowing="ProcessHangMonitor.refreshMenu(window);">
-      <menuitem id="processHangTerminateScript"
-                oncommand="ProcessHangMonitor.terminateScript(window)"
-                accesskey="&processHang.terminateScript.accessKey;"
-                label="&processHang.terminateScript.label;"/>
-      <menuitem id="processHangDebugScript"
-                oncommand="ProcessHangMonitor.debugScript(window)"
-                accesskey="&processHang.debugScript.accessKey;"
-                label="&processHang.debugScript.label;"/>
-      <menuitem id="processHangTerminatePlugin"
-                oncommand="ProcessHangMonitor.terminatePlugin(window)"
-                accesskey="&processHang.terminatePlugin.accessKey;"
-                label="&processHang.terminatePlugin.label;"/>
-      <menuitem id="processHangTerminateProcess"
-                oncommand="ProcessHangMonitor.terminateProcess(window)"
-                accesskey="&processHang.terminateProcess.accessKey;"
-                label="&processHang.terminateProcess.label;"/>
-    </menupopup>
 
     <menupopup id="toolbar-context-menu"
                onpopupshowing="onViewToolbarsPopupShowing(event, document.getElementById('viewToolbarsMenuSeparator'));">
@@ -561,7 +530,7 @@
 <deck flex="1" id="tab-view-deck">
 <vbox flex="1" id="browser-panel">
 
-  <toolbox id="navigator-toolbox" mode="icons" >
+  <toolbox id="navigator-toolbox" mode="icons">
     <!-- Menu -->
     <toolbar type="menubar" id="toolbar-menubar" class="chromeclass-menubar" customizable="true"
              defaultset="menubar-items"
@@ -574,11 +543,11 @@
 #endif
 #endif
              context="toolbar-context-menu">
-      <toolbaritem id="menubar-items" align="center" >
+      <toolbaritem id="menubar-items" align="center">
 # The entire main menubar is placed into browser-menubar.inc, so that it can be shared by
 # hiddenWindow.xul.
 #include browser-menubar.inc
-     </toolbaritem>
+      </toolbaritem>
 
 #ifdef CAN_DRAW_IN_TITLEBAR
 #ifndef XP_MACOSX
@@ -635,12 +604,6 @@
                      removable="false">
         <menupopup id="alltabs-popup"
                    position="after_end">
-          <menuitem id="menu_tabview"
-                    class="menuitem-iconic"
-                    key="key_tabview"
-                    label="&viewTabGroups.label;"
-                    command="Browser:ToggleTabView"
-                    observes="tabviewGroupsNumber"/>
           <menuitem id="alltabs_undoCloseTab"
                     class="menuitem-iconic"
                     key="key_undoCloseTab"
@@ -694,7 +657,7 @@
 
       <hbox id="nav-bar-customization-target" flex="1">
         <toolbaritem id="urlbar-container" flex="400" persist="width"
-                     title="&locationItem.title;" removable="false"
+                     removable="false"
                      class="chromeclass-location" overflows="false">
           <toolbarbutton id="back-button" class="toolbarbutton-1 chromeclass-toolbar-additional"
                          label="&backCmd.label;"
@@ -716,6 +679,7 @@
                      autocompletesearchparam="enable-actions"
                      autocompletepopup="PopupAutoCompleteRichResult"
                      completeselectedindex="true"
+                     shrinkdelay="250"
                      tabscrolling="true"
                      showcommentcolumn="true"
                      showimagecolumn="true"
@@ -728,30 +692,50 @@
                      onfocus="document.getElementById('identity-box').style.MozUserFocus= 'normal'"
                      onblur="setTimeout(() => { document.getElementById('identity-box').style.MozUserFocus = ''; }, 0);">
               <box id="notification-popup-box" hidden="true" align="center">
-                <image id="default-notification-icon" class="notification-anchor-icon" role="button"/>
+                <image id="default-notification-icon" class="notification-anchor-icon" role="button"
+                       aria-label="&urlbar.defaultNotificationAnchor.label;"/>
+                <!-- NB: the identity-notification-icon is used for persona-based auth and preffed
+                     off by default. It hasn't been updated for some time and liable to being
+                     removed.-->
                 <image id="identity-notification-icon" class="notification-anchor-icon" role="button"/>
-                <image id="geo-notification-icon" class="notification-anchor-icon" role="button"/>
-                <image id="push-notification-icon" class="notification-anchor-icon" role="button"/>
-                <image id="addons-notification-icon" class="notification-anchor-icon" role="button"/>
-                <image id="indexedDB-notification-icon" class="notification-anchor-icon" role="button"/>
-                <image id="login-fill-notification-icon" class="notification-anchor-icon" role="button"/>
-                <image id="password-notification-icon" class="notification-anchor-icon" role="button"/>
-                <image id="webapps-notification-icon" class="notification-anchor-icon" role="button"/>
-                <image id="plugins-notification-icon" class="notification-anchor-icon" role="button"/>
-                <image id="web-notifications-notification-icon" class="notification-anchor-icon" role="button"/>
-                <image id="bad-content-blocked-notification-icon" class="notification-anchor-icon" role="button"/>
-                <image id="bad-content-unblocked-notification-icon" class="notification-anchor-icon" role="button"/>
-                <image id="webRTC-shareDevices-notification-icon" class="notification-anchor-icon" role="button"/>
-                <image id="webRTC-sharingDevices-notification-icon" class="notification-anchor-icon" role="button"/>
-                <image id="webRTC-shareMicrophone-notification-icon" class="notification-anchor-icon" role="button"/>
-                <image id="webRTC-sharingMicrophone-notification-icon" class="notification-anchor-icon" role="button"/>
-                <image id="webRTC-shareScreen-notification-icon" class="notification-anchor-icon" role="button"/>
-                <image id="webRTC-sharingScreen-notification-icon" class="notification-anchor-icon" role="button"/>
-                <image id="pointerLock-notification-icon" class="notification-anchor-icon" role="button"/>
-                <image id="servicesInstall-notification-icon" class="notification-anchor-icon" role="button"/>
-                <image id="translate-notification-icon" class="notification-anchor-icon" role="button"/>
-                <image id="translated-notification-icon" class="notification-anchor-icon" role="button"/>
-                <image id="eme-notification-icon" class="notification-anchor-icon" role="button"/>
+                <image id="geo-notification-icon" class="notification-anchor-icon" role="button"
+                       aria-label="&urlbar.geolocationNotificationAnchor.label;"/>
+                <image id="addons-notification-icon" class="notification-anchor-icon" role="button"
+                       aria-label="&urlbar.addonsNotificationAnchor.label;"/>
+                <image id="indexedDB-notification-icon" class="notification-anchor-icon" role="button"
+                       aria-label="&urlbar.indexedDBNotificationAnchor.label;"/>
+                <image id="login-fill-notification-icon" class="notification-anchor-icon" role="button"
+                       aria-label="&urlbar.loginFillNotificationAnchor.label;"/>
+                <image id="password-notification-icon" class="notification-anchor-icon" role="button"
+                       aria-label="&urlbar.passwordNotificationAnchor.label;"/>
+                <image id="webapps-notification-icon" class="notification-anchor-icon" role="button"
+                       aria-label="&urlbar.webappsNotificationAnchor.label;"/>
+                <image id="plugins-notification-icon" class="notification-anchor-icon" role="button"
+                       aria-label="&urlbar.pluginsNotificationAnchor.label;"/>
+                <image id="web-notifications-notification-icon" class="notification-anchor-icon" role="button"
+                       aria-label="&urlbar.webNotsNotificationAnchor3.label;"/>
+                <image id="webRTC-shareDevices-notification-icon" class="notification-anchor-icon" role="button"
+                       aria-label="&urlbar.webRTCShareDevicesNotificationAnchor.label;"/>
+                <image id="webRTC-sharingDevices-notification-icon" class="notification-anchor-icon" role="button"
+                       aria-label="&urlbar.webRTCSharingDevicesNotificationAnchor.label;"/>
+                <image id="webRTC-shareMicrophone-notification-icon" class="notification-anchor-icon" role="button"
+                       aria-label="&urlbar.webRTCShareMicrophoneNotificationAnchor.label;"/>
+                <image id="webRTC-sharingMicrophone-notification-icon" class="notification-anchor-icon" role="button"
+                       aria-label="&urlbar.webRTCSharingMicrophoneNotificationAnchor.label;"/>
+                <image id="webRTC-shareScreen-notification-icon" class="notification-anchor-icon" role="button"
+                       aria-label="&urlbar.webRTCShareScreenNotificationAnchor.label;"/>
+                <image id="webRTC-sharingScreen-notification-icon" class="notification-anchor-icon" role="button"
+                       aria-label="&urlbar.webRTCSharingScreenNotificationAnchor.label;"/>
+                <image id="pointerLock-notification-icon" class="notification-anchor-icon" role="button"
+                       aria-label="&urlbar.pointerLockNotificationAnchor.label;"/>
+                <image id="servicesInstall-notification-icon" class="notification-anchor-icon" role="button"
+                       aria-label="&urlbar.servicesNotificationAnchor.label;"/>
+                <image id="translate-notification-icon" class="notification-anchor-icon" role="button"
+                       aria-label="&urlbar.translateNotificationAnchor.label;"/>
+                <image id="translated-notification-icon" class="notification-anchor-icon" role="button"
+                       aria-label="&urlbar.translatedNotificationAnchor.label;"/>
+                <image id="eme-notification-icon" class="notification-anchor-icon" role="button"
+                       aria-label="&urlbar.emeNotificationAnchor.label;"/>
               </box>
               <!-- Use onclick instead of normal popup= syntax since the popup
                    code fires onmousedown, and hence eats our favicon drag events.
@@ -759,13 +743,15 @@
                    has focus, otherwise pressing F6 focuses it instead of the location bar -->
               <box id="identity-box" role="button"
                    align="center"
+                   aria-label="&urlbar.viewSiteInfo.label;"
                    onclick="gIdentityHandler.handleIdentityButtonEvent(event);"
                    onkeypress="gIdentityHandler.handleIdentityButtonEvent(event);"
                    ondragstart="gIdentityHandler.onDragStart(event);">
-                <image id="page-proxy-favicon"
+                <image id="identity-icon"
                        consumeanchor="identity-box"
-                       onclick="PageProxyClickHandler(event);"
-                       pageproxystate="invalid"/>
+                       onclick="PageProxyClickHandler(event);"/>
+                <image id="tracking-protection-icon"/>
+                <image id="connection-icon"/>
                 <hbox id="identity-icon-labels">
                   <label id="identity-icon-label" class="plain" flex="1"/>
                   <label id="identity-icon-country-label" class="plain"/>
@@ -780,14 +766,14 @@
                        hidden="true"
                        tooltiptext="&pageReportIcon.tooltip;"
                        onclick="gPopupBlockerObserver.onReportButtonClick(event);"/>
-                <image id="readinglist-addremove-button"
-                       class="urlbar-icon"
-                       hidden="true"
-                       onclick="ReadingListUI.buttonClick(event);"/>
                 <image id="reader-mode-button"
                        class="urlbar-icon"
                        hidden="true"
                        onclick="ReaderParent.buttonClick(event);"/>
+              </hbox>
+              <hbox id="userContext-icons">
+                <label id="userContext-label"/>
+                <image id="userContext-indicator"/>
               </hbox>
               <toolbarbutton id="urlbar-go-button"
                              class="chromeclass-toolbar-additional"
@@ -806,16 +792,15 @@
           </hbox>
         </toolbaritem>
 
-       <toolbaritem id="search-container" title="&searchItem.title;"
+        <toolbaritem id="search-container" title="&searchItem.title;"
                      align="center" class="chromeclass-toolbar-additional panel-wide-item"
                      cui-areatype="toolbar"
                      flex="100" persist="width" removable="true">
           <searchbar id="searchbar" flex="1"/>
-        </toolbaritem> 
+        </toolbaritem>
 
         <toolbarbutton id="bookmarks-menu-button"
                        class="toolbarbutton-1 chromeclass-toolbar-additional"
-                       persist="class"
                        removable="true"
                        type="menu-button"
                        label="&bookmarksMenuButton.label;"
@@ -837,7 +822,7 @@
                      oncommand="BookmarksEventHandler.onCommand(event, this.parentNode._placesView);"
                      onclick="BookmarksEventHandler.onClick(event, this.parentNode._placesView);"
                      onpopupshowing="BookmarkingUI.onPopupShowing(event,this);
-									BookmarkingUI.attachPlacesView(event, this);"
+                                     BookmarkingUI.attachPlacesView(event, this);"
                      tooltip="bhTooltip" popupsinherittooltip="true">
             <menuitem id="BMB_viewEnterMasterPassword"
                       label="&enterMasterPassword.label;"
@@ -861,8 +846,7 @@
                       class="menuitem-iconic bookmark-item subviewbutton"
                       label="&pocketMenuitem.label;"
                       oncommand="openUILink(Pocket.listURL, event);"/>
-            <menuseparator id="BMB_pocketSeparator"/> 
-			
+            <menuseparator id="BMB_pocketSeparator"/>
             <menuitem id="BMB_subscribeToPageMenuitem"
 #ifndef XP_MACOSX
                       class="menuitem-iconic subviewbutton"
@@ -918,23 +902,7 @@
                                            new PlacesMenu(event, 'place:folder=UNFILED_BOOKMARKS',
                                                           PlacesUIUtils.getViewForNode(this.parentNode.parentNode).options);"/>
             </menu>
-            <menuseparator id="BMB_Seperator2" >
-              <observes element="readingListSidebar" attribute="hidden"/>
-            </menuseparator>
-            <menu id="BMB_readingList"
-                  class="menu-iconic bookmark-item subviewbutton"
-                  label="&readingList.label;"
-                  container="true">
-              <observes element="readingListSidebar" attribute="hidden"/>
-              <menupopup id="BMB_readingListPopup"
-                         placespopup="true"
-                         onpopupshowing="ReadingListUI.onReadingListPopupShowing(this);">
-                <menuitem id="BMB_viewReadingListSidebar" class="subviewbutton"
-                          oncommand="SidebarUI.show('readingListSidebar');"
-                          label="&readingList.showSidebar.label;"/>
-              </menupopup>
-            </menu>
-            <menuseparator id="BMB_Seperator3"/>
+            <menuseparator id="BMB_Seperator2" />
             <!-- Bookmarks menu items will go here -->
             <menuitem id="BMB_bookmarksShowAll"
                       class="subviewbutton panel-subview-footer"
@@ -959,7 +927,7 @@
                        tooltip="dynamic-shortcut-tooltip"/>
 
         <toolbarbutton id="home-button" class="toolbarbutton-1 chromeclass-toolbar-additional"
-                       persist="class" removable="true"
+                       removable="true"
                        label="&homeButton.label;"
                        ondragover="homeButtonObserver.onDragOver(event)"
                        ondragenter="homeButtonObserver.onDragOver(event)"
@@ -969,7 +937,6 @@
                        onclick="BrowserGoHome(event);"
                        cui-areatype="toolbar"
                        aboutHomeOverrideTooltip="&abouthome.pageTitle;"/>
-
       </hbox>
 
       <toolbarbutton id="nav-bar-overflow-button"
@@ -981,7 +948,7 @@
                    class="chromeclass-toolbar-additional"
                    removable="false">
         <toolbarbutton id="PanelUI-menu-button"
-                       class="toolbarbutton-1"
+                       class="toolbarbutton-1 badged-button"
                        consumeanchor="PanelUI-button"
                        label="&brandShortName;"
                        tooltiptext="&appmenu.tooltip;"/>
@@ -1009,7 +976,7 @@
     </toolbar>
 
     <toolbarset id="customToolbars" context="toolbar-context-menu"/>
-    
+
     <toolbar id="PersonalToolbar"
              mode="icons" iconsize="small"
              class="chromeclass-directories"
@@ -1034,7 +1001,6 @@
               popupsinherittooltip="true">
           <button id="enterMasterPassword" label="&enterMasterPassword.label;" oncommand="PlacesCommandHook.showPromptProtectBookmark();"/>
         </hbox>
-
         <hbox flex="1"
               id="PlacesToolbar"
               context="placesContext"
@@ -1106,19 +1072,12 @@
                      type="checkbox"
                      label="&fullScreenCmd.label;"
                      tooltip="dynamic-shortcut-tooltip"/>
-
-
-      <toolbarbutton id="tabview-button" class="toolbarbutton-1 chromeclass-toolbar-additional"
-                     label="&tabGroupsButton.label;"
-                     command="Browser:ToggleTabView"
-                     tooltip="dynamic-shortcut-tooltip"
-                     observes="tabviewGroupsNumber"/>
     </toolbarpalette>
   </toolbox>
 
   <hbox id="fullscr-toggler" hidden="true"/>
 
-  <deck id="content-deck" flex="1">	
+  <deck id="content-deck" flex="1">
     <hbox flex="1" id="browser">
       <vbox id="browser-border-start" hidden="true" layer="true"/>
       <vbox id="sidebar-box" hidden="true" class="chromeclass-extrachrome">
@@ -1130,14 +1089,13 @@
 		<hbox id="sidebar-header" align="center" >
 			<toolbarbutton id="sidebar-box-master-password" hidden="true"  align="start" label="&enterMasterPassword.label;" oncommand="PlacesCommandHook.showPromptProtectBookmark();" flex="1"/>
         </hbox>
-				
         <browser id="sidebar" flex="1" autoscroll="false" disablehistory="true"
                   style="min-width: 14em; width: 18em; max-width: 36em;" tooltip="aHTMLTooltip"/>
       </vbox>
 
       <splitter id="sidebar-splitter" class="chromeclass-extrachrome sidebar-splitter" hidden="true"/>
       <vbox id="appcontent" flex="1">
-        <notificationbox id="high-priority-global-notificationbox"/>
+        <notificationbox id="high-priority-global-notificationbox" notificationside="top"/>
         <tabbrowser id="content"
                     flex="1" contenttooltip="aHTMLTooltip"
                     tabcontainer="tabbrowser-tabs"
@@ -1186,7 +1144,7 @@
 
         <browser id="social-sidebar-browser"
                  type="content"
-                 context="contentAreaContextMenu"	
+                 context="contentAreaContextMenu"
                  message="true"
                  messagemanagergroup="social"
                  disableglobalhistory="true"
@@ -1200,37 +1158,27 @@
 #include ../../components/customizableui/content/customizeMode.inc.xul
   </deck>
 
-  <hbox id="full-screen-warning-container" hidden="true" fadeout="true">
-    <hbox style="width: 100%;" pack="center"> <!-- Inner hbox needed due to bug 579776. -->
-      <vbox id="full-screen-warning-message" align="center">
-        <description id="full-screen-domain-text"/>
-        <description class="full-screen-description" value="&fullscreenExitHint2.value;"/>
-        <vbox id="full-screen-approval-pane" align="center">
-          <hbox>
-#ifdef XP_UNIX
-            <button label="&fullscreenExitButton.label;"
-                    oncommand="FullScreen.setFullscreenAllowed(false);"
-                    class="full-screen-approval-button"/>
-            <button label="&fullscreenAllowButton.label;"
-                    oncommand="FullScreen.setFullscreenAllowed(true);"
-                    class="full-screen-approval-button"/>
+  <html:div id="fullscreen-warning" hidden="true">
+    <html:div id="fullscreen-domain-text">
+      &fullscreenWarning.beforeDomain.label;
+      <html:span id="fullscreen-domain"/>
+      &fullscreenWarning.afterDomain.label;
+    </html:div>
+    <html:div id="fullscreen-generic-text">
+      &fullscreenWarning.generic.label;
+    </html:div>
+    <html:button id="fullscreen-exit-button"
+                 onclick="FullScreen.exitDomFullScreen();">
+#ifdef XP_MACOSX
+            &exitDOMFullscreenMac.button;
 #else
-            <button label="&fullscreenAllowButton.label;"
-                    oncommand="FullScreen.setFullscreenAllowed(true);"
-                    class="full-screen-approval-button"/>
-            <button label="&fullscreenExitButton.label;"
-                    oncommand="FullScreen.setFullscreenAllowed(false);"
-                    class="full-screen-approval-button"/>
+            &exitDOMFullscreen.button;
 #endif
-          </hbox>
-          <checkbox id="full-screen-remember-decision"/>
-        </vbox>
-      </vbox>
-    </hbox>
-  </hbox>
+    </html:button>
+  </html:div>
 
   <vbox id="browser-bottombox" layer="true">
-    <notificationbox id="global-notificationbox"/>
+    <notificationbox id="global-notificationbox" notificationside="bottom"/>
     <toolbar id="developer-toolbar"
              hidden="true">
 #ifdef XP_MACOSX

@@ -183,7 +183,7 @@ class LAllocation : public TempObject
         return bits_;
     }
 
-    const char* toString() const;
+    UniqueChars toString() const;
     bool aliases(const LAllocation& other) const;
     void dump() const;
 
@@ -252,12 +252,12 @@ class LUse : public LAllocation
     explicit LUse(FloatRegister reg, bool usedAtStart = false) {
         set(FIXED, reg.code(), usedAtStart);
     }
-    LUse(Register reg, uint32_t virtualRegister) {
-        set(FIXED, reg.code(), false);
+    LUse(Register reg, uint32_t virtualRegister, bool usedAtStart = false) {
+        set(FIXED, reg.code(), usedAtStart);
         setVirtualRegister(virtualRegister);
     }
-    LUse(FloatRegister reg, uint32_t virtualRegister) {
-        set(FIXED, reg.code(), false);
+    LUse(FloatRegister reg, uint32_t virtualRegister, bool usedAtStart = false) {
+        set(FIXED, reg.code(), usedAtStart);
         setVirtualRegister(virtualRegister);
     }
 
@@ -422,6 +422,7 @@ class LDefinition
         DOUBLE,     // 64-bit floating-point value (FPU).
         INT32X4,    // SIMD data containing four 32-bit integers (FPU).
         FLOAT32X4,  // SIMD data containing four 32-bit floats (FPU).
+        SINCOS,
 #ifdef JS_NUNBOX32
         // A type virtual register must be followed by a payload virtual
         // register, as both will be tracked as a single gcthing.
@@ -483,16 +484,14 @@ class LDefinition
                 return r.fpu().isSingle();
             if (type() == DOUBLE)
                 return r.fpu().isDouble();
-            if (type() == INT32X4)
-                return r.fpu().isInt32x4();
-            if (type() == FLOAT32X4)
-                return r.fpu().isFloat32x4();
+            if (isSimdType())
+                return r.fpu().isSimd128();
             MOZ_CRASH("Unexpected MDefinition type");
         }
         return !isFloatReg() && !r.isFloat();
     }
     bool isCompatibleDef(const LDefinition& other) const {
-#if defined(JS_CODEGEN_ARM) || defined(JS_CODEGEN_MIPS)
+#if defined(JS_CODEGEN_ARM) || defined(JS_CODEGEN_MIPS32)
         if (isFloatReg() && other.isFloatReg())
             return type() == other.type();
         return !isFloatReg() && !other.isFloatReg();
@@ -562,11 +561,14 @@ class LDefinition
           case MIRType_Value:
             return LDefinition::BOX;
 #endif
+          case MIRType_SinCosDouble:
+            return LDefinition::SINCOS;
           case MIRType_Slots:
           case MIRType_Elements:
             return LDefinition::SLOTS;
           case MIRType_Pointer:
             return LDefinition::GENERAL;
+          case MIRType_Bool32x4:
           case MIRType_Int32x4:
             return LDefinition::INT32X4;
           case MIRType_Float32x4:
@@ -576,7 +578,7 @@ class LDefinition
         }
     }
 
-    const char* toString() const;
+    UniqueChars toString() const;
 
     void dump() const;
 };
@@ -1031,7 +1033,7 @@ namespace details {
             return getDef(0);
         }
     };
-}
+} // namespace details
 
 template <size_t Defs, size_t Operands, size_t Temps>
 class LInstructionHelper : public details::LInstructionFixedDefsTempsHelper<Defs, Temps>
@@ -1592,9 +1594,6 @@ class LSafepoint : public TempObject
         MOZ_ASSERT(!osiCallPointOffset_);
         osiCallPointOffset_ = osiCallPointOffset;
     }
-    void fixupOffset(MacroAssembler* masm) {
-        osiCallPointOffset_ = masm->actualOffset(osiCallPointOffset_);
-    }
 };
 
 class LInstruction::InputIterator
@@ -1815,7 +1814,7 @@ LAllocation::toRegister() const
 } // namespace jit
 } // namespace js
 
-#include "jit/LIR-Common.h"
+#include "jit/shared/LIR-shared.h"
 #if defined(JS_CODEGEN_X86) || defined(JS_CODEGEN_X64)
 # if defined(JS_CODEGEN_X86)
 #  include "jit/x86/LIR-x86.h"
@@ -1827,8 +1826,13 @@ LAllocation::toRegister() const
 # include "jit/arm/LIR-arm.h"
 #elif defined(JS_CODEGEN_ARM64)
 # include "jit/arm64/LIR-arm64.h"
-#elif defined(JS_CODEGEN_MIPS)
-# include "jit/mips/LIR-mips.h"
+#elif defined(JS_CODEGEN_MIPS32) || defined(JS_CODEGEN_MIPS64)
+# if defined(JS_CODEGEN_MIPS32)
+#  include "jit/mips32/LIR-mips32.h"
+# elif defined(JS_CODEGEN_MIPS64)
+#  include "jit/mips64/LIR-mips64.h"
+# endif
+# include "jit/mips-shared/LIR-mips-shared.h"
 #elif defined(JS_CODEGEN_NONE)
 # include "jit/none/LIR-none.h"
 #else

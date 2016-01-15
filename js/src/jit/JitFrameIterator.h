@@ -18,7 +18,7 @@
 
 namespace js {
     class ActivationIterator;
-};
+} // namespace js
 
 namespace js {
 namespace jit {
@@ -170,6 +170,9 @@ class JitFrameIterator
     }
     bool isIonStub() const {
         return type_ == JitFrame_IonStub;
+    }
+    bool isIonStubMaybeUnwound() const {
+        return type_ == JitFrame_IonStub || type_ == JitFrame_Unwound_IonStub;
     }
     bool isBailoutJS() const {
         return type_ == JitFrame_Bailout;
@@ -338,6 +341,9 @@ class RInstructionResults
 
     bool init(JSContext* cx, uint32_t numResults);
     bool isInitialized() const;
+#ifdef DEBUG
+    size_t length() const;
+#endif
 
     JitFrameLayout* frame() const;
 
@@ -410,7 +416,7 @@ class SnapshotIterator
     SnapshotReader snapshot_;
     RecoverReader recover_;
     JitFrameLayout* fp_;
-    MachineState machine_;
+    const MachineState* machine_;
     IonScript* ionScript_;
     RInstructionResults* instructionResults_;
 
@@ -429,17 +435,17 @@ class SnapshotIterator
   private:
     // Read a spilled register from the machine state.
     bool hasRegister(Register reg) const {
-        return machine_.has(reg);
+        return machine_->has(reg);
     }
     uintptr_t fromRegister(Register reg) const {
-        return machine_.read(reg);
+        return machine_->read(reg);
     }
 
     bool hasRegister(FloatRegister reg) const {
-        return machine_.has(reg);
+        return machine_->has(reg);
     }
     double fromRegister(FloatRegister reg) const {
-        return machine_.read(reg);
+        return machine_->read(reg);
     }
 
     // Read an uintptr_t from the stack.
@@ -550,9 +556,7 @@ class SnapshotIterator
     // Connect all informations about the current script in order to recover the
     // content of baseline frames.
 
-    SnapshotIterator(IonScript* ionScript, SnapshotOffset snapshotOffset,
-                     JitFrameLayout* fp, const MachineState& machine);
-    explicit SnapshotIterator(const JitFrameIterator& iter);
+    SnapshotIterator(const JitFrameIterator& iter, const MachineState* machineState);
     SnapshotIterator();
 
     Value read() {
@@ -656,6 +660,9 @@ class InlineFrameIterator
     RootedScript script_;
     jsbytecode* pc_;
     uint32_t numActualArgs_;
+
+    // Register state, used by all snapshot iterators.
+    MachineState machine_;
 
     struct Nop {
         void operator()(const Value& v) { }
@@ -815,8 +822,7 @@ class InlineFrameIterator
         return computeScopeChain(v, fallback);
     }
 
-    Value thisValue(MaybeReadFallback& fallback) const {
-        // MOZ_ASSERT(isConstructing(...));
+    Value thisArgument(MaybeReadFallback& fallback) const {
         SnapshotIterator s(si_);
 
         // scopeChain

@@ -11,6 +11,7 @@
 
 #include "base/message_loop.h"
 #include "nsAutoPtr.h"
+#include "mozilla/UniquePtr.h"
 
 namespace mozilla {
 namespace ipc {
@@ -197,6 +198,7 @@ private:
 class UnixSocketIOBuffer : public UnixSocketBuffer
 {
 public:
+  UnixSocketIOBuffer();
   virtual ~UnixSocketIOBuffer();
 
   /**
@@ -228,6 +230,15 @@ public:
    * @param aSize The number of bytes in |aData|.
    */
   UnixSocketRawData(const void* aData, size_t aSize);
+
+  /**
+   * This constructor takes ownership of the data in aData.  The
+   * data is assumed to be aSize bytes in length.
+   *
+   * @param aData The buffer to take ownership of.
+   * @param aSize The number of bytes in |aData|.
+   */
+  UnixSocketRawData(UniquePtr<uint8_t[]> aData, size_t aSize);
 
   /**
    * This constructor reserves aSize bytes of space. Currently
@@ -439,6 +450,7 @@ public:
   };
 
   SocketEventTask(SocketIOBase* aIO, SocketEvent aEvent);
+  ~SocketEventTask();
 
   void Run() override;
 
@@ -454,6 +466,7 @@ class SocketRequestClosingTask final : public SocketTask<SocketIOBase>
 {
 public:
   SocketRequestClosingTask(SocketIOBase* aIO);
+  ~SocketRequestClosingTask();
 
   void Run() override;
 };
@@ -465,6 +478,7 @@ class SocketDeleteInstanceTask final : public Task
 {
 public:
   SocketDeleteInstanceTask(SocketIOBase* aIO);
+  ~SocketDeleteInstanceTask();
 
   void Run() override;
 
@@ -520,6 +534,7 @@ class SocketIOShutdownTask final : public SocketIOTask<SocketIOBase>
 {
 public:
   SocketIOShutdownTask(SocketIOBase* aIO);
+  ~SocketIOShutdownTask();
 
   void Run() override;
 };

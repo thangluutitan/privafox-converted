@@ -335,7 +335,7 @@ public:
    * @param [out] the widget containing the caret
    * @return      the caret rect
    */
-  nsIntRect GetCaretRect(nsIWidget** aWidget);
+  mozilla::LayoutDeviceIntRect GetCaretRect(nsIWidget** aWidget);
 
   /**
    * Return selected regions count within the accessible.
@@ -560,6 +560,12 @@ protected:
   void GetSpellTextAttr(nsINode* aNode, int32_t aNodeOffset,
                         uint32_t* aStartOffset, uint32_t* aEndOffset,
                         nsIPersistentProperties* aAttributes);
+
+  /**
+   * Set xml-roles attributes for MathML elements.
+   * @param aAttributes
+   */
+  void SetMathMLXMLRoles(nsIPersistentProperties* aAttributes);
 
 private:
   /**

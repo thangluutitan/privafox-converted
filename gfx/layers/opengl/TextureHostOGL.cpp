@@ -16,7 +16,6 @@
 #include "mozilla/gfx/BaseSize.h"       // for BaseSize
 #include "mozilla/gfx/Logging.h"        // for gfxCriticalError
 #include "mozilla/layers/ISurfaceAllocator.h"
-#include "mozilla/layers/YCbCrImageDataSerializer.h"
 #include "mozilla/layers/GrallocTextureHost.h"
 #include "nsRegion.h"                   // for nsIntRegion
 #include "AndroidSurfaceTexture.h"
@@ -33,6 +32,9 @@
 #include "mozilla/layers/MacIOSurfaceTextureHostOGL.h"
 #endif
 
+#ifdef GL_PROVIDER_GLX
+#include "mozilla/layers/X11TextureHost.h"
+#endif
 
 using namespace mozilla::gl;
 using namespace mozilla::gfx;
@@ -49,8 +51,7 @@ CreateTextureHostOGL(const SurfaceDescriptor& aDesc,
 {
   RefPtr<TextureHost> result;
   switch (aDesc.type()) {
-    case SurfaceDescriptor::TSurfaceDescriptorShmem:
-    case SurfaceDescriptor::TSurfaceDescriptorMemory: {
+    case SurfaceDescriptor::TSurfaceDescriptorBuffer: {
       result = CreateBackendIndependentTextureHost(aDesc,
                                                    aDeallocator, aFlags);
       break;
@@ -86,13 +87,31 @@ CreateTextureHostOGL(const SurfaceDescriptor& aDesc,
 #endif
 
 #ifdef MOZ_WIDGET_GONK
-    case SurfaceDescriptor::TNewSurfaceDescriptorGralloc: {
-      const NewSurfaceDescriptorGralloc& desc =
-        aDesc.get_NewSurfaceDescriptorGralloc();
+    case SurfaceDescriptor::TSurfaceDescriptorGralloc: {
+      const SurfaceDescriptorGralloc& desc =
+        aDesc.get_SurfaceDescriptorGralloc();
       result = new GrallocTextureHostOGL(aFlags, desc);
       break;
     }
 #endif
+
+#ifdef GL_PROVIDER_GLX
+    case SurfaceDescriptor::TSurfaceDescriptorX11: {
+      const auto& desc = aDesc.get_SurfaceDescriptorX11();
+      result = new X11TextureHost(aFlags, desc);
+      break;
+    }
+#endif
+
+    case SurfaceDescriptor::TSurfaceDescriptorSharedGLTexture: {
+      const auto& desc = aDesc.get_SurfaceDescriptorSharedGLTexture();
+      result = new GLTextureHost(aFlags, desc.texture(),
+                                 desc.target(),
+                                 (GLsync)desc.fence(),
+                                 desc.size(),
+                                 desc.hasAlpha());
+      break;
+    }
     default: return nullptr;
   }
   return result.forget();
@@ -324,6 +343,9 @@ GLTextureSource::SetCompositor(Compositor* aCompositor)
 {
   MOZ_ASSERT(aCompositor);
   mCompositor = static_cast<CompositorOGL*>(aCompositor);
+  if (mNextSibling) {
+    mNextSibling->SetCompositor(aCompositor);
+  }
 }
 
 bool
@@ -631,5 +653,76 @@ EGLImageTextureHost::GetFormat() const
   return mTextureSource->GetFormat();
 }
 
-} // namespace
-} // namespace
+//
+
+GLTextureHost::GLTextureHost(TextureFlags aFlags,
+                             GLuint aTextureHandle,
+                             GLenum aTarget,
+                             GLsync aSync,
+                             gfx::IntSize aSize,
+                             bool aHasAlpha)
+  : TextureHost(aFlags)
+  , mTexture(aTextureHandle)
+  , mTarget(aTarget)
+  , mSync(aSync)
+  , mSize(aSize)
+  , mHasAlpha(aHasAlpha)
+  , mCompositor(nullptr)
+{}
+
+GLTextureHost::~GLTextureHost()
+{}
+
+gl::GLContext*
+GLTextureHost::gl() const
+{
+  return mCompositor ? mCompositor->gl() : nullptr;
+}
+
+bool
+GLTextureHost::Lock()
+{
+  if (!mCompositor) {
+    return false;
+  }
+
+  if (mSync) {
+    gl()->MakeCurrent();
+    gl()->fWaitSync(mSync, 0, LOCAL_GL_TIMEOUT_IGNORED);
+    gl()->fDeleteSync(mSync);
+    mSync = 0;
+  }
+
+  if (!mTextureSource) {
+    gfx::SurfaceFormat format = mHasAlpha ? gfx::SurfaceFormat::R8G8B8A8
+                                          : gfx::SurfaceFormat::R8G8B8X8;
+    mTextureSource = new GLTextureSource(mCompositor,
+                                         mTexture,
+                                         mTarget,
+                                         mSize,
+                                         format,
+                                         false /* owned by the client */);
+  }
+
+  return true;
+}
+void
+GLTextureHost::SetCompositor(Compositor* aCompositor)
+{
+  MOZ_ASSERT(aCompositor);
+  CompositorOGL* glCompositor = static_cast<CompositorOGL*>(aCompositor);
+  mCompositor = glCompositor;
+  if (mTextureSource) {
+    mTextureSource->SetCompositor(glCompositor);
+  }
+}
+
+gfx::SurfaceFormat
+GLTextureHost::GetFormat() const
+{
+  MOZ_ASSERT(mTextureSource);
+  return mTextureSource->GetFormat();
+}
+
+} // namespace layers
+} // namespace mozilla

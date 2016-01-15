@@ -10,6 +10,7 @@
 
 #include "ExtendedValidation.h"
 #include "OCSPRequestor.h"
+#include "OCSPVerificationTrustDomain.h"
 #include "certdb.h"
 #include "cert.h"
 #include "mozilla/UniquePtr.h"
@@ -49,6 +50,9 @@ NSSCertDBTrustDomain::NSSCertDBTrustDomain(SECTrustType certDBTrustType,
                                            CertVerifier::PinningMode pinningMode,
                                            unsigned int minRSABits,
                                            ValidityCheckingMode validityCheckingMode,
+                                           SignatureDigestOption signatureDigestOption,
+                                           CertVerifier::SHA1Mode sha1Mode,
+                              /*optional*/ PinningTelemetryInfo* pinningTelemetryInfo,
                               /*optional*/ const char* hostname,
                               /*optional*/ ScopedCERTCertList* builtChain)
   : mCertDBTrustType(certDBTrustType)
@@ -60,6 +64,9 @@ NSSCertDBTrustDomain::NSSCertDBTrustDomain(SECTrustType certDBTrustType,
   , mPinningMode(pinningMode)
   , mMinRSABits(minRSABits)
   , mValidityCheckingMode(validityCheckingMode)
+  , mSignatureDigestOption(signatureDigestOption)
+  , mSHA1Mode(sha1Mode)
+  , mPinningTelemetryInfo(pinningTelemetryInfo)
   , mHostname(hostname)
   , mBuiltChain(builtChain)
   , mCertBlocklist(do_GetService(NS_CERTBLOCKLIST_CONTRACTID))
@@ -636,7 +643,17 @@ NSSCertDBTrustDomain::VerifyAndMaybeCacheEncodedOCSPResponse(
 {
   Time thisUpdate(Time::uninitialized);
   Time validThrough(Time::uninitialized);
-  Result rv = VerifyEncodedOCSPResponse(*this, certID, time,
+
+  // We use a try and fallback approach which first mandates good signature
+  // digest algorithms, then falls back to SHA-1 if this fails. If a delegated
+  // OCSP response signing certificate was issued with a SHA-1 signature,
+  // verification initially fails. We cache the failure and then re-use that
+  // result even when doing fallback (i.e. when weak signature digest algorithms
+  // should succeed). To address this we use an OCSPVerificationTrustDomain
+  // here, rather than using *this, to ensure verification succeeds for all
+  // allowed signature digest algorithms.
+  OCSPVerificationTrustDomain trustDomain(*this);
+  Result rv = VerifyEncodedOCSPResponse(trustDomain, certID, time,
                                         maxLifetimeInDays, encodedResponse,
                                         expired, &thisUpdate, &validThrough);
   // If a response was stapled and expired, we don't want to cache it. Return
@@ -779,7 +796,8 @@ NSSCertDBTrustDomain::IsChainValid(const DERArray& certArray, Time time)
       (mPinningMode == CertVerifier::pinningEnforceTestMode);
     bool chainHasValidPins;
     nsresult nsrv = PublicKeyPinningService::ChainHasValidPins(
-      certList, mHostname, time, enforceTestMode, chainHasValidPins);
+      certList, mHostname, time, enforceTestMode, chainHasValidPins,
+      mPinningTelemetryInfo);
     if (NS_FAILED(nsrv)) {
       return Result::FATAL_ERROR_LIBRARY_FAILURE;
     }
@@ -796,8 +814,50 @@ NSSCertDBTrustDomain::IsChainValid(const DERArray& certArray, Time time)
 }
 
 Result
-NSSCertDBTrustDomain::CheckSignatureDigestAlgorithm(DigestAlgorithm)
+NSSCertDBTrustDomain::CheckSignatureDigestAlgorithm(DigestAlgorithm aAlg,
+                                                    EndEntityOrCA endEntityOrCA,
+                                                    Time notBefore)
 {
+  // (new Date("2016-01-01T00:00:00Z")).getTime() / 1000
+  static const Time JANUARY_FIRST_2016 = TimeFromEpochInSeconds(1451606400);
+
+  MOZ_LOG(gCertVerifierLog, LogLevel::Debug,
+          ("NSSCertDBTrustDomain: CheckSignatureDigestAlgorithm"));
+  if (aAlg == DigestAlgorithm::sha1) {
+    // First check based on SHA1Mode
+    switch (mSHA1Mode) {
+      case CertVerifier::SHA1Mode::Forbidden:
+        MOZ_LOG(gCertVerifierLog, LogLevel::Debug, ("SHA-1 certificate rejected"));
+        return Result::ERROR_CERT_SIGNATURE_ALGORITHM_DISABLED;
+      case CertVerifier::SHA1Mode::OnlyBefore2016:
+        if (JANUARY_FIRST_2016 <= notBefore) {
+          MOZ_LOG(gCertVerifierLog, LogLevel::Debug, ("Post-2015 SHA-1 certificate rejected"));
+          return Result::ERROR_CERT_SIGNATURE_ALGORITHM_DISABLED;
+        }
+        break;
+      case CertVerifier::SHA1Mode::Allowed:
+      default:
+        break;
+    }
+
+    // Then check the signatureDigestOption values
+    if (mSignatureDigestOption == DisableSHA1Everywhere) {
+      MOZ_LOG(gCertVerifierLog, LogLevel::Debug, ("SHA-1 certificate rejected"));
+      return Result::ERROR_CERT_SIGNATURE_ALGORITHM_DISABLED;
+    }
+
+    if (endEntityOrCA == EndEntityOrCA::MustBeCA) {
+      MOZ_LOG(gCertVerifierLog, LogLevel::Debug, ("CA cert is SHA-1"));
+      return mSignatureDigestOption == DisableSHA1ForCA
+             ? Result::ERROR_CERT_SIGNATURE_ALGORITHM_DISABLED
+             : Success;
+    } else {
+      MOZ_LOG(gCertVerifierLog, LogLevel::Debug, ("EE cert is SHA-1"));
+      return mSignatureDigestOption == DisableSHA1ForEE
+             ? Result::ERROR_CERT_SIGNATURE_ALGORITHM_DISABLED
+             : Success;
+    }
+  }
   return Success;
 }
 
@@ -854,7 +914,8 @@ NSSCertDBTrustDomain::CheckValidityIsAcceptable(Time notBefore, Time notAfter,
     return Success;
   }
 
-  Duration DURATION_39_MONTHS((3 * 365 + 3 * 31) * Time::ONE_DAY_IN_SECONDS);
+  Duration DURATION_27_MONTHS_PLUS_SLOP((2 * 365 + 3 * 31 + 7) *
+                                        Time::ONE_DAY_IN_SECONDS);
   Duration maxValidityDuration(UINT64_MAX);
   Duration validityDuration(notBefore, notAfter);
 
@@ -862,12 +923,9 @@ NSSCertDBTrustDomain::CheckValidityIsAcceptable(Time notBefore, Time notAfter,
     case ValidityCheckingMode::CheckingOff:
       return Success;
     case ValidityCheckingMode::CheckForEV:
-      // The EV Guidelines say the maximum is 27 months, but we use a higher
-      // limit here:
-      //  a) To (hopefully) minimize compatibility breakage.
-      //  b) Because there was some talk about raising the limit to 39 months to
-      //     match the BR limit.
-      maxValidityDuration = DURATION_39_MONTHS;
+      // The EV Guidelines say the maximum is 27 months, but we use a slightly
+      // higher limit here to (hopefully) minimize compatibility breakage.
+      maxValidityDuration = DURATION_27_MONTHS_PLUS_SLOP;
       break;
     default:
       PR_NOT_REACHED("We're not handling every ValidityCheckingMode type");
@@ -915,7 +973,7 @@ nss_addEscape(const char* string, char quote)
 } // unnamed namespace
 
 SECStatus
-InitializeNSS(const char* dir, bool readOnly)
+InitializeNSS(const char* dir, bool readOnly, bool loadPKCS11Modules)
 {
   // The NSS_INIT_NOROOTINIT flag turns off the loading of the root certs
   // module by NSS_Initialize because we will load it in InstallLoadableRoots
@@ -925,6 +983,9 @@ InitializeNSS(const char* dir, bool readOnly)
   uint32_t flags = NSS_INIT_NOROOTINIT | NSS_INIT_OPTIMIZESPACE;
   if (readOnly) {
     flags |= NSS_INIT_READONLY;
+  }
+  if (!loadPKCS11Modules) {
+    flags |= NSS_INIT_NOMODDB;
   }
   return ::NSS_Initialize(dir, "", "", SECMOD_DB, flags);
 }

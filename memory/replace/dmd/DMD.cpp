@@ -134,6 +134,28 @@ class InfallibleAllocPolicy
   static void ExitOnFailure(const void* aP);
 
 public:
+  template <typename T>
+  static T* maybe_pod_malloc(size_t aNumElems)
+  {
+    if (aNumElems & mozilla::tl::MulOverflowMask<sizeof(T)>::value)
+      return nullptr;
+    return (T*)gMallocTable->malloc(aNumElems * sizeof(T));
+  }
+
+  template <typename T>
+  static T* maybe_pod_calloc(size_t aNumElems)
+  {
+    return (T*)gMallocTable->calloc(aNumElems, sizeof(T));
+  }
+
+  template <typename T>
+  static T* maybe_pod_realloc(T* aPtr, size_t aOldSize, size_t aNewSize)
+  {
+    if (aNewSize & mozilla::tl::MulOverflowMask<sizeof(T)>::value)
+      return nullptr;
+    return (T*)gMallocTable->realloc(aPtr, aNewSize * sizeof(T));
+  }
+
   static void* malloc_(size_t aSize)
   {
     void* p = gMallocTable->malloc(aSize);
@@ -144,11 +166,9 @@ public:
   template <typename T>
   static T* pod_malloc(size_t aNumElems)
   {
-    if (aNumElems & mozilla::tl::MulOverflowMask<sizeof(T)>::value)
-      return nullptr;
-    void* p = gMallocTable->malloc(aNumElems * sizeof(T));
+    T* p = maybe_pod_malloc<T>(aNumElems);
     ExitOnFailure(p);
-    return (T*)p;
+    return p;
   }
 
   static void* calloc_(size_t aSize)
@@ -161,9 +181,9 @@ public:
   template <typename T>
   static T* pod_calloc(size_t aNumElems)
   {
-    void* p = gMallocTable->calloc(aNumElems, sizeof(T));
+    T* p = maybe_pod_calloc<T>(aNumElems);
     ExitOnFailure(p);
-    return (T*)p;
+    return p;
   }
 
   // This realloc_ is the one we use for direct reallocs within DMD.
@@ -178,9 +198,9 @@ public:
   template <typename T>
   static T* pod_realloc(T* aPtr, size_t aOldSize, size_t aNewSize)
   {
-    if (aNewSize & mozilla::tl::MulOverflowMask<sizeof(T)>::value)
-      return nullptr;
-    return (T*)InfallibleAllocPolicy::realloc_((void *)aPtr, aNewSize * sizeof(T));
+    T* p = maybe_pod_realloc(aPtr, aOldSize, aNewSize);
+    ExitOnFailure(p);
+    return p;
   }
 
   static void* memalign_(size_t aAlignment, size_t aSize)
@@ -225,6 +245,7 @@ public:
   }
 
   static void reportAllocOverflow() { ExitOnFailure(nullptr); }
+  bool checkSimulatedOOM() const { return true; }
 };
 
 // This is only needed because of the |const void*| vs |void*| arg mismatch.
@@ -589,7 +610,10 @@ public:
 class StringTable
 {
 public:
-  StringTable() { (void)mSet.init(64); }
+  StringTable()
+  {
+    MOZ_ALWAYS_TRUE(mSet.init(64));
+  }
 
   const char*
   Intern(const char* aString)
@@ -600,7 +624,7 @@ public:
     }
 
     const char* newString = InfallibleAllocPolicy::strdup_(aString);
-    (void)mSet.add(p, newString);
+    MOZ_ALWAYS_TRUE(mSet.add(p, newString));
     return newString;
   }
 
@@ -764,7 +788,7 @@ StackTrace::Get(Thread* aT)
   StackTraceTable::AddPtr p = gStackTraceTable->lookupForAdd(&tmp);
   if (!p) {
     StackTrace* stnew = InfallibleAllocPolicy::new_<StackTrace>(tmp);
-    (void)gStackTraceTable->add(p, stnew);
+    MOZ_ALWAYS_TRUE(gStackTraceTable->add(p, stnew));
   }
   return *p;
 }
@@ -913,14 +937,14 @@ public:
 
   void AddStackTracesToTable(StackTraceSet& aStackTraces) const
   {
-    aStackTraces.put(AllocStackTrace());  // never null
+    MOZ_ALWAYS_TRUE(aStackTraces.put(AllocStackTrace()));  // never null
     if (gOptions->IsDarkMatterMode()) {
       const StackTrace* st;
       if ((st = ReportStackTrace1())) {     // may be null
-        aStackTraces.put(st);
+        MOZ_ALWAYS_TRUE(aStackTraces.put(st));
       }
       if ((st = ReportStackTrace2())) {     // may be null
-        aStackTraces.put(st);
+        MOZ_ALWAYS_TRUE(aStackTraces.put(st));
       }
     }
   }
@@ -1031,7 +1055,7 @@ public:
 
   void AddStackTracesToTable(StackTraceSet& aStackTraces) const
   {
-    aStackTraces.put(AllocStackTrace());  // never null
+    MOZ_ALWAYS_TRUE(aStackTraces.put(AllocStackTrace()));  // never null
   }
 
   // Hash policy.
@@ -1069,7 +1093,7 @@ void MaybeAddToDeadBlockTable(const DeadBlock& aDb)
     if (DeadBlockTable::AddPtr p = gDeadBlockTable->lookupForAdd(aDb)) {
       p->value() += 1;
     } else {
-      gDeadBlockTable->add(p, aDb, 1);
+      MOZ_ALWAYS_TRUE(gDeadBlockTable->add(p, aDb, 1));
     }
   }
 }
@@ -1083,7 +1107,7 @@ GatherUsedStackTraces(StackTraceSet& aStackTraces)
   MOZ_ASSERT(Thread::Fetch()->InterceptsAreBlocked());
 
   aStackTraces.finish();
-  aStackTraces.init(512);
+  MOZ_ALWAYS_TRUE(aStackTraces.init(512));
 
   for (auto r = gLiveBlockTable->all(); !r.empty(); r.popFront()) {
     r.front().AddStackTracesToTable(aStackTraces);
@@ -1149,12 +1173,12 @@ AllocCallback(void* aPtr, size_t aReqSize, Thread* aT)
 
       LiveBlock b(aPtr, sampleBelowSize, StackTrace::Get(aT),
                   /* isSampled */ true);
-      (void)gLiveBlockTable->putNew(aPtr, b);
+      MOZ_ALWAYS_TRUE(gLiveBlockTable->putNew(aPtr, b));
     }
   } else {
     // If this block size is larger than the sample size, record it exactly.
     LiveBlock b(aPtr, aReqSize, StackTrace::Get(aT), /* isSampled */ false);
-    (void)gLiveBlockTable->putNew(aPtr, b);
+    MOZ_ALWAYS_TRUE(gLiveBlockTable->putNew(aPtr, b));
   }
 }
 
@@ -1191,8 +1215,8 @@ FreeCallback(void* aPtr, Thread* aT, DeadBlock* aDeadBlock)
 
 static void Init(const malloc_table_t* aMallocTable);
 
-}   // namespace dmd
-}   // namespace mozilla
+} // namespace dmd
+} // namespace mozilla
 
 void
 replace_init(const malloc_table_t* aMallocTable)
@@ -1569,16 +1593,17 @@ Init(const malloc_table_t* aMallocTable)
     AutoLockState lock;
 
     gStackTraceTable = InfallibleAllocPolicy::new_<StackTraceTable>();
-    gStackTraceTable->init(8192);
+    MOZ_ALWAYS_TRUE(gStackTraceTable->init(8192));
 
     gLiveBlockTable = InfallibleAllocPolicy::new_<LiveBlockTable>();
-    gLiveBlockTable->init(8192);
+    MOZ_ALWAYS_TRUE(gLiveBlockTable->init(8192));
 
     // Create this even if the mode isn't Cumulative (albeit with a small
     // size), in case the mode is changed later on (as is done by SmokeDMD.cpp,
     // for example).
     gDeadBlockTable = InfallibleAllocPolicy::new_<DeadBlockTable>();
-    gDeadBlockTable->init(gOptions->IsCumulativeMode() ? 8192 : 4);
+    size_t tableSize = gOptions->IsCumulativeMode() ? 8192 : 4;
+    MOZ_ALWAYS_TRUE(gDeadBlockTable->init(tableSize));
   }
 
   gIsDMDInitialized = true;
@@ -1699,7 +1724,11 @@ DMDFuncs::ClearReports()
 class ToIdStringConverter final
 {
 public:
-  ToIdStringConverter() : mNextId(0) { mIdMap.init(512); }
+  ToIdStringConverter()
+    : mNextId(0)
+  {
+    MOZ_ALWAYS_TRUE(mIdMap.init(512));
+  }
 
   // Converts a pointer to a unique ID. Reuses the existing ID for the pointer
   // if it's been seen before.
@@ -1709,7 +1738,7 @@ public:
     PointerIdMap::AddPtr p = mIdMap.lookupForAdd(aPtr);
     if (!p) {
       id = mNextId++;
-      (void)mIdMap.add(p, aPtr, id);
+      MOZ_ALWAYS_TRUE(mIdMap.add(p, aPtr, id));
     } else {
       id = p->value();
     }
@@ -1807,10 +1836,10 @@ AnalyzeImpl(UniquePtr<JSONWriteFunc> aWriter)
   auto locService = InfallibleAllocPolicy::new_<CodeAddressService>();
 
   StackTraceSet usedStackTraces;
-  usedStackTraces.init(512);
+  MOZ_ALWAYS_TRUE(usedStackTraces.init(512));
 
   PointerSet usedPcs;
-  usedPcs.init(512);
+  MOZ_ALWAYS_TRUE(usedPcs.init(512));
 
   size_t iscSize;
 
@@ -1915,7 +1944,7 @@ AnalyzeImpl(UniquePtr<JSONWriteFunc> aWriter)
           for (uint32_t i = 0; i < st->Length(); i++) {
             const void* pc = st->Pc(i);
             writer.StringElement(isc.ToIdString(pc));
-            usedPcs.put(pc);
+            MOZ_ALWAYS_TRUE(usedPcs.put(pc));
           }
         }
         writer.EndArray();
@@ -2041,5 +2070,5 @@ DMDFuncs::ResetEverything(const char* aOptions)
   gSmallBlockActualSizeCounter = 0;
 }
 
-}   // namespace dmd
-}   // namespace mozilla
+} // namespace dmd
+} // namespace mozilla

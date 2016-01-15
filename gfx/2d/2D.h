@@ -89,7 +89,7 @@ struct DrawOptions {
                                      operation is multiplied. */
   CompositionOp mCompositionOp; /**< The operator that indicates how the source and
                                      destination patterns are blended. */
-  AntialiasMode mAntialiasMode; /**< The AntiAlias mode used for this drawing 
+  AntialiasMode mAntialiasMode; /**< The AntiAlias mode used for this drawing
                                      operation. */
 };
 
@@ -317,8 +317,13 @@ class DrawTargetCaptureImpl;
  * This is the base class for source surfaces. These objects are surfaces
  * which may be used as a source in a SurfacePattern or a DrawSurface call.
  * They cannot be drawn to directly.
+ *
+ * Although SourceSurface has thread-safe refcount, some SourceSurface cannot
+ * be used on random threads at the same time. Only DataSourceSurface can be
+ * used on random threads now. This will be fixed in the future. Eventually
+ * all SourceSurface should be thread-safe.
  */
-class SourceSurface : public RefCounted<SourceSurface>
+class SourceSurface : public external::AtomicRefCounted<SourceSurface>
 {
 public:
   MOZ_DECLARE_REFCOUNTED_VIRTUAL_TYPENAME(SourceSurface)
@@ -415,25 +420,25 @@ public:
       }
     }
 
-    uint8_t* GetData()
+    uint8_t* GetData() const
     {
       MOZ_ASSERT(mIsMapped);
       return mMap.mData;
     }
 
-    int32_t GetStride()
+    int32_t GetStride() const
     {
       MOZ_ASSERT(mIsMapped);
       return mMap.mStride;
     }
 
-    MappedSurface* GetMappedSurface()
+    const MappedSurface* GetMappedSurface() const
     {
       MOZ_ASSERT(mIsMapped);
       return &mMap;
     }
 
-    bool IsMapped() { return mIsMapped; }
+    bool IsMapped() const { return mIsMapped; }
 
   private:
     RefPtr<DataSourceSurface> mSurface;
@@ -527,7 +532,7 @@ class Path : public RefCounted<Path>
 public:
   MOZ_DECLARE_REFCOUNTED_VIRTUAL_TYPENAME(Path)
   virtual ~Path();
-  
+
   virtual BackendType GetBackendType() const = 0;
 
   /** This returns a PathBuilder object that contains a copy of the contents of
@@ -694,6 +699,7 @@ public:
   DrawTarget() : mTransformDirty(false), mPermitSubpixelAA(false) {}
   virtual ~DrawTarget() {}
 
+  virtual bool IsValid() const { return true; };
   virtual DrawTargetType GetType() const = 0;
 
   virtual BackendType GetBackendType() const = 0;
@@ -803,7 +809,7 @@ public:
 
   /** @see CopySurface
    * Same as CopySurface, except uses itself as the source.
-   * 
+   *
    * Some backends may be able to optimize this better
    * than just taking a snapshot and using CopySurface.
    */
@@ -863,7 +869,7 @@ public:
                       const Pattern &aPattern,
                       const StrokeOptions &aStrokeOptions = StrokeOptions(),
                       const DrawOptions &aOptions = DrawOptions()) = 0;
-  
+
   /**
    * Fill a path on the draw target with a certain source pattern.
    *
@@ -968,7 +974,7 @@ public:
    * Create a DrawTarget that captures the drawing commands and can be replayed
    * onto a compatible DrawTarget afterwards.
    *
-   * @param aSize Size of the area this DT will capture. 
+   * @param aSize Size of the area this DT will capture.
    */
   virtual already_AddRefed<DrawTargetCapture> CreateCaptureDT(const IntSize& aSize);
 
@@ -1128,21 +1134,45 @@ struct TileSet
   size_t mTileCount;
 };
 
+struct Config {
+  LogForwarder* mLogForwarder;
+  int32_t mMaxTextureSize;
+  int32_t mMaxAllocSize;
+
+  Config()
+  : mLogForwarder(nullptr)
+  , mMaxTextureSize(8192)
+  , mMaxAllocSize(52000000)
+  {}
+};
+
 class GFX2D_API Factory
 {
 public:
+  static void Init(const Config& aConfig);
+  static void ShutDown();
+
   static bool HasSSE2();
 
   /** Make sure that the given dimensions don't overflow a 32-bit signed int
    * using 4 bytes per pixel; optionally, make sure that either dimension
    * doesn't exceed the given limit.
    */
-  static bool CheckSurfaceSize(const IntSize &sz, int32_t limit = 0);
+  static bool CheckSurfaceSize(const IntSize &sz,
+                               int32_t limit = 0,
+                               int32_t allocLimit = 0);
+
+  /**
+   * Make sure that the given buffer size doesn't exceed the allocation limit.
+   */
+  static bool CheckBufferSize(int32_t bufSize);
 
   /** Make sure the given dimension satisfies the CheckSurfaceSize and is
    * within 8k limit.  The 8k value is chosen a bit randomly.
    */
   static bool ReasonableSurfaceSize(const IntSize &aSize);
+
+  static bool AllowedSurfaceSize(const IntSize &aSize);
 
   static already_AddRefed<DrawTarget> CreateDrawTargetForCairoSurface(cairo_surface_t* aSurface, const IntSize& aSize, SurfaceFormat* aFormat = nullptr);
 
@@ -1151,7 +1181,7 @@ public:
 
   static already_AddRefed<DrawTarget>
     CreateRecordingDrawTarget(DrawEventRecorder *aRecorder, DrawTarget *aDT);
-     
+
   static already_AddRefed<DrawTarget>
     CreateDrawTargetForData(BackendType aBackend, unsigned char* aData, const IntSize &aSize, int32_t aStride, SurfaceFormat aFormat);
 
@@ -1207,6 +1237,11 @@ public:
     CreateWrappingDataSourceSurface(uint8_t *aData, int32_t aStride,
                                     const IntSize &aSize, SurfaceFormat aFormat);
 
+  static void
+    CopyDataSourceSurface(DataSourceSurface* aSource,
+                          DataSourceSurface* aDest);
+
+
   static already_AddRefed<DrawEventRecorder>
     CreateEventRecorderForFile(const char *aFilename);
 
@@ -1217,10 +1252,10 @@ public:
 
   static uint32_t GetMaxSurfaceSize(BackendType aType);
 
-  static LogForwarder* GetLogForwarder() { return mLogForwarder; }
+  static LogForwarder* GetLogForwarder() { return sConfig ? sConfig->mLogForwarder : nullptr; }
 
 private:
-  static LogForwarder* mLogForwarder;
+  static Config* sConfig;
 public:
 
 #ifdef USE_SKIA_GPU
@@ -1234,7 +1269,7 @@ public:
 
 #if defined(USE_SKIA) && defined(MOZ_ENABLE_FREETYPE)
   static already_AddRefed<GlyphRenderingOptions>
-    CreateCairoGlyphRenderingOptions(FontHinting aHinting, bool aAutoHinting);
+    CreateCairoGlyphRenderingOptions(FontHinting aHinting, bool aAutoHinting, AntialiasMode aAntialiasMode = AntialiasMode::DEFAULT);
 #endif
   static already_AddRefed<DrawTarget>
     CreateDualDrawTarget(DrawTarget *targetA, DrawTarget *targetB);
@@ -1249,7 +1284,7 @@ public:
 
   static bool DoesBackendSupportDataDrawtarget(BackendType aType);
 
-#ifdef XP_MACOSX
+#ifdef XP_DARWIN
   static already_AddRefed<DrawTarget> CreateDrawTargetForCairoCGContext(CGContextRef cg, const IntSize& aSize);
   static already_AddRefed<GlyphRenderingOptions>
     CreateCGGlyphRenderingOptions(const Color &aFontSmoothingBackgroundColor);
@@ -1287,7 +1322,7 @@ private:
   static DrawEventRecorder *mRecorder;
 };
 
-}
-}
+} // namespace gfx
+} // namespace mozilla
 
 #endif // _MOZILLA_GFX_2D_H

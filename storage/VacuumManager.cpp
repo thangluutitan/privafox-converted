@@ -204,7 +204,7 @@ Vacuumer::execute()
   rv = mDBConn->CreateAsyncStatement(pageSizeQuery,
                                      getter_AddRefs(pageSizeStmt));
   NS_ENSURE_SUCCESS(rv, false);
-  nsRefPtr<BaseCallback> callback = new BaseCallback();
+  RefPtr<BaseCallback> callback = new BaseCallback();
   nsCOMPtr<mozIStoragePendingStatement> ps;
   rv = pageSizeStmt->ExecuteAsync(callback, getter_AddRefs(ps));
   NS_ENSURE_SUCCESS(rv, false);
@@ -298,7 +298,7 @@ Vacuumer::notifyCompletion(bool aSucceeded)
   return NS_OK;
 }
 
-} // Anonymous namespace.
+} // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 //// VacuumManager
@@ -315,7 +315,7 @@ VacuumManager *
 VacuumManager::getSingleton()
 {
   //Don't allocate it in the child Process.
-  if (XRE_GetProcessType() != GeckoProcessType_Default) {
+  if (!XRE_IsParentProcess()) {
     return nullptr;
   }
 
@@ -371,7 +371,7 @@ VacuumManager::Observe(nsISupports *aSubject,
     }
     int32_t index;
     for (index = startIndex; index < entries.Count(); ++index) {
-      nsRefPtr<Vacuumer> vacuum = new Vacuumer(entries[index]);
+      RefPtr<Vacuumer> vacuum = new Vacuumer(entries[index]);
       // Only vacuum one database per day.
       if (vacuum->execute()) {
         break;

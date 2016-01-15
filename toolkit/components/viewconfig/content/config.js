@@ -338,6 +338,7 @@ function onConfigLoad()
   gTypeStrs[nsIPrefBranch.PREF_BOOL] = gConfigBundle.getString("bool");
 
   var showWarning = gPrefBranch.getBoolPref("general.warnOnAboutConfig");
+
   if (showWarning)
     document.getElementById("warningButton").focus();
   else
@@ -415,13 +416,8 @@ function ExcludeKey()
 // Unhide the warning message
 function ShowPrefs()
 {
-  //Services.ww.getNewPrompter(null).alert("Call ShowPrefs", "Hello ShowPrefs");
-  
   gPrefBranch.getChildList("").forEach(fetchPref);
   ExcludeKey();
-  //Services.ww.getNewPrompter(null).alert("Before", "Before");
-  //Services.ww.getNewPrompter(null).alert("After", "After");
-  //Services.ww.getNewPrompter(null).alert("Call ShowPrefs - length1:", gPrefView.length + "Length 2:" + gPrefArray.length);
   var descending = document.getElementsByAttribute("sortDirection", "descending");
   if (descending.item(0)) {
     gSortedColumn = descending[0].id;
@@ -475,9 +471,7 @@ function onConfigUnload()
 
 function FilterPrefs()
 {
-  //Services.ww.getNewPrompter(null).alert("Call FilterPrefs", "Hello FilterPrefs");
   if (document.getElementById("configDeck").getAttribute("selectedIndex") != 1) {
-	  //Services.ww.getNewPrompter(null).alert("Call FilterPrefs1", "Hello FilterPrefs1");
     return;
   }
 
@@ -510,7 +504,7 @@ function FilterPrefs()
 		  continue;
       if (gFilter.test(gPrefArray[i].prefCol + ";" + gPrefArray[i].valueCol))
         gPrefView.push(gPrefArray[i]);
-	}
+     }
   }
   view.treebox.invalidate();
   view.treebox.rowCountChanged(oldlen, gPrefView.length - oldlen);

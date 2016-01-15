@@ -37,10 +37,10 @@ export USE_ELF_HACK ELF_HACK_FLAGS
 # Override the value of OMNIJAR_NAME from config.status with the value
 # set earlier in this file.
 
-stage-package: $(MOZ_PKG_MANIFEST)
+stage-package: $(MOZ_PKG_MANIFEST) $(MOZ_PKG_MANIFEST_DEPS)
 	OMNIJAR_NAME=$(OMNIJAR_NAME) \
 	NO_PKG_FILES="$(NO_PKG_FILES)" \
-	$(PYTHON) $(MOZILLA_DIR)/toolkit/mozapps/installer/packager.py $(DEFINES) \
+	$(PYTHON) $(MOZILLA_DIR)/toolkit/mozapps/installer/packager.py $(DEFINES) $(ACDEFINES) \
 		--format $(MOZ_PACKAGER_FORMAT) \
 		$(addprefix --removals ,$(MOZ_PKG_REMOVALS)) \
 		$(if $(filter-out 0,$(MOZ_PKG_FATAL_WARNINGS)),,--ignore-errors) \
@@ -50,18 +50,23 @@ stage-package: $(MOZ_PKG_MANIFEST)
 		) \
 		$(if $(JARLOG_DIR),$(addprefix --jarlog ,$(wildcard $(JARLOG_FILE_AB_CD)))) \
 		$(if $(OPTIMIZEJARS),--optimizejars) \
+		$(if $(DISABLE_JAR_COMPRESSION),--disable-compression) \
 		$(addprefix --unify ,$(UNIFY_DIST)) \
 		$(MOZ_PKG_MANIFEST) $(DIST) $(DIST)/$(STAGEPATH)$(MOZ_PKG_DIR)$(if $(MOZ_PKG_MANIFEST),,$(_BINPATH)) \
 		$(if $(filter omni,$(MOZ_PACKAGER_FORMAT)),$(if $(NON_OMNIJAR_FILES),--non-resource $(NON_OMNIJAR_FILES)))
 	$(PYTHON) $(MOZILLA_DIR)/toolkit/mozapps/installer/find-dupes.py $(DIST)/$(STAGEPATH)$(MOZ_PKG_DIR)
-ifndef LIBXUL_SDK
+ifndef MOZ_THUNDERBIRD
+	# Package mozharness
+	$(call py_action,test_archive, \
+		mozharness \
+		$(abspath $(DIST))/$(PKG_PATH)$(MOZHARNESS_PACKAGE))
+endif # MOZ_THUNDERBIRD
 ifdef MOZ_PACKAGE_JSSHELL
-# Package JavaScript Shell
+	# Package JavaScript Shell
 	@echo 'Packaging JavaScript Shell...'
 	$(RM) $(PKG_JSSHELL)
 	$(MAKE_JSSHELL)
 endif # MOZ_PACKAGE_JSSHELL
-endif # LIBXUL_SDK
 ifdef MOZ_CODE_COVERAGE
 	# Package code coverage gcno tree
 	@echo 'Packaging code coverage data...'
@@ -152,12 +157,19 @@ ifdef INSTALL_SDK # Here comes the hard part
 endif # INSTALL_SDK
 
 make-sdk:
+ifndef SDK_UNIFY
 	$(MAKE) stage-package UNIVERSAL_BINARY= STAGE_SDK=1 MOZ_PKG_DIR=sdk-stage
+endif
 	@echo 'Packaging SDK...'
 	$(RM) -rf $(DIST)/$(MOZ_APP_NAME)-sdk
 	$(NSINSTALL) -D $(DIST)/$(MOZ_APP_NAME)-sdk/bin
+ifdef SDK_UNIFY
+	(cd $(UNIFY_DIST)/sdk-stage && $(TAR) $(TAR_CREATE_FLAGS) - .) | \
+	  (cd $(DIST)/$(MOZ_APP_NAME)-sdk/bin && tar -xf -)
+else
 	(cd $(DIST)/sdk-stage && $(TAR) $(TAR_CREATE_FLAGS) - .) | \
 	  (cd $(DIST)/$(MOZ_APP_NAME)-sdk/bin && tar -xf -)
+endif
 	$(NSINSTALL) -D $(DIST)/$(MOZ_APP_NAME)-sdk/host/bin
 	(cd $(DIST)/host/bin && $(TAR) $(TAR_CREATE_FLAGS) - .) | \
 	  (cd $(DIST)/$(MOZ_APP_NAME)-sdk/host/bin && tar -xf -)
@@ -180,6 +192,11 @@ ifndef PKG_SKIP_STRIP
 	USE_ELF_HACK= $(PYTHON) $(MOZILLA_DIR)/toolkit/mozapps/installer/strip.py $(DIST)/$(MOZ_APP_NAME)-sdk
 endif
 	cd $(DIST) && $(MAKE_SDK)
+ifdef UNIFY_DIST
+ifndef SDK_UNIFY
+	$(MAKE) -C $(UNIFY_DIST)/.. sdk SDK_UNIFY=1
+endif
+endif
 
 checksum:
 	mkdir -p `dirname $(CHECKSUM_FILE)`
@@ -195,7 +212,9 @@ checksum:
 
 
 upload: checksum
-	$(PYTHON) $(MOZILLA_DIR)/build/upload.py --base-path $(DIST) \
+	$(PYTHON) -u $(MOZILLA_DIR)/build/upload.py --base-path $(DIST) \
+		--package '$(PACKAGE)' \
+		--properties-file $(DIST)/mach_build_properties.json \
 		$(UPLOAD_FILES) \
 		$(CHECKSUM_FILES)
 
