@@ -19,5 +19,5 @@ ac_add_options --disable-system-extension-dirs
 #ac_add_options --disable-webrtc
 mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/privafox-x64-new
 # for X86
-WIN32_REDIST_DIR=$VCINSTALLDIR/redist/x64/Microsoft.VC120.CRT
+#WIN32_REDIST_DIR=$VCINSTALLDIR/redist/x64/Microsoft.VC120.CRT
 
