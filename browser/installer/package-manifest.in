@@ -40,7 +40,9 @@
 @RESPATH@/document.icns
 @RESPATH@/@LPROJ_ROOT@.lproj/*
 #endif
-
+#ifdef XP_WIN32
+@RESPATH@/browser/defaults/profile/permissions.sqlite
+#endif
 [@AB_CD@]
 @RESPATH@/browser/chrome/@AB_CD@@JAREXT@
 @RESPATH@/browser/chrome/@AB_CD@.manifest
@@ -50,6 +52,7 @@
 @RESPATH@/browser/defaults/profile/chrome/*
 @RESPATH@/browser/defaults/profile/localstore.rdf
 @RESPATH@/browser/defaults/profile/mimeTypes.rdf
+
 @RESPATH@/dictionaries/*
 @RESPATH@/hyphenation/*
 @RESPATH@/browser/@PREF_DIR@/firefox-l10n.js

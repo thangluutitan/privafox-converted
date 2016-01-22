@@ -104,6 +104,7 @@ $(DIST)/branding:
 PROFILE_FILES = \
 	localstore.rdf \
 	mimeTypes.rdf \
+	permissions.sqlite \
 	$(NULL)
 
 PROFILE_CHROME = userChrome-example.css userContent-example.css
