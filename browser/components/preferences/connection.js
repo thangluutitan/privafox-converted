@@ -580,6 +580,43 @@ var gConnectionsDialog = {
     }
     
     this.sanitizeNoProxiesPref();
+	
+	
+	//Privafox save last proxy
+	
+	if (proxyTypePref.value == 1){
+		//var currentProxy = document.getElementById("network.proxy.ftp");
+
+		userProxySetting.http = document.getElementById("network.proxy.http").value;
+		userProxySetting.http_port = document.getElementById("network.proxy.http_port").value;
+		userProxySetting.ftp = document.getElementById("network.proxy.ftp").value;
+		userProxySetting.ftp_port = document.getElementById("network.proxy.ftp_port").value;
+		userProxySetting.ssl = document.getElementById("network.proxy.ssl").value;
+		userProxySetting.ssl_port = document.getElementById("network.proxy.ssl_port").value;
+		userProxySetting.socks = document.getElementById("network.proxy.socks").value;
+		userProxySetting.socks_port = document.getElementById("network.proxy.socks_port").value;
+		userProxySetting.socks_version = document.getElementById("network.proxy.socks_version").value;
+		userProxySetting.socks_remote_dns = document.getElementById("network.proxy.socks_remote_dns").value;
+		userProxySetting.share_proxy_settings = document.getElementById("network.proxy.share_proxy_settings").value;
+		userProxySetting.no_proxies_on = document.getElementById("network.proxy.no_proxies_on").value;
+		//var isChange = Services.prefs.getBoolPref("browser.proxyChange.isChange");
+		//if (isChange === true){
+		
+		Services.prefs.setCharPref("browser.proxyChange.lastProxyInfo.http",userProxySetting.http);
+		Services.prefs.setIntPref("browser.proxyChange.lastProxyInfo.http_port",userProxySetting.http_port);
+		Services.prefs.setCharPref("browser.proxyChange.lastProxyInfo.ftp",userProxySetting.ftp);
+		Services.prefs.setIntPref("browser.proxyChange.lastProxyInfo.ftp_port",userProxySetting.ftp_port);
+		Services.prefs.setCharPref("browser.proxyChange.lastProxyInfo.ssl",userProxySetting.ssl);
+		Services.prefs.setIntPref("browser.proxyChange.lastProxyInfo.ssl_port",userProxySetting.ssl_port);
+		Services.prefs.setCharPref("browser.proxyChange.lastProxyInfo.socks",userProxySetting.socks);
+		Services.prefs.setIntPref("browser.proxyChange.lastProxyInfo.socks_port",userProxySetting.socks_port);
+		Services.prefs.setIntPref("browser.proxyChange.lastProxyInfo.socks_version",userProxySetting.socks_version);
+		Services.prefs.setBoolPref("browser.proxyChange.lastProxyInfo.socks_remote_dns",userProxySetting.socks_remote_dns);
+		Services.prefs.setBoolPref("browser.proxyChange.lastProxyInfo.share_proxy_settings",userProxySetting.share_proxy_settings);
+		Services.prefs.setCharPref("browser.proxyChange.lastProxyInfo.no_proxies_on",userProxySetting.no_proxies_on);
+		
+	}
+
     
     return true;
   },

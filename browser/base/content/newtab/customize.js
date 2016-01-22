@@ -87,14 +87,15 @@ var gCustomize = {
         sendAsyncMessage("NewTab:Customize", {enabled: false, enhanced: false});
         break;
       case "newtab-customize-classic":
-        if (this._nodes.enhanced.getAttribute("selected")){
-          sendAsyncMessage("NewTab:Customize", {enabled: true, enhanced: true});
-        } else {
-          sendAsyncMessage("NewTab:Customize", {enabled: true, enhanced: false});
-        }
+        //if (this._nodes.enhanced.getAttribute("selected")){
+        //  sendAsyncMessage("NewTab:Customize", {enabled: true, enhanced: true});
+        //} else {
+          
+        //}
+		sendAsyncMessage("NewTab:Customize", {enabled: true, enhanced: false});
         break;
       case "newtab-customize-enhanced":
-        sendAsyncMessage("NewTab:Customize", {enabled: true, enhanced: !gAllPages.enhanced});
+        //sendAsyncMessage("NewTab:Customize", {enabled: true, enhanced: !gAllPages.enhanced});
         break;
       case "newtab-customize-learn":
         this.showLearn();
