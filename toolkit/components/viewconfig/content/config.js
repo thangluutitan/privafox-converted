@@ -396,7 +396,11 @@ var excludeKeys = ["toolkit.telemetry.server","toolkit.telemetry.enabled","toolk
 					"dom.disable_window_open_feature.location","geo.enabled","geo.wifi.uri","browser.search.geoip.url","browser.search.geoip.timeout",
 					"datareporting.healthreport.service.enabled","datareporting.healthreport.uploadEnabled","identity.fxaccounts.auth.uri","identity.fxaccounts.migrateToDevEdition",
 					"identity.fxaccounts.profile_image.enabled","geo.provider.use_corelocation","dom.ipc.plugins.reportCrashURL",
-					"media.gmp-manager.url","social.directories"];
+					"media.gmp-manager.url","social.directories","browser.safebrowsing.allowOverride","browser.safebrowsing.forbiddenURIs.enabled","browser.safebrowsing.provider.mozilla.gethashURL","browser.safebrowsing.provider.mozilla.lists",
+					"browser.safebrowsing.provider.mozilla.lists.mozfull.description","browser.safebrowsing.provider.mozilla.lists.mozfull.name","browser.safebrowsing.provider.mozilla.lists.mozstd.description",
+					"browser.safebrowsing.provider.mozilla.lists.mozstd.name","browser.safebrowsing.provider.mozilla.nextupdatetime","browser.safebrowsing.provider.mozilla.updateURL",
+					"browser.addon-watch.ignore","devtools.command-button-pick.enabled","devtools.memory.enabled","devtools.migration.warnings","devtools.performance.ui.enable-memory-flame","devtools.selfxss.count",
+					"devtools.telemetry.supported_performance_marks","devtools.webide.enabled","devtools.webide.widget.enabled","toolkit.telemetry.optoutSample","toolkit.telemetry.reportingpolicy.firstRun"];
 function ExcludeKey()
 {
 	//Services.ww.getNewPrompter(null).alert("gPrefView.length:", gPrefView.length);

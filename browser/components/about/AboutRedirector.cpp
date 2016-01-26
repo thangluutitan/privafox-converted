@@ -65,21 +65,21 @@ static RedirEntry kRedirMap[] = {
     nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
     nsIAboutModule::ALLOW_SCRIPT |
     nsIAboutModule::HIDE_FROM_ABOUTABOUT },
-  { "privatebrowsing", "chrome://browser/content/aboutPrivateBrowsing.xhtml",
+  { "privatebrowsing", "chrome://browser/content/NullPage.xhtml",
     nsIAboutModule::URI_MUST_LOAD_IN_CHILD |
     nsIAboutModule::ALLOW_SCRIPT },
   { "rights",
     "chrome://global/content/aboutRights.xhtml",
     nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
     nsIAboutModule::ALLOW_SCRIPT },
-  { "robots", "chrome://browser/content/aboutRobots.xhtml",
+  { "robots", "chrome://browser/content/NullPage.xhtml",
     nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
     nsIAboutModule::ALLOW_SCRIPT },
-  { "sessionrestore", "chrome://browser/content/aboutSessionRestore.xhtml",
+  { "sessionrestore", "chrome://browser/content/NullPage.xhtml",
     nsIAboutModule::ALLOW_SCRIPT },
   { "welcomeback", "chrome://browser/content/aboutWelcomeBack.xhtml",
     nsIAboutModule::ALLOW_SCRIPT },
-  { "sync-tabs", "chrome://browser/content/sync/aboutSyncTabs.xul",
+  { "sync-tabs", "chrome://browser/content/NullPage.xhtml",
     nsIAboutModule::ALLOW_SCRIPT },
   { "home", "chrome://browser/content/abouthome/aboutHome.xhtml",
     nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
@@ -98,17 +98,17 @@ static RedirEntry kRedirMap[] = {
   { "downloads", "chrome://browser/content/downloads/contentAreaDownloadsView.xul",
     nsIAboutModule::ALLOW_SCRIPT },
 #ifdef MOZ_SERVICES_HEALTHREPORT
-  { "healthreport", "chrome://browser/content/abouthealthreport/abouthealth.xhtml",
+  { "healthreport", "chrome://browser/content/NullPage.xhtml",
     nsIAboutModule::ALLOW_SCRIPT },
 #endif
-  { "accounts", "chrome://browser/content/aboutaccounts/aboutaccounts.xhtml",
+  { "accounts", "chrome://browser/content/NullPage.xhtml",
     nsIAboutModule::ALLOW_SCRIPT },
   { "customizing", "chrome://browser/content/customizableui/aboutCustomizing.xul",
     nsIAboutModule::ALLOW_SCRIPT },
   {
-    "debugging", "chrome://devtools/content/aboutdebugging/aboutdebugging.xhtml",
+    "debugging", "chrome://browser/content/NullPage.xhtml",
     nsIAboutModule::ALLOW_SCRIPT },
-  { "loopconversation", "chrome://loop/content/panels/conversation.html",
+  { "loopconversation", "chrome://browser/content/NullPage.xhtml",
     nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
     nsIAboutModule::ALLOW_SCRIPT |
     nsIAboutModule::HIDE_FROM_ABOUTABOUT |
