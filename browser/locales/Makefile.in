@@ -129,7 +129,7 @@ libs:: $(call MERGE_FILES,$(addprefix profile/chrome/,$(PROFILE_CHROME)))
 libs-%:
 	$(NSINSTALL) -D $(DIST)/install
 	@$(MAKE) -C ../../toolkit/locales libs-$* XPI_ROOT_APPID='$(XPI_ROOT_APPID)'
-	@$(MAKE) -C ../../services/sync/locales AB_CD=$* XPI_NAME=locale-$*
+	# @$(MAKE) -C ../../services/sync/locales AB_CD=$* XPI_NAME=locale-$*
 ifdef MOZ_WEBAPP_RUNTIME
 	@$(MAKE) -C ../../webapprt/locales AB_CD=$* XPI_NAME=locale-$*
 endif
